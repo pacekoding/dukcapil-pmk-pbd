@@ -95,11 +95,11 @@ export default function WebsiteKegiatanPage() {
   return (
     <main className="min-h-screen bg-pbd-bg">
       <section className="bg-pbd-navy">
-        <div className="mx-auto max-w-7xl px-6 py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
           <span className="rounded-full bg-pbd-gold/20 px-4 py-2 text-sm font-medium text-pbd-gold">
             Kegiatan
           </span>
-          <h1 className="mt-6 max-w-4xl text-4xl font-extrabold leading-tight text-white md:text-6xl">
+          <h1 className="mt-6 max-w-4xl text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-6xl">
             Dokumentasi Kegiatan Selesai
           </h1>
           <p className="mt-6 max-w-3xl text-lg leading-relaxed text-white/80">
@@ -115,7 +115,7 @@ export default function WebsiteKegiatanPage() {
           {(data?.stats ?? []).map((item) => (
             <div
               key={item.label}
-              className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm"
+              className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm"
             >
               <p className="text-sm text-gray-500">{item.label}</p>
               <h2 className="mt-2 text-3xl font-extrabold text-pbd-navy">
@@ -129,8 +129,8 @@ export default function WebsiteKegiatanPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-16">
-        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-16">
+        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
           <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_220px]">
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -138,12 +138,12 @@ export default function WebsiteKegiatanPage() {
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Cari kegiatan, lokasi, bidang..."
-                className="h-11 rounded-2xl border-slate-200 pl-10"
+                className="h-11 rounded-lg border-slate-200 pl-10"
               />
             </div>
 
             <Select value={jenis} onValueChange={(value) => setJenis(value as JenisFilter)}>
-              <SelectTrigger className="h-11 rounded-2xl border-slate-200">
+              <SelectTrigger className="h-11 rounded-lg border-slate-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -159,7 +159,7 @@ export default function WebsiteKegiatanPage() {
         </div>
 
         {error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+          <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
             {error}
           </div>
         ) : null}
@@ -169,7 +169,7 @@ export default function WebsiteKegiatanPage() {
             ? Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-72 animate-pulse rounded-3xl bg-white"
+                  className="h-72 animate-pulse rounded-lg bg-white"
                 />
               ))
             : filteredItems.map((item) => (
@@ -178,7 +178,7 @@ export default function WebsiteKegiatanPage() {
         </div>
 
         {!loading && filteredItems.length === 0 ? (
-          <div className="mt-8 rounded-3xl border border-dashed border-gray-200 bg-white p-10 text-center">
+          <div className="mt-8 rounded-lg border border-dashed border-gray-200 bg-white p-10 text-center">
             <h2 className="text-xl font-bold text-pbd-navy">
               Kegiatan tidak ditemukan
             </h2>
@@ -197,7 +197,7 @@ function KegiatanCard({ item }: { item: PublicKegiatanItem }) {
 
   return (
     <Link href={`/kegiatan/${item.id}`} className="group block h-full">
-      <article className="h-full overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:border-pbd-blue/30 hover:shadow-xl">
+      <article className="h-full overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:border-pbd-blue/30 hover:shadow-xl">
         <div className="relative aspect-[16/10] bg-slate-100">
           <Image
             src={primaryPhoto?.url ?? "/hero-pbd.png"}
@@ -250,7 +250,7 @@ function KegiatanCard({ item }: { item: PublicKegiatanItem }) {
                 {item.penanggungJawab}
               </span>
             </p>
-            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pbd-blue/10 text-pbd-blue transition group-hover:bg-pbd-blue group-hover:text-white">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-pbd-blue/10 text-pbd-blue transition group-hover:bg-pbd-blue group-hover:text-white">
               <ArrowRight className="h-4 w-4" />
             </span>
           </div>

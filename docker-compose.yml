@@ -1,6 +1,24 @@
 name: dukcapil-pbd
 
 services:
+  dukcapil-pbd-db:
+    image: postgres:16-alpine
+    container_name: dukcapil-pbd-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dukcapil_pbd}
+      POSTGRES_USER: ${POSTGRES_USER:-dukcapil_pbd}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dukcapil_pbd_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - dukcapil-pbd-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dukcapil_pbd} -d ${POSTGRES_DB:-dukcapil_pbd}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   dukcapil-pbd-be:
     build:
       context: ./apps/dukcapil-pbd-be
@@ -9,6 +27,11 @@ services:
       APP_ENV: ${APP_ENV:-development}
       PORT: 8080
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:3000}
+      DATABASE_URL: postgres://${POSTGRES_USER:-dukcapil_pbd}:${POSTGRES_PASSWORD:-dukcapil_pbd_password}@dukcapil-pbd-db:5432/${POSTGRES_DB:-dukcapil_pbd}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+    depends_on:
+      dukcapil-pbd-db:
+        condition: service_healthy
     ports:
       - "${BE_PORT:-8080}:8080"
     restart: unless-stopped
@@ -18,17 +41,22 @@ services:
       context: ./apps/dukcapil-pbd-fe
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
-        NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/mock}
+        NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/backend}
         JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
     container_name: dukcapil-pbd-fe
     environment:
       NODE_ENV: production
       PORT: 3000
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
-      NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/mock}
+      NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/backend}
+      SERVER_API_BASE_URL: ${SERVER_API_BASE_URL:-http://dukcapil-pbd-be:8080}
+      SERVER_API_PREFIX: ${SERVER_API_PREFIX:-/api/v1}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
     depends_on:
       - dukcapil-pbd-be
     ports:
       - "${FE_PORT:-3000}:3000"
     restart: unless-stopped
+
+volumes:
+  dukcapil-pbd-postgres-data:

@@ -941,7 +941,7 @@ export default function KegiatanPage() {
       </Card>
 
       {pageError ? (
-        <section className="rounded-3xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700">
+        <section className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700">
           {pageError}
         </section>
       ) : null}
@@ -1012,7 +1012,7 @@ function StatCard({
   return (
     <Card
       className={cn(
-        "min-h-[150px] rounded-3xl border-slate-200 py-0 shadow-sm",
+        "min-h-[150px] rounded-lg border-slate-200 py-0 shadow-sm",
         className,
       )}
     >
@@ -1029,7 +1029,7 @@ function StatCard({
 
           <div
             className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg",
               iconClassName,
             )}
           >
@@ -1206,7 +1206,7 @@ function KegiatanFormModal({
     <ModalShell onClose={onClose} title={title}>
       <form onSubmit={onSubmit} className="space-y-6">
         {error && (
-          <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{error}</p>
           </div>
@@ -1224,7 +1224,7 @@ function KegiatanFormModal({
               onChange={(event) => onChange("nama", event.target.value)}
               placeholder="Contoh: Sosialisasi Administrasi Kependudukan"
               disabled={saving}
-              className="h-11 rounded-2xl border-slate-200 bg-slate-50"
+              className="h-11 rounded-lg border-slate-200 bg-slate-50"
             />
           </FormField>
 
@@ -1238,7 +1238,7 @@ function KegiatanFormModal({
             >
               <SelectTrigger
                 id="bidang"
-                className="h-11 w-full rounded-2xl border-slate-200 bg-slate-50 px-4"
+                className="h-11 w-full rounded-lg border-slate-200 bg-slate-50 px-4"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -1262,7 +1262,7 @@ function KegiatanFormModal({
             >
               <SelectTrigger
                 id="jenis"
-                className="h-11 w-full rounded-2xl border-slate-200 bg-slate-50 px-4"
+                className="h-11 w-full rounded-lg border-slate-200 bg-slate-50 px-4"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -1283,7 +1283,7 @@ function KegiatanFormModal({
               value={formData.tanggal}
               onChange={(event) => onChange("tanggal", event.target.value)}
               disabled={saving}
-              className="h-11 rounded-2xl border-slate-200 bg-slate-50"
+              className="h-11 rounded-lg border-slate-200 bg-slate-50"
             />
           </FormField>
 
@@ -1297,7 +1297,7 @@ function KegiatanFormModal({
             >
               <SelectTrigger
                 id="status"
-                className="h-11 w-full rounded-2xl border-slate-200 bg-slate-50 px-4"
+                className="h-11 w-full rounded-lg border-slate-200 bg-slate-50 px-4"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -1318,7 +1318,7 @@ function KegiatanFormModal({
               onChange={(event) => onChange("lokasi", event.target.value)}
               placeholder="Contoh: Kampung Waimuri"
               disabled={saving}
-              className="h-11 rounded-2xl border-slate-200 bg-slate-50"
+              className="h-11 rounded-lg border-slate-200 bg-slate-50"
             />
           </FormField>
 
@@ -1335,7 +1335,7 @@ function KegiatanFormModal({
               }
               placeholder="Contoh: Kabid Pelayanan Pendaftaran Penduduk"
               disabled={saving}
-              className="h-11 rounded-2xl border-slate-200 bg-slate-50"
+              className="h-11 rounded-lg border-slate-200 bg-slate-50"
             />
           </FormField>
 
@@ -1347,7 +1347,7 @@ function KegiatanFormModal({
               value={formData.peserta}
               onChange={(event) => onChange("peserta", event.target.value)}
               disabled={saving}
-              className="h-11 rounded-2xl border-slate-200 bg-slate-50"
+              className="h-11 rounded-lg border-slate-200 bg-slate-50"
             />
           </FormField>
 
@@ -1362,7 +1362,7 @@ function KegiatanFormModal({
               onChange={(event) => onChange("deskripsi", event.target.value)}
               placeholder="Ringkasan pelaksanaan dan tujuan kegiatan"
               disabled={saving}
-              className="min-h-28 rounded-2xl border-slate-200 bg-slate-50"
+              className="min-h-28 rounded-lg border-slate-200 bg-slate-50"
             />
           </FormField>
         </div>
@@ -1373,14 +1373,14 @@ function KegiatanFormModal({
             variant="outline"
             onClick={onClose}
             disabled={saving}
-            className="h-11 rounded-2xl px-5"
+            className="h-11 rounded-lg px-5"
           >
             Batal
           </Button>
           <Button
             type="submit"
             disabled={saving}
-            className="h-11 rounded-2xl bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
+            className="h-11 rounded-lg bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
           >
             {saving
               ? "Menyimpan..."
@@ -1410,7 +1410,7 @@ function KegiatanDetailModal({
   return (
     <ModalShell onClose={onClose} title="Detail Kegiatan">
       <div className="space-y-6">
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1458,7 +1458,7 @@ function KegiatanDetailModal({
         </div>
 
         {item.status === "Selesai" ? (
-          <div className="rounded-3xl border border-slate-200 p-5">
+          <div className="rounded-lg border border-slate-200 p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-950">
@@ -1473,7 +1473,7 @@ function KegiatanDetailModal({
                 type="button"
                 variant="outline"
                 onClick={onDocumentation}
-                className="h-10 rounded-2xl px-4"
+                className="h-10 rounded-lg px-4"
               >
                 <Images className="h-4 w-4" />
                 Kelola Foto
@@ -1483,7 +1483,7 @@ function KegiatanDetailModal({
             {dokumentasi.length > 0 ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {dokumentasi.slice(0, 3).map((photo) => (
-                  <div key={photo.id} className="overflow-hidden rounded-2xl">
+                  <div key={photo.id} className="overflow-hidden rounded-lg">
                     <div
                       className="aspect-[4/3] bg-slate-100 bg-cover bg-center"
                       style={{ backgroundImage: `url(${photo.url})` }}
@@ -1495,7 +1495,7 @@ function KegiatanDetailModal({
                 ))}
               </div>
             ) : (
-              <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+              <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
                 Belum ada foto dokumentasi yang ditambahkan.
               </div>
             )}
@@ -1507,14 +1507,14 @@ function KegiatanDetailModal({
             type="button"
             variant="outline"
             onClick={onClose}
-            className="h-11 rounded-2xl px-5"
+            className="h-11 rounded-lg px-5"
           >
             Tutup
           </Button>
           <Button
             type="button"
             onClick={onEdit}
-            className="h-11 rounded-2xl bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
+            className="h-11 rounded-lg bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
           >
             <Pencil className="h-4 w-4" />
             Edit Kegiatan
@@ -1564,7 +1564,7 @@ function KegiatanDocumentationModal({
   return (
     <ModalShell onClose={onClose} title="Dokumentasi Foto" size="lg">
       <div className="space-y-6">
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1579,7 +1579,7 @@ function KegiatanDocumentationModal({
               </p>
             </div>
 
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-pbd-blue/10 text-pbd-blue">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-pbd-blue/10 text-pbd-blue">
               <Images className="h-5 w-5" />
             </div>
           </div>
@@ -1588,7 +1588,7 @@ function KegiatanDocumentationModal({
         {item.status === "Selesai" ? (
           <form
             onSubmit={handleSubmit}
-            className="rounded-3xl border border-slate-200 p-5"
+            className="rounded-lg border border-slate-200 p-5"
           >
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.75fr)]">
               <FormField label="Foto Dokumentasi" htmlFor="fotoDokumentasi">
@@ -1602,7 +1602,7 @@ function KegiatanDocumentationModal({
                   onChange={(event) =>
                     setFiles(Array.from(event.target.files ?? []))
                   }
-                  className="h-11 rounded-2xl border-slate-200 bg-slate-50 file:mr-4 file:border-0 file:bg-transparent file:text-sm file:font-semibold file:text-pbd-blue"
+                  className="h-11 rounded-lg border-slate-200 bg-slate-50 file:mr-4 file:border-0 file:bg-transparent file:text-sm file:font-semibold file:text-pbd-blue"
                 />
                 <p className="text-xs leading-5 text-slate-500">
                   Bisa memilih lebih dari satu foto. Maksimal{" "}
@@ -1620,13 +1620,13 @@ function KegiatanDocumentationModal({
                   disabled={saving}
                   onChange={(event) => setCaption(event.target.value)}
                   placeholder="Contoh: Pembukaan kegiatan bersama peserta kampung"
-                  className="min-h-[112px] rounded-2xl border-slate-200 bg-slate-50"
+                  className="min-h-[112px] rounded-lg border-slate-200 bg-slate-50"
                 />
               </FormField>
             </div>
 
             {error ? (
-              <div className="mt-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="mt-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>{error}</p>
               </div>
@@ -1638,14 +1638,14 @@ function KegiatanDocumentationModal({
                 variant="outline"
                 onClick={onClose}
                 disabled={saving}
-                className="h-11 rounded-2xl px-5"
+                className="h-11 rounded-lg px-5"
               >
                 Tutup
               </Button>
               <Button
                 type="submit"
                 disabled={saving}
-                className="h-11 rounded-2xl bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
+                className="h-11 rounded-lg bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
               >
                 <ImagePlus className="h-4 w-4" />
                 {saving ? "Menyimpan..." : "Tambah Foto"}
@@ -1653,13 +1653,13 @@ function KegiatanDocumentationModal({
             </div>
           </form>
         ) : (
-          <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-800">
             Dokumentasi foto hanya dapat ditambahkan setelah kegiatan berstatus
             selesai.
           </div>
         )}
 
-        <div className="rounded-3xl border border-slate-200 p-5">
+        <div className="rounded-lg border border-slate-200 p-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-950">
@@ -1676,7 +1676,7 @@ function KegiatanDocumentationModal({
               {dokumentasi.map((photo) => (
                 <div
                   key={photo.id}
-                  className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+                  className="overflow-hidden rounded-lg border border-slate-200 bg-white"
                 >
                   <div
                     className="aspect-[4/3] bg-slate-100 bg-cover bg-center"
@@ -1712,8 +1712,8 @@ function KegiatanDocumentationModal({
               ))}
             </div>
           ) : (
-            <div className="mt-4 flex min-h-[180px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-8 text-center">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500">
+            <div className="mt-4 flex min-h-[180px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-6 py-8 text-center">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-500">
                 <Images className="h-5 w-5" />
               </div>
               <p className="mt-3 text-sm font-semibold text-slate-950">
@@ -1747,9 +1747,9 @@ function DeleteKegiatanModal({
   return (
     <ModalShell onClose={onClose} title="Hapus Kegiatan" size="sm">
       <div className="space-y-5">
-        <div className="rounded-3xl border border-red-100 bg-red-50 p-5">
+        <div className="rounded-lg border border-red-100 bg-red-50 p-5">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
               <Trash2 className="h-5 w-5" />
             </div>
             <div>
@@ -1763,7 +1763,7 @@ function DeleteKegiatanModal({
         </div>
 
         {error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
             {error}
           </div>
         ) : null}
@@ -1774,7 +1774,7 @@ function DeleteKegiatanModal({
             variant="outline"
             onClick={onClose}
             disabled={saving}
-            className="h-11 rounded-2xl px-5"
+            className="h-11 rounded-lg px-5"
           >
             Batal
           </Button>
@@ -1782,7 +1782,7 @@ function DeleteKegiatanModal({
             type="button"
             onClick={onDelete}
             disabled={saving}
-            className="h-11 rounded-2xl bg-red-600 px-5 text-white hover:bg-red-700"
+            className="h-11 rounded-lg bg-red-600 px-5 text-white hover:bg-red-700"
           >
             {saving ? "Menghapus..." : "Hapus"}
           </Button>
@@ -1822,7 +1822,7 @@ function ModalShell({
           `
             max-h-[calc(100vh-3rem)]
             w-full overflow-hidden
-            rounded-3xl bg-white
+            rounded-lg bg-white
             shadow-2xl
           `,
           size === "sm"
@@ -1893,9 +1893,9 @@ function InfoItem({
   value: string;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 p-4">
+    <div className="rounded-lg border border-slate-200 p-4">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">

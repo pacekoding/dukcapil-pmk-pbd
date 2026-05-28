@@ -7,7 +7,7 @@ import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { publicMenus } from "@/lib/dummy/navigation-data";
+import { publicMenus } from "@/lib/navigation";
 
 /* =========================
    COMPONENT

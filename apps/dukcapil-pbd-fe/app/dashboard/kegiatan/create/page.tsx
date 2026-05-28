@@ -83,10 +83,10 @@ export default function CreateKegiatanPage() {
               href={`/dashboard/kegiatan/create/${item.slug}`}
               className="group"
             >
-              <Card className="h-full rounded-3xl border border-slate-200 shadow-sm transition hover:border-pbd-blue hover:bg-blue-50/30">
+              <Card className="h-full rounded-lg border border-slate-200 shadow-sm transition hover:border-pbd-blue hover:bg-blue-50/30">
                 <CardContent className="flex h-full flex-col p-6">
                   <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-2xl ${colorMap[item.slug]}`}
+                    className={`flex h-12 w-12 items-center justify-center rounded-lg ${colorMap[item.slug]}`}
                   >
                     <Icon className="h-5 w-5" />
                   </div>

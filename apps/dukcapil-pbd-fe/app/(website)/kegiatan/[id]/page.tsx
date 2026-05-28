@@ -84,9 +84,9 @@ export default function WebsiteKegiatanDetailPage() {
   if (error || !item) {
     return (
       <main className="min-h-screen bg-pbd-bg">
-        <section className="mx-auto max-w-7xl px-6 py-20">
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
           <Breadcrumb current="Kegiatan tidak ditemukan" />
-          <div className="mt-8 rounded-3xl border border-dashed border-gray-200 bg-white p-10 text-center">
+          <div className="mt-8 rounded-lg border border-dashed border-gray-200 bg-white p-10 text-center">
             <h1 className="text-2xl font-bold text-pbd-navy">
               Kegiatan tidak ditemukan
             </h1>
@@ -95,7 +95,7 @@ export default function WebsiteKegiatanDetailPage() {
             </p>
             <Link
               href="/kegiatan"
-              className="mt-6 inline-flex h-12 items-center justify-center rounded-2xl bg-pbd-navy px-6 font-semibold text-white"
+              className="mt-6 inline-flex h-12 items-center justify-center rounded-lg bg-pbd-navy px-6 font-semibold text-white"
             >
               Lihat Kegiatan
             </Link>
@@ -111,7 +111,7 @@ export default function WebsiteKegiatanDetailPage() {
   return (
     <main className="min-h-screen bg-pbd-bg">
       <section className="bg-pbd-navy">
-        <div className="mx-auto max-w-7xl px-6 py-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-10">
           <Breadcrumb current={item.nama} inverted />
 
           <div className="grid gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_520px] lg:items-center">
@@ -128,7 +128,7 @@ export default function WebsiteKegiatanDetailPage() {
                 </span>
               </div>
 
-              <h1 className="mt-6 max-w-4xl text-4xl font-extrabold leading-tight text-white md:text-6xl">
+              <h1 className="mt-6 max-w-4xl text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-6xl">
                 {item.nama}
               </h1>
 
@@ -137,7 +137,7 @@ export default function WebsiteKegiatanDetailPage() {
               </p>
             </div>
 
-            <div className="relative aspect-[16/11] overflow-hidden rounded-3xl bg-white/10 shadow-2xl">
+            <div className="relative aspect-[16/11] overflow-hidden rounded-lg bg-white/10 shadow-2xl">
               <Image
                 src={primaryPhoto?.url ?? "/hero-pbd.png"}
                 alt={primaryPhoto?.caption ?? item.nama}
@@ -174,7 +174,7 @@ export default function WebsiteKegiatanDetailPage() {
 
       <section className="mx-auto grid max-w-7xl gap-8 px-6 py-16 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-8">
-          <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+          <div className="rounded-lg border border-gray-100 bg-white p-8 shadow-sm">
             <SectionTitle title="Ringkasan Kegiatan" />
             <p className="mt-5 leading-8 text-gray-600">{item.ringkasan}</p>
 
@@ -183,7 +183,7 @@ export default function WebsiteKegiatanDetailPage() {
                 {detailRows.map((detail) => (
                   <div
                     key={detail}
-                    className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700"
+                    className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700"
                   >
                     {detail}
                   </div>
@@ -192,7 +192,7 @@ export default function WebsiteKegiatanDetailPage() {
             ) : null}
           </div>
 
-          <div className="rounded-3xl border border-gray-100 bg-white p-8 shadow-sm">
+          <div className="rounded-lg border border-gray-100 bg-white p-8 shadow-sm">
             <SectionTitle title="Foto Dokumentasi" />
 
             {dokumentasi.length > 0 ? (
@@ -200,7 +200,7 @@ export default function WebsiteKegiatanDetailPage() {
                 {dokumentasi.map((photo) => (
                   <figure
                     key={photo.id}
-                    className="overflow-hidden rounded-3xl border border-gray-100 bg-white"
+                    className="overflow-hidden rounded-lg border border-gray-100 bg-white"
                   >
                     <div className="relative aspect-[16/11] bg-slate-100">
                       <Image
@@ -218,7 +218,7 @@ export default function WebsiteKegiatanDetailPage() {
                 ))}
               </div>
             ) : (
-              <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-slate-50 p-8 text-center text-gray-500">
+              <div className="mt-6 rounded-lg border border-dashed border-gray-200 bg-slate-50 p-8 text-center text-gray-500">
                 Foto dokumentasi belum tersedia.
               </div>
             )}
@@ -226,7 +226,7 @@ export default function WebsiteKegiatanDetailPage() {
         </div>
 
         <aside className="space-y-5">
-          <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
             <SectionTitle title="Dokumen" />
             <div className="mt-5 grid gap-3">
               <DocumentRow label="TOR" value={item.dokumen.tor} />
@@ -235,8 +235,8 @@ export default function WebsiteKegiatanDetailPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-pbd-navy p-6 text-white shadow-sm">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-pbd-gold">
+          <div className="rounded-lg bg-pbd-navy p-6 text-white shadow-sm">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10 text-pbd-gold">
               <Images className="h-5 w-5" />
             </div>
             <h2 className="mt-5 text-xl font-bold">Arsip Kegiatan Selesai</h2>
@@ -304,8 +304,8 @@ function InfoCard({
   value: string;
 }) {
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-pbd-blue/10 text-pbd-blue">
+    <div className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-pbd-blue/10 text-pbd-blue">
         <Icon className="h-5 w-5" />
       </div>
       <p className="mt-5 text-sm text-gray-500">{label}</p>
@@ -325,7 +325,7 @@ function SectionTitle({ title }: { title: string }) {
 
 function DocumentRow({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+    <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
       <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
         <FileText className="h-4 w-4 text-pbd-blue" />
         {label}
@@ -339,12 +339,12 @@ function DetailSkeleton() {
   return (
     <main className="min-h-screen bg-pbd-bg">
       <section className="bg-pbd-navy">
-        <div className="mx-auto max-w-7xl px-6 py-20">
-          <div className="h-80 animate-pulse rounded-3xl bg-white/10" />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
+          <div className="h-80 animate-pulse rounded-lg bg-white/10" />
         </div>
       </section>
-      <section className="mx-auto max-w-7xl px-6 py-12">
-        <div className="h-96 animate-pulse rounded-3xl bg-white" />
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-12">
+        <div className="h-96 animate-pulse rounded-lg bg-white" />
       </section>
     </main>
   );

@@ -751,7 +751,7 @@ export default function DokumenPage() {
       </Card>
 
       {pageError ? (
-        <section className="rounded-3xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700">
+        <section className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700">
           {pageError}
         </section>
       ) : null}
@@ -815,7 +815,7 @@ function StatCard({
   return (
     <Card
       className={cn(
-        "min-h-[150px] rounded-3xl border-slate-200 py-0 shadow-sm",
+        "min-h-[150px] rounded-lg border-slate-200 py-0 shadow-sm",
         className,
       )}
     >
@@ -832,7 +832,7 @@ function StatCard({
 
           <div
             className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg",
               iconClassName,
             )}
           >
@@ -973,7 +973,7 @@ function CreateDokumenChoiceModal({ onClose }: { onClose: () => void }) {
   return (
     <ModalShell onClose={onClose} title="Tambah Dokumen">
       <div className="space-y-6">
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
           <h2 className="font-heading text-2xl font-bold leading-tight text-slate-950">
             Pilih format dokumen
           </h2>
@@ -986,9 +986,9 @@ function CreateDokumenChoiceModal({ onClose }: { onClose: () => void }) {
         <div className="grid gap-4 md:grid-cols-2">
           <Link
             href="/dashboard/dokumen/create/tor"
-            className="group rounded-3xl border border-slate-200 p-5 transition hover:border-pbd-blue hover:bg-blue-50/40"
+            className="group rounded-lg border border-slate-200 p-5 transition hover:border-pbd-blue hover:bg-blue-50/40"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 transition group-hover:bg-blue-100">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition group-hover:bg-blue-100">
               <ClipboardList className="h-5 w-5" />
             </div>
             <h3 className="mt-4 text-lg font-semibold text-slate-950">
@@ -1002,9 +1002,9 @@ function CreateDokumenChoiceModal({ onClose }: { onClose: () => void }) {
 
           <Link
             href="/dashboard/dokumen/create/laporan"
-            className="group rounded-3xl border border-slate-200 p-5 transition hover:border-emerald-500 hover:bg-emerald-50/40"
+            className="group rounded-lg border border-slate-200 p-5 transition hover:border-emerald-500 hover:bg-emerald-50/40"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition group-hover:bg-emerald-100">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition group-hover:bg-emerald-100">
               <FileText className="h-5 w-5" />
             </div>
             <h3 className="mt-4 text-lg font-semibold text-slate-950">
@@ -1022,7 +1022,7 @@ function CreateDokumenChoiceModal({ onClose }: { onClose: () => void }) {
             type="button"
             variant="outline"
             onClick={onClose}
-            className="h-11 rounded-2xl px-5"
+            className="h-11 rounded-lg px-5"
           >
             Batal
           </Button>
@@ -1062,7 +1062,7 @@ function DokumenFormModal({
     <ModalShell onClose={onClose} title={title}>
       <form onSubmit={onSubmit} className="space-y-6">
         {error && (
-          <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{error}</p>
           </div>
@@ -1082,7 +1082,7 @@ function DokumenFormModal({
               }
               placeholder="Contoh: Sosialisasi Administrasi Kependudukan"
               disabled={saving}
-              className="h-11 rounded-2xl border-slate-200 bg-slate-50"
+              className="h-11 rounded-lg border-slate-200 bg-slate-50"
             />
           </FormField>
 
@@ -1096,7 +1096,7 @@ function DokumenFormModal({
             >
               <SelectTrigger
                 id="jenisKegiatan"
-                className="h-11 w-full rounded-2xl border-slate-200 bg-slate-50 px-4"
+                className="h-11 w-full rounded-lg border-slate-200 bg-slate-50 px-4"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -1120,7 +1120,7 @@ function DokumenFormModal({
             >
               <SelectTrigger
                 id="jenisDokumen"
-                className="h-11 w-full rounded-2xl border-slate-200 bg-slate-50 px-4"
+                className="h-11 w-full rounded-lg border-slate-200 bg-slate-50 px-4"
               >
                 <SelectValue />
               </SelectTrigger>
@@ -1141,7 +1141,7 @@ function DokumenFormModal({
               value={formData.tanggal}
               onChange={(event) => onChange("tanggal", event.target.value)}
               disabled={saving}
-              className="h-11 rounded-2xl border-slate-200 bg-slate-50"
+              className="h-11 rounded-lg border-slate-200 bg-slate-50"
             />
           </FormField>
 
@@ -1152,7 +1152,7 @@ function DokumenFormModal({
               onChange={(event) => onChange("dibuatOleh", event.target.value)}
               placeholder="Contoh: Admin Dinas"
               disabled={saving}
-              className="h-11 rounded-2xl border-slate-200 bg-slate-50"
+              className="h-11 rounded-lg border-slate-200 bg-slate-50"
             />
           </FormField>
         </div>
@@ -1163,14 +1163,14 @@ function DokumenFormModal({
             variant="outline"
             onClick={onClose}
             disabled={saving}
-            className="h-11 rounded-2xl px-5"
+            className="h-11 rounded-lg px-5"
           >
             Batal
           </Button>
           <Button
             type="submit"
             disabled={saving}
-            className="h-11 rounded-2xl bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
+            className="h-11 rounded-lg bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
           >
             {saving
               ? "Menyimpan..."
@@ -1196,7 +1196,7 @@ function DokumenDetailModal({
   return (
     <ModalShell onClose={onClose} title="Detail Dokumen">
       <div className="space-y-6">
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1243,14 +1243,14 @@ function DokumenDetailModal({
             type="button"
             variant="outline"
             onClick={onClose}
-            className="h-11 rounded-2xl px-5"
+            className="h-11 rounded-lg px-5"
           >
             Tutup
           </Button>
           <Button
             type="button"
             onClick={onEdit}
-            className="h-11 rounded-2xl bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
+            className="h-11 rounded-lg bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
           >
             <Pencil className="h-4 w-4" />
             Edit Dokumen
@@ -1277,9 +1277,9 @@ function DeleteDokumenModal({
   return (
     <ModalShell onClose={onClose} title="Hapus Dokumen" size="sm">
       <div className="space-y-5">
-        <div className="rounded-3xl border border-red-100 bg-red-50 p-5">
+        <div className="rounded-lg border border-red-100 bg-red-50 p-5">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600">
               <Trash2 className="h-5 w-5" />
             </div>
             <div>
@@ -1295,7 +1295,7 @@ function DeleteDokumenModal({
         </div>
 
         {error ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
             {error}
           </div>
         ) : null}
@@ -1306,7 +1306,7 @@ function DeleteDokumenModal({
             variant="outline"
             onClick={onClose}
             disabled={saving}
-            className="h-11 rounded-2xl px-5"
+            className="h-11 rounded-lg px-5"
           >
             Batal
           </Button>
@@ -1314,7 +1314,7 @@ function DeleteDokumenModal({
             type="button"
             onClick={onDelete}
             disabled={saving}
-            className="h-11 rounded-2xl bg-red-600 px-5 text-white hover:bg-red-700"
+            className="h-11 rounded-lg bg-red-600 px-5 text-white hover:bg-red-700"
           >
             {saving ? "Menghapus..." : "Hapus"}
           </Button>
@@ -1354,7 +1354,7 @@ function ModalShell({
           `
             max-h-[calc(100vh-3rem)]
             w-full overflow-hidden
-            rounded-3xl bg-white
+            rounded-lg bg-white
             shadow-2xl
           `,
           size === "sm" ? "max-w-lg" : "max-w-3xl",
@@ -1421,9 +1421,9 @@ function InfoItem({
   value: string;
 }) {
   return (
-    <div className="rounded-3xl border border-slate-200 p-4">
+    <div className="rounded-lg border border-slate-200 p-4">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">

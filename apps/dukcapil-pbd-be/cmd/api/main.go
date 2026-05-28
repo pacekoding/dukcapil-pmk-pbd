@@ -1,78 +1,69 @@
 package main
 
 import (
+	"context"
 	"log"
-	"net/http"
 	"os"
-	"strconv"
 	"time"
 
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"dukcapil-pbd-be/internal/controller"
+	"dukcapil-pbd-be/internal/database"
+	authmiddleware "dukcapil-pbd-be/internal/middleware"
+	"dukcapil-pbd-be/internal/repository"
+	"dukcapil-pbd-be/internal/router"
+	"dukcapil-pbd-be/internal/security"
 )
-
-type healthResponse struct {
-	Status  string `json:"status"`
-	Service string `json:"service"`
-	Time    string `json:"time"`
-}
-
-type responseEnvelope struct {
-	Data any `json:"data"`
-}
 
 func main() {
 	port := env("PORT", "8080")
 	allowedOrigin := env("CORS_ALLOWED_ORIGIN", "*")
+	databaseURL := database.PostgresURL()
+	if databaseURL == "" {
+		log.Fatal("DATABASE_URL is required for admin login")
+	}
 
-	e := echo.New()
-	e.HideBanner = true
+	db, err := database.OpenPostgres(context.Background())
+	if err != nil {
+		log.Fatalf("database connection failed: %v", err)
+	}
+	if db != nil {
+		sqlDB, err := database.SQLDB(db)
+		if err != nil {
+			log.Fatalf("database instance failed: %v", err)
+		}
+		defer sqlDB.Close()
+	}
+	initCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := database.Migrate(initCtx, databaseURL); err != nil {
+		log.Fatalf("database migration failed: %v", err)
+	}
+	if err := repository.SeedDefaultAdminUsers(initCtx, db); err != nil {
+		log.Fatalf("admin user seed failed: %v", err)
+	}
 
-	e.Use(middleware.Recover())
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{allowedOrigin},
-		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions},
-		AllowHeaders: []string{echo.HeaderContentType, echo.HeaderAuthorization},
-	}))
+	userRepo := repository.NewUserRepository(db)
+	kegiatanRepo := repository.NewKegiatanRepository(db)
+	dokumenRepo := repository.NewDokumenRepository(db)
+	tokenManager := security.NewManager(env("JWT_SECRET", "dev-secret-change-me"), 24*time.Hour)
+	authMiddleware := authmiddleware.NewAuthMiddleware(tokenManager)
 
-	e.GET("/health", healthHandler)
-	e.GET("/api/v1/health", healthHandler)
-
-	api := e.Group("/api/v1")
-	website := api.Group("/website")
-	website.GET("/kegiatan", websiteKegiatanHandler)
-	website.GET("/kegiatan/:id", websiteKegiatanDetailHandler)
+	e := router.New(router.Config{
+		AllowedOrigin:  allowedOrigin,
+		Health:         controller.NewHealthController(db),
+		Auth:           controller.NewAuthController(userRepo, tokenManager),
+		Dashboard:      controller.NewDashboardController(kegiatanRepo),
+		Kegiatan:       controller.NewKegiatanController(kegiatanRepo),
+		Dokumen:        controller.NewDokumenController(dokumenRepo),
+		Users:          controller.NewUserController(userRepo),
+		Website:        controller.NewWebsiteController(kegiatanRepo),
+		AuthMiddleware: authMiddleware,
+	})
 
 	log.Printf("dukcapil-pbd-be listening on :%s", port)
 	if err := e.Start(":" + port); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func healthHandler(c echo.Context) error {
-	return c.JSON(http.StatusOK, responseEnvelope{Data: healthResponse{
-		Status:  "ok",
-		Service: "dukcapil-pbd-be",
-		Time:    time.Now().UTC().Format(time.RFC3339),
-	}})
-}
-
-func websiteKegiatanHandler(c echo.Context) error {
-	return c.JSON(http.StatusOK, responseEnvelope{Data: getWebsiteKegiatanData()})
-}
-
-func websiteKegiatanDetailHandler(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid kegiatan id")
-	}
-
-	item, found := getWebsiteKegiatanDetailData(id)
-	if !found {
-		return echo.NewHTTPError(http.StatusNotFound, "kegiatan tidak ditemukan")
-	}
-
-	return c.JSON(http.StatusOK, responseEnvelope{Data: item})
 }
 
 func env(key string, fallback string) string {

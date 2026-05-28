@@ -2,7 +2,8 @@
 
 "use client";
 
-import { CalendarDays, LogOut, Menu } from "lucide-react";
+import { CalendarDays, KeyRound, LogOut, Menu } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -17,6 +18,11 @@ import {
 
 type DashboardTopbarProps = {
   setMobileOpen: (value: boolean) => void;
+};
+
+type SessionUser = {
+  name: string;
+  role: string;
 };
 
 const menuTitles: Record<
@@ -39,6 +45,16 @@ const menuTitles: Record<
   "/dashboard/dokumen": {
     title: "Dokumen",
     description: "Kelola dokumen kegiatan (TOR & Laporan)",
+  },
+
+  "/dashboard/users": {
+    title: "User Admin",
+    description: "Kelola akun admin dan akses dashboard",
+  },
+
+  "/dashboard/akun": {
+    title: "Akun",
+    description: "Pengaturan keamanan akun login",
   },
 };
 
@@ -69,6 +85,10 @@ export default function DashboardTopbar({
   const pageInfo = getPageInfo(pathname);
 
   const [tahunAnggaran, setTahunAnggaran] = useState("2026");
+  const [user, setUser] = useState<SessionUser>({
+    name: "Admin PBD",
+    role: "superadmin",
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -83,6 +103,13 @@ export default function DashboardTopbar({
 
         if (mounted && result.tahunAnggaran) {
           setTahunAnggaran(result.tahunAnggaran);
+        }
+
+        if (mounted && result.user) {
+          setUser({
+            name: result.user.name,
+            role: result.user.role,
+          });
         }
       } catch (error) {
         console.error(error);
@@ -206,17 +233,24 @@ export default function DashboardTopbar({
 
                 <div className="hidden min-w-0 text-left md:block">
                   <p className="text-sm font-semibold leading-4 text-slate-900">
-                    Admin PBD
+                    {user.name}
                   </p>
 
                   <p className="text-xs leading-4 text-slate-500">
-                    Super Admin
+                    {user.role.replaceAll("_", " ")}
                   </p>
                 </div>
               </button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" className="w-52 rounded-2xl">
+            <DropdownMenuContent align="end" className="w-52 rounded-lg">
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/akun" className="cursor-pointer">
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  Ganti Password
+                </Link>
+              </DropdownMenuItem>
+
               <DropdownMenuItem
                 onClick={handleLogout}
                 className="

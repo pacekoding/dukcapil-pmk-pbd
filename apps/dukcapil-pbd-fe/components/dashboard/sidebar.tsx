@@ -12,8 +12,10 @@ import {
   CalendarDays,
   FileText,
   Home,
+  KeyRound,
   PanelLeftClose,
   PanelLeftOpen,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,9 +26,10 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   dashboardMenus,
   type DashboardMenuIcon,
-} from "@/lib/dummy/navigation-data";
+} from "@/lib/navigation";
 
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 /* =========================
    TYPES
@@ -46,6 +49,8 @@ const dashboardMenuIconMap: Record<DashboardMenuIcon, LucideIcon> = {
   home: Home,
   calendar: CalendarDays,
   fileText: FileText,
+  users: UsersRound,
+  keyRound: KeyRound,
 };
 
 /* =========================
@@ -58,14 +63,20 @@ function SidebarContent({
   setCollapsed,
 
   onClose,
+  role,
 }: {
   collapsed: boolean;
 
   setCollapsed: (value: boolean) => void;
 
   onClose?: () => void;
+
+  role: string;
 }) {
   const pathname = usePathname();
+  const visibleMenus = dashboardMenus.filter(
+    (menu) => !menu.roles || menu.roles.includes(role),
+  );
 
   return (
     <div
@@ -84,7 +95,7 @@ function SidebarContent({
           `
             flex items-center
             border-b border-white/10
-            px-5 py-6
+            px-4 py-5 sm:px-5 sm:py-6
           `,
           collapsed ? "justify-center" : "justify-between",
         )}
@@ -161,7 +172,7 @@ function SidebarContent({
 
       <div className="flex-1 px-3 py-4">
         <nav className="space-y-2">
-          {dashboardMenus.map((menu) => {
+          {visibleMenus.map((menu) => {
             const Icon = dashboardMenuIconMap[menu.icon];
 
             const active =
@@ -178,7 +189,7 @@ function SidebarContent({
                 className={cn(
                   `
                       flex items-center
-                      rounded-2xl
+                      rounded-lg
                       transition-all
                     `,
                   collapsed
@@ -230,6 +241,33 @@ export default function DashboardSidebar({
 
   setCollapsed,
 }: SidebarProps) {
+  const [role, setRole] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session", {
+          cache: "no-store",
+        });
+        const result = await response.json();
+
+        if (mounted) {
+          setRole(result.user?.role ?? "");
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    void loadSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <>
       {/* MOBILE */}
@@ -238,7 +276,7 @@ export default function DashboardSidebar({
         <SheetContent
           side="left"
           className="
-            w-[320px]
+            w-[min(320px,calc(100vw-2rem))]
             border-none p-0
           "
         >
@@ -246,6 +284,7 @@ export default function DashboardSidebar({
             collapsed={false}
             setCollapsed={() => {}}
             onClose={() => setMobileOpen(false)}
+            role={role}
           />
         </SheetContent>
       </Sheet>
@@ -265,7 +304,11 @@ export default function DashboardSidebar({
           collapsed ? "w-[96px]" : "w-[320px]",
         )}
       >
-        <SidebarContent collapsed={collapsed} setCollapsed={setCollapsed} />
+        <SidebarContent
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          role={role}
+        />
       </aside>
     </>
   );

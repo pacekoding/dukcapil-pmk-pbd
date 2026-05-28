@@ -65,11 +65,11 @@ export default function CreateDokumenPage() {
           return (
             <Link key={item.href} href={item.href} className="group">
               <Card
-                className={`h-full rounded-3xl border border-slate-200 shadow-sm transition ${item.hoverClassName}`}
+                className={`h-full rounded-lg border border-slate-200 shadow-sm transition ${item.hoverClassName}`}
               >
                 <CardContent className="flex h-full flex-col p-6">
                   <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-2xl ${item.iconClassName}`}
+                    className={`flex h-12 w-12 items-center justify-center rounded-lg ${item.iconClassName}`}
                   >
                     <Icon className="h-5 w-5" />
                   </div>

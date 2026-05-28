@@ -1,6 +1,6 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
-export const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX ?? "/api/mock";
+export const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX ?? "/api/backend";
 
 type ApiEnvelope<T> = {
   data?: T;
@@ -33,6 +33,7 @@ export async function apiRequest<T>(
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     cache: "no-store",
+    credentials: "include",
     ...init,
     headers,
   });

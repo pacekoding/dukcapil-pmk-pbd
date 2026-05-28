@@ -257,7 +257,7 @@ export default function CreateKegiatanJenisPage() {
   if (!config) {
     return (
       <main className="space-y-6">
-        <Card className="rounded-3xl border border-slate-200 shadow-sm">
+        <Card className="rounded-lg border border-slate-200 shadow-sm">
           <CardContent className="p-6">
             <h1 className="text-2xl font-bold text-slate-950">
               Jenis kegiatan tidak ditemukan
@@ -265,7 +265,7 @@ export default function CreateKegiatanJenisPage() {
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Pilih ulang jenis kegiatan dari halaman buat kegiatan.
             </p>
-            <Button asChild className="mt-5 h-11 rounded-2xl px-5">
+            <Button asChild className="mt-5 h-11 rounded-lg px-5">
               <Link href="/dashboard/kegiatan/create">Pilih Jenis Kegiatan</Link>
             </Button>
           </CardContent>
@@ -314,7 +314,7 @@ export default function CreateKegiatanJenisPage() {
       </section>
 
       {pageError ? (
-        <section className="rounded-3xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700">
+        <section className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-700">
           {pageError}
         </section>
       ) : null}
@@ -324,7 +324,7 @@ export default function CreateKegiatanJenisPage() {
           <CardContent className="p-5 sm:p-6 lg:p-8">
             <form onSubmit={handleSubmit} className="space-y-8">
               {formError ? (
-                <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <p>{formError}</p>
                 </div>

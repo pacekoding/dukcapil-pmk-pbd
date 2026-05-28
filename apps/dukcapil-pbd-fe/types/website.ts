@@ -1,5 +1,14 @@
 import type { Kegiatan, KegiatanJenis } from "@/types/kegiatan";
-import type { ContactItem, StrukturOrganisasiItem } from "@/lib/dummy/profile-data";
+
+export type StrukturOrganisasiItem = {
+  id: number;
+  name: string;
+};
+
+export type ContactItem = {
+  title: string;
+  content: string;
+};
 
 export type WebsiteStat = {
   label: string;

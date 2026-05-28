@@ -35,5 +35,15 @@ export async function POST() {
     }
   );
 
+  response.cookies.set("admin_name", "", {
+    path: "/",
+    expires: new Date(0),
+  });
+
+  response.cookies.set("admin_role", "", {
+    path: "/",
+    expires: new Date(0),
+  });
+
   return response;
 }

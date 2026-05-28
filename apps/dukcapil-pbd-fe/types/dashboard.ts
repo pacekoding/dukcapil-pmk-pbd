@@ -1,6 +1,6 @@
 export type DashboardIcon = "calendar" | "play" | "checkCircle" | "fileText";
 
-export type DashboardActivityStatus = "Berjalan" | "Selesai";
+export type DashboardActivityStatus = "Berjalan" | "Selesai" | "Draft";
 
 export type DashboardStat = {
   title: string;

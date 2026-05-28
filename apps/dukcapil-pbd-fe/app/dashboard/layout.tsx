@@ -71,7 +71,7 @@ export default function DashboardLayout({
 
         <main
           className="
-            px-5 py-6
+            px-4 py-5 sm:px-5 sm:py-6
             lg:px-8 lg:py-8
           "
         >

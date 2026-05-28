@@ -37,6 +37,8 @@ export type DokumenFormMeta = {
   kegiatanOptions: Array<{
     id: number;
     nama: string;
+    jenis?: DokumenJenisKegiatan;
+    tanggal?: string;
   }>;
   torData: TorDocument;
   torPdfSections: string[];

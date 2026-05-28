@@ -10,7 +10,6 @@ import {
   FileText,
   type LucideIcon,
   Play,
-  TrendingUp,
 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,12 +29,15 @@ const dashboardIconMap: Record<DashboardIcon, LucideIcon> = {
 export default function DashboardPage() {
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
 
     const loadDashboard = async () => {
       try {
+        setLoading(true);
+
         const data = await getDashboardOverview();
 
         if (mounted) {
@@ -46,6 +48,10 @@ export default function DashboardPage() {
 
         if (mounted) {
           setError("Data dashboard gagal dimuat.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
         }
       }
     };
@@ -62,180 +68,144 @@ export default function DashboardPage() {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex flex-wrap gap-2">
-          <Badge className="rounded-xl">Dashboard Provinsi</Badge>
+      {/* HEADER */}
+      <section className="flex flex-col gap-4 rounded-xl border bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">Dashboard</Badge>
+            <Badge variant="secondary">
+              TA {overview?.tahunAnggaran ?? "-"}
+            </Badge>
+          </div>
 
-          <Badge
-            variant="outline"
-            className="rounded-xl border-blue-200 bg-blue-50 text-blue-700"
-          >
-            TA {overview?.tahunAnggaran ?? "-"}
-          </Badge>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900">
+            Ringkasan Kegiatan
+          </h1>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Monitoring data kegiatan, dokumen, dan status pelaksanaan.
+          </p>
         </div>
 
-        <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900">
-          Dashboard Monitoring Dukcapil & PMK Provinsi
-        </h1>
-
-        <p className="mt-3 max-w-3xl text-slate-500">
-          Platform monitoring, fasilitasi, supervisi, dan evaluasi program
-          administrasi kependudukan serta pemberdayaan masyarakat pada
-          kabupaten/kota dan kampung/desa di tingkat provinsi.
-        </p>
-
-        <div className="mt-5 max-w-4xl rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-slate-700">
-          Pemerintah Provinsi berperan dalam pembinaan, koordinasi, fasilitasi,
-          supervisi, monitoring, dan evaluasi pelaksanaan urusan administrasi
-          kependudukan serta pemberdayaan masyarakat. Fokus dashboard ini bukan
-          pelayanan langsung kepada masyarakat, tetapi penguatan kabupaten/kota,
-          intervensi kampung, pembinaan perangkat kampung, monitoring hibah, dan
-          sinkronisasi kebijakan pusat-daerah.
-        </div>
+        <Button asChild className="w-full md:w-auto">
+          <Link href="/dashboard/kegiatan">Kelola Kegiatan</Link>
+        </Button>
       </section>
 
+      {/* ERROR */}
       {error ? (
-        <section className="rounded-3xl border border-red-200 bg-red-50 p-6 text-sm font-medium text-red-700">
+        <section className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
           {error}
         </section>
       ) : null}
 
-      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        {overview
-          ? dashboardStats.map((item, index) => {
+      {/* STATS */}
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {loading
+          ? Array.from({ length: 4 }).map((_, index) => (
+              <Card key={index} className="border shadow-sm">
+                <CardContent className="p-5">
+                  <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
+                </CardContent>
+              </Card>
+            ))
+          : dashboardStats.map((item, index) => {
               const Icon = dashboardIconMap[item.icon];
 
               return (
-                <Card key={index} className="border border-slate-200 shadow-sm">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
+                <Card key={index} className="border shadow-sm">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between gap-4">
                       <div>
-                        <p className="text-sm text-slate-500">{item.title}</p>
+                        <p className="text-sm font-medium text-slate-500">
+                          {item.title}
+                        </p>
 
-                        <h2 className="mt-3 text-4xl font-bold tracking-tight text-slate-900">
+                        <h2 className="mt-2 text-3xl font-bold text-slate-900">
                           {item.value}
                         </h2>
 
-                        <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-                          <TrendingUp className="h-3 w-3" />
-                          {item.trend}
-                        </div>
+                        {item.trend ? (
+                          <p className="mt-1 text-xs text-slate-500">
+                            {item.trend}
+                          </p>
+                        ) : null}
                       </div>
 
-                      <div
-                        className={`flex h-14 w-14 items-center justify-center rounded-2xl ${item.color}`}
-                      >
-                        <Icon className="h-7 w-7" />
+                      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                        <Icon className="h-5 w-5" />
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               );
-            })
-          : Array.from({ length: 4 }).map((_, index) => (
-              <Card key={index} className="border border-slate-200 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="h-24 animate-pulse rounded-2xl bg-slate-100" />
-                </CardContent>
-              </Card>
-            ))}
+            })}
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-2">
-        <Card className="border border-slate-200 shadow-sm">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-slate-900">
-              Dukcapil Provinsi
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Pembinaan dan supervisi administrasi kependudukan pada
-              kabupaten/kota, fasilitasi implementasi layanan adminduk,
-              monitoring kualitas data kependudukan, serta evaluasi pemanfaatan
-              data kependudukan untuk perencanaan pembangunan daerah.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-slate-200 shadow-sm">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-bold text-slate-900">PMK Provinsi</h2>
-
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Fasilitasi pemberdayaan masyarakat dan kampung/desa, pembinaan
-              kelembagaan kampung, penguatan kapasitas perangkat kampung,
-              monitoring intervensi program, evaluasi perkembangan kampung,
-              serta pengawasan hibah dan bantuan sesuai kewenangan provinsi.
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
+      {/* RECENT ACTIVITIES */}
+      <section className="rounded-xl border bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">
-              Aktivitas Fasilitasi & Supervisi Terbaru
+            <h2 className="text-lg font-semibold text-slate-900">
+              Aktivitas Terbaru
             </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Monitoring kegiatan pembinaan, supervisi kabupaten/kota,
-              intervensi kampung, perangkat kampung, dan hibah.
+            <p className="text-sm text-slate-500">
+              Data terbaru berdasarkan API dashboard.
             </p>
           </div>
 
-          <Button asChild variant="outline" className="rounded-2xl">
+          <Button asChild variant="outline" size="sm">
             <Link href="/dashboard/kegiatan">Lihat Semua</Link>
           </Button>
         </div>
 
         <div className="divide-y">
-          {overview ? (
+          {loading ? (
+            Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="px-6 py-4">
+                <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
+              </div>
+            ))
+          ) : dashboardActivities.length > 0 ? (
             dashboardActivities.map((item, index) => {
               const Icon = dashboardIconMap[item.icon];
 
               return (
                 <div
                   key={index}
-                  className="flex items-center justify-between px-8 py-6"
+                  className="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between"
                 >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`flex h-14 w-14 items-center justify-center rounded-2xl ${item.color}`}
-                    >
-                      <Icon className="h-6 w-6" />
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                      <Icon className="h-5 w-5" />
                     </div>
 
                     <div>
-                      <h3 className="font-semibold text-slate-900">
+                      <h3 className="text-sm font-semibold text-slate-900">
                         {item.title}
                       </h3>
 
-                      <p className="mt-1 text-sm text-slate-500">
-                        {item.location}
-                      </p>
+                      <p className="text-sm text-slate-500">{item.location}</p>
                     </div>
                   </div>
 
-                  <div className="text-right">
+                  <div className="flex items-center gap-3 md:justify-end">
                     <Badge
-                      className={
-                        item.status === "Selesai"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-blue-100 text-blue-700"
+                      variant={
+                        item.status === "Selesai" ? "secondary" : "outline"
                       }
                     >
                       {item.status}
                     </Badge>
 
-                    <p className="mt-2 text-sm text-slate-500">{item.time}</p>
+                    <span className="text-sm text-slate-500">{item.time}</span>
                   </div>
                 </div>
               );
             })
           ) : (
-            <div className="px-8 py-6">
-              <div className="h-16 animate-pulse rounded-2xl bg-slate-100" />
+            <div className="px-6 py-10 text-center text-sm text-slate-500">
+              Belum ada aktivitas terbaru.
             </div>
           )}
         </div>

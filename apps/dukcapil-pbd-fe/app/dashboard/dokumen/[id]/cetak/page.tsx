@@ -164,8 +164,8 @@ export default function CetakDokumenPage() {
     return (
       <main className="min-h-screen bg-slate-100">
         <div className="mx-auto max-w-[1800px] space-y-6 p-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="h-28 animate-pulse rounded-2xl bg-slate-100" />
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="h-28 animate-pulse rounded-lg bg-slate-100" />
             {error ? (
               <p className="mt-4 text-sm font-medium text-red-700">{error}</p>
             ) : null}
@@ -196,7 +196,7 @@ export default function CetakDokumenPage() {
             HEADER
         ========================= */}
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
           <nav
             aria-label="Breadcrumb"
             className="mb-5 flex flex-wrap items-center gap-2 text-sm"
@@ -234,7 +234,7 @@ export default function CetakDokumenPage() {
 
             <Button
               onClick={handlePrint}
-              className="h-11 w-full rounded-2xl bg-pbd-navy px-6 text-white hover:bg-pbd-navy/90 sm:w-fit"
+              className="h-11 w-full rounded-lg bg-pbd-navy px-6 text-white hover:bg-pbd-navy/90 sm:w-fit"
             >
               <Printer className="mr-2 h-4 w-4" />
               Cetak Dokumen

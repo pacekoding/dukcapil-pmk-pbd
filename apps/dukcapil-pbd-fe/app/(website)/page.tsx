@@ -62,13 +62,13 @@ export default function HomePage() {
           />
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-6 py-24">
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 py-24">
           <div className="max-w-4xl">
             <span className="inline-flex rounded-full bg-pbd-gold/20 px-4 py-2 text-sm font-medium text-pbd-gold">
               {data.hero.eyebrow}
             </span>
 
-            <h1 className="mt-6 text-4xl font-extrabold leading-tight text-white md:text-6xl">
+            <h1 className="mt-6 text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-6xl">
               {data.hero.title}
             </h1>
 
@@ -79,14 +79,14 @@ export default function HomePage() {
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
                 href="/kegiatan"
-                className="rounded-2xl bg-pbd-gold px-6 py-4 font-semibold text-pbd-navy transition hover:opacity-90"
+                className="rounded-lg bg-pbd-gold px-6 py-4 font-semibold text-pbd-navy transition hover:opacity-90"
               >
                 Lihat Kegiatan
               </Link>
 
               <Link
                 href="/profil"
-                className="rounded-2xl border border-white/20 bg-white/10 px-6 py-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                className="rounded-lg border border-white/20 bg-white/10 px-6 py-4 font-semibold text-white backdrop-blur transition hover:bg-white/20"
               >
                 Profil Dinas
               </Link>
@@ -108,7 +108,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-20">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <SectionLabel>Kegiatan Terkini</SectionLabel>
@@ -134,13 +134,13 @@ export default function HomePage() {
       </section>
 
       <section className="bg-white py-20">
-        <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <SectionLabel>Fokus Layanan</SectionLabel>
           <div className="mt-8 grid gap-6 md:grid-cols-3">
             {data.highlights.map((item) => (
               <div
                 key={item.title}
-                className="rounded-3xl border border-gray-100 bg-pbd-bg p-8"
+                className="rounded-lg border border-gray-100 bg-pbd-bg p-8"
               >
                 <h3 className="text-2xl font-bold text-pbd-navy">
                   {item.title}
@@ -154,8 +154,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-20">
-        <div className="grid gap-10 rounded-3xl bg-pbd-navy p-8 text-white lg:grid-cols-[1fr_auto] lg:items-center lg:p-12">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 py-20">
+        <div className="grid gap-10 rounded-lg bg-pbd-navy p-8 text-white lg:grid-cols-[1fr_auto] lg:items-center lg:p-12">
           <div>
             <SectionLabel className="text-pbd-gold">Profil</SectionLabel>
             <h2 className="mt-3 text-3xl font-bold">
@@ -168,7 +168,7 @@ export default function HomePage() {
 
           <Link
             href="/profil"
-            className="inline-flex h-12 items-center justify-center rounded-2xl bg-pbd-gold px-6 font-semibold text-pbd-navy"
+            className="inline-flex h-12 items-center justify-center rounded-lg bg-pbd-gold px-6 font-semibold text-pbd-navy"
           >
             Baca Profil
           </Link>
@@ -182,8 +182,8 @@ function HomeSkeleton({ error }: { error: string }) {
   return (
     <main className="min-h-screen bg-pbd-bg">
       <section className="bg-pbd-navy">
-        <div className="mx-auto max-w-7xl px-6 py-24">
-          <div className="h-56 animate-pulse rounded-3xl bg-white/10" />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-24">
+          <div className="h-56 animate-pulse rounded-lg bg-white/10" />
           {error ? <p className="mt-4 text-sm text-red-200">{error}</p> : null}
         </div>
       </section>
@@ -215,8 +215,8 @@ function StatCard({
   description: string;
 }) {
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-pbd-blue/10 text-pbd-blue">
+    <div className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-pbd-blue/10 text-pbd-blue">
         <Users className="h-5 w-5" />
       </div>
       <p className="mt-5 text-sm text-gray-500">{label}</p>
@@ -228,7 +228,7 @@ function StatCard({
 
 function KegiatanCard({ item }: { item: PublicKegiatanItem }) {
   return (
-    <article className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+    <article className="rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <span className="rounded-full bg-pbd-blue/10 px-3 py-1 text-xs font-semibold text-pbd-blue">
           {item.jenis}

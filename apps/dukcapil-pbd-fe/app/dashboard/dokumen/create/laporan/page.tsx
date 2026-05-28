@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 import {
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { getDokumenFormMeta } from "@/lib/api/dokumen";
+import { createDokumen, getDokumenFormMeta } from "@/lib/api/dokumen";
 import { toDateInputValue } from "@/lib/date/date-format";
 import type { DokumenFormMeta } from "@/types/dokumen";
 import type {
@@ -39,9 +40,12 @@ import type {
 const listValue = (items: string[]) => items.join("\n");
 
 export default function CreateLaporanPage() {
+  const router = useRouter();
   const [meta, setMeta] = useState<DokumenFormMeta | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [selectedKegiatanId, setSelectedKegiatanId] = useState("");
   const [pesertaRows, setPesertaRows] = useState<LaporanPesertaItem[]>([]);
   const [dokumentasiRows, setDokumentasiRows] = useState<
     LaporanDokumentasiItem[]
@@ -57,6 +61,7 @@ export default function CreateLaporanPage() {
 
         if (mounted) {
           setMeta(data);
+          setSelectedKegiatanId(String(data.kegiatanOptions[0]?.id ?? ""));
           setPesertaRows(
             data.laporanPelaksanaanData.pesertaDetail.map((item) => ({
               ...item,
@@ -216,11 +221,47 @@ export default function CreateLaporanPage() {
     );
   };
 
+  const handleSave = async (preview = false) => {
+    if (!meta) {
+      return;
+    }
+
+    const kegiatan = meta.kegiatanOptions.find(
+      (item) => String(item.id) === selectedKegiatanId,
+    );
+    if (!kegiatan) {
+      setError("Pilih kegiatan terlebih dahulu.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError("");
+      const created = await createDokumen({
+        namaKegiatan: kegiatan.nama,
+        jenisKegiatan: kegiatan.jenis ?? "Sosialisasi",
+        jenisDokumen: "Laporan",
+        tanggal: kegiatan.tanggal || new Date().toISOString().slice(0, 10),
+        dibuatOleh: "Admin Pelaporan",
+      });
+      router.push(
+        preview
+          ? `/dashboard/dokumen/${created.id}/cetak`
+          : "/dashboard/dokumen",
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Laporan pelaksanaan gagal disimpan.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading || !meta) {
     return (
       <main className="space-y-6">
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="h-32 animate-pulse rounded-2xl bg-slate-100" />
+          <div className="h-32 animate-pulse rounded-lg bg-slate-100" />
           {error ? (
             <p className="mt-4 text-sm font-medium text-red-700">{error}</p>
           ) : null}
@@ -265,11 +306,15 @@ export default function CreateLaporanPage() {
           </p>
         </div>
 
-        <Button asChild variant="outline" className="h-11 rounded-lg px-5">
-          <Link href="/dashboard/dokumen/5/cetak">
-            <Eye className="mr-2 h-4 w-4" />
-            Preview PDF
-          </Link>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 rounded-lg px-5"
+          disabled={saving}
+          onClick={() => void handleSave(true)}
+        >
+          <Eye className="mr-2 h-4 w-4" />
+          Preview PDF
         </Button>
       </section>
 
@@ -283,7 +328,10 @@ export default function CreateLaporanPage() {
             >
               <div className="grid gap-5 md:grid-cols-2">
                 <FormField label="Pilih Kegiatan">
-                  <Select defaultValue={String(kegiatanOptions[0]?.id ?? "")}>
+                  <Select
+                    value={selectedKegiatanId}
+                    onValueChange={setSelectedKegiatanId}
+                  >
                     <SelectTrigger className="h-11 rounded-lg border-slate-200">
                       <SelectValue placeholder="Pilih kegiatan" />
                     </SelectTrigger>
@@ -823,9 +871,14 @@ export default function CreateLaporanPage() {
                 <Link href="/dashboard/dokumen">Batal</Link>
               </Button>
 
-              <Button className="h-11 rounded-lg px-5">
+              <Button
+                type="button"
+                className="h-11 rounded-lg px-5"
+                disabled={saving}
+                onClick={() => void handleSave(false)}
+              >
                 <Save className="mr-2 h-4 w-4" />
-                Simpan Laporan
+                {saving ? "Menyimpan..." : "Simpan Laporan"}
               </Button>
             </div>
           </CardContent>

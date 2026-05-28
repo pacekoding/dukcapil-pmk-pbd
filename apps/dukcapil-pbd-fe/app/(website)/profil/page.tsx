@@ -92,7 +92,7 @@ export default function ProfilePage() {
     return (
       <main className="min-h-screen bg-pbd-bg">
         <Container className="py-20">
-          <div className="rounded-3xl border border-red-100 bg-red-50 p-6 text-sm font-medium text-red-700">
+          <div className="rounded-lg border border-red-100 bg-red-50 p-6 text-sm font-medium text-red-700">
             {error || "Data profil tidak tersedia."}
           </div>
         </Container>
@@ -109,7 +109,7 @@ export default function ProfilePage() {
               Profil Dinas
             </span>
 
-            <h1 className="mt-6 text-4xl font-extrabold leading-tight text-white md:text-5xl">
+            <h1 className="mt-6 text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-5xl">
               {data.title}
             </h1>
 
@@ -134,7 +134,7 @@ export default function ProfilePage() {
 
             <p className="mt-5 leading-8 text-gray-700">{data.description}</p>
 
-            <div className="mt-6 rounded-2xl bg-pbd-blue/5 p-5 text-sm leading-7 text-gray-700">
+            <div className="mt-6 rounded-lg bg-pbd-blue/5 p-5 text-sm leading-7 text-gray-700">
               Fokus provinsi bukan pelayanan langsung harian kepada masyarakat,
               tetapi penguatan kapasitas, fasilitasi, supervisi, dan evaluasi
               penyelenggaraan urusan oleh kabupaten/kota dan kampung/desa.
@@ -266,14 +266,14 @@ function ProfileSkeleton() {
     <main className="min-h-screen bg-pbd-bg">
       <section className="bg-pbd-navy">
         <Container className="py-20">
-          <div className="h-56 animate-pulse rounded-3xl bg-white/10" />
+          <div className="h-56 animate-pulse rounded-lg bg-white/10" />
         </Container>
       </section>
 
       <Container className="py-12">
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-64 animate-pulse rounded-3xl bg-white" />
-          <div className="h-64 animate-pulse rounded-3xl bg-white" />
+          <div className="h-64 animate-pulse rounded-lg bg-white" />
+          <div className="h-64 animate-pulse rounded-lg bg-white" />
         </div>
       </Container>
     </main>
@@ -288,13 +288,13 @@ function Container({
   className?: string;
 }) {
   return (
-    <div className={`mx-auto max-w-7xl px-6 ${className}`}>{children}</div>
+    <div className={`mx-auto max-w-7xl px-4 sm:px-6 ${className}`}>{children}</div>
   );
 }
 
 function Card({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-7 shadow-sm">
+    <div className="rounded-lg border border-gray-100 bg-white p-7 shadow-sm">
       {children}
     </div>
   );
@@ -311,7 +311,7 @@ function SectionTitle({
 }) {
   return (
     <div className="flex items-start gap-4">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-pbd-blue/10 text-pbd-blue">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-pbd-blue/10 text-pbd-blue">
         <Icon className="h-5 w-5" />
       </div>
 
@@ -344,8 +344,8 @@ function InfoCard({
   description: string;
 }) {
   return (
-    <div className="rounded-3xl border border-gray-100 bg-pbd-bg p-6">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-pbd-blue shadow-sm">
+    <div className="rounded-lg border border-gray-100 bg-pbd-bg p-6">
+      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-pbd-blue shadow-sm">
         <Icon className="h-5 w-5" />
       </div>
 
@@ -364,7 +364,7 @@ function SimplePanel({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-3xl border border-gray-100 bg-pbd-bg p-6">
+    <div className="rounded-lg border border-gray-100 bg-pbd-bg p-6">
       <h3 className="text-lg font-bold text-pbd-navy">{title}</h3>
 
       <ul className="mt-5 space-y-4">{children}</ul>
