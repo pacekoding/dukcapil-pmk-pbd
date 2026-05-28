@@ -1,11 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
+
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
 type healthResponse struct {
@@ -14,64 +17,62 @@ type healthResponse struct {
 	Time    string `json:"time"`
 }
 
+type responseEnvelope struct {
+	Data any `json:"data"`
+}
+
 func main() {
 	port := env("PORT", "8080")
+	allowedOrigin := env("CORS_ALLOWED_ORIGIN", "*")
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/health", healthHandler)
-	mux.HandleFunc("/api/v1/health", healthHandler)
+	e := echo.New()
+	e.HideBanner = true
 
-	server := &http.Server{
-		Addr:              ":" + port,
-		Handler:           withCORS(mux),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{allowedOrigin},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodOptions},
+		AllowHeaders: []string{echo.HeaderContentType, echo.HeaderAuthorization},
+	}))
+
+	e.GET("/health", healthHandler)
+	e.GET("/api/v1/health", healthHandler)
+
+	api := e.Group("/api/v1")
+	website := api.Group("/website")
+	website.GET("/kegiatan", websiteKegiatanHandler)
+	website.GET("/kegiatan/:id", websiteKegiatanDetailHandler)
 
 	log.Printf("dukcapil-pbd-be listening on :%s", port)
-
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := e.Start(":" + port); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", http.MethodGet)
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, healthResponse{
+func healthHandler(c echo.Context) error {
+	return c.JSON(http.StatusOK, responseEnvelope{Data: healthResponse{
 		Status:  "ok",
 		Service: "dukcapil-pbd-be",
 		Time:    time.Now().UTC().Format(time.RFC3339),
-	})
+	}})
 }
 
-func withCORS(next http.Handler) http.Handler {
-	allowedOrigin := env("CORS_ALLOWED_ORIGIN", "*")
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
+func websiteKegiatanHandler(c echo.Context) error {
+	return c.JSON(http.StatusOK, responseEnvelope{Data: getWebsiteKegiatanData()})
 }
 
-func writeJSON(w http.ResponseWriter, status int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-
-	if err := json.NewEncoder(w).Encode(payload); err != nil {
-		log.Printf("write response: %v", err)
+func websiteKegiatanDetailHandler(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid kegiatan id")
 	}
+
+	item, found := getWebsiteKegiatanDetailData(id)
+	if !found {
+		return echo.NewHTTPError(http.StatusNotFound, "kegiatan tidak ditemukan")
+	}
+
+	return c.JSON(http.StatusOK, responseEnvelope{Data: item})
 }
 
 func env(key string, fallback string) string {
@@ -79,6 +80,5 @@ func env(key string, fallback string) string {
 	if value == "" {
 		return fallback
 	}
-
 	return value
 }
