@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DUKCAPIL-PBD
 
-## Getting Started
+Monorepo untuk aplikasi DUKCAPIL Papua Barat Daya.
 
-First, run the development server:
+## Struktur
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```txt
+DUKCAPIL-PBD/
+├── apps/
+│   ├── dukcapil-pbd-fe/     # Next.js
+│   └── dukcapil-pbd-be/     # Golang API
+├── docker-compose.yml
+├── .env
+└── README.md
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Menjalankan dengan Docker
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+docker compose up --build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Frontend berjalan di `http://localhost:3000`.
+Backend health check berjalan di `http://localhost:8080/health`.
 
-## Learn More
+## Menjalankan Frontend Saja
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cd apps/dukcapil-pbd-fe
+npm install
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Menjalankan Backend Saja
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+cd apps/dukcapil-pbd-be
+go run ./cmd/api
+```
 
-## Deploy on Vercel
+## Continuous Integration
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Repository ini menggunakan GitHub Actions untuk menjalankan checkout, instalasi, lint, build frontend, dan validasi backend pada setiap push atau pull request ke `main`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Konfigurasi Env
+
+Root `.env` dipakai oleh Docker Compose.
+
+```env
+FE_PORT=3000
+BE_PORT=8080
+NEXT_PUBLIC_API_BASE_URL=
+NEXT_PUBLIC_API_PREFIX=/api/mock
+JWT_SECRET=dev-secret-change-me
+```
+
+Secara default frontend masih memakai API mock Next.js melalui `/api/mock` agar fitur yang sudah ada tetap berjalan. Saat endpoint Go sudah dibuat lengkap, ubah:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_API_PREFIX=/api/v1
+```

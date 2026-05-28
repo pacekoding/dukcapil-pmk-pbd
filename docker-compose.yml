@@ -1,0 +1,34 @@
+name: dukcapil-pbd
+
+services:
+  dukcapil-pbd-be:
+    build:
+      context: ./apps/dukcapil-pbd-be
+    container_name: dukcapil-pbd-be
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      PORT: 8080
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:3000}
+    ports:
+      - "${BE_PORT:-8080}:8080"
+    restart: unless-stopped
+
+  dukcapil-pbd-fe:
+    build:
+      context: ./apps/dukcapil-pbd-fe
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
+        NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/mock}
+        JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+    container_name: dukcapil-pbd-fe
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
+      NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/mock}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+    depends_on:
+      - dukcapil-pbd-be
+    ports:
+      - "${FE_PORT:-3000}:3000"
+    restart: unless-stopped

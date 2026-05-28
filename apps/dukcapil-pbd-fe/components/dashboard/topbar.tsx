@@ -1,0 +1,237 @@
+// components/dashboard/topbar.tsx
+
+"use client";
+
+import { CalendarDays, LogOut, Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+type DashboardTopbarProps = {
+  setMobileOpen: (value: boolean) => void;
+};
+
+const menuTitles: Record<
+  string,
+  {
+    title: string;
+    description: string;
+  }
+> = {
+  "/dashboard": {
+    title: "Dashboard",
+    description: "Overview statistik dan aktivitas sistem",
+  },
+
+  "/dashboard/kegiatan": {
+    title: "Kegiatan",
+    description: "Daftar dan pengelolaan kegiatan",
+  },
+
+  "/dashboard/dokumen": {
+    title: "Dokumen",
+    description: "Kelola dokumen kegiatan (TOR & Laporan)",
+  },
+};
+
+function getPageInfo(pathname: string) {
+  if (menuTitles[pathname]) {
+    return menuTitles[pathname];
+  }
+
+  if (pathname.startsWith("/dashboard/kegiatan")) {
+    return menuTitles["/dashboard/kegiatan"];
+  }
+
+  if (pathname.startsWith("/dashboard/dokumen")) {
+    return menuTitles["/dashboard/dokumen"];
+  }
+
+  return {
+    title: "Dashboard",
+    description: "Dashboard Admin Papua Barat Daya",
+  };
+}
+
+export default function DashboardTopbar({
+  setMobileOpen,
+}: DashboardTopbarProps) {
+  const pathname = usePathname();
+
+  const pageInfo = getPageInfo(pathname);
+
+  const [tahunAnggaran, setTahunAnggaran] = useState("2026");
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session", {
+          cache: "no-store",
+        });
+
+        const result = await response.json();
+
+        if (mounted && result.tahunAnggaran) {
+          setTahunAnggaran(result.tahunAnggaran);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    void loadSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+
+      window.location.href = "/login";
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <header
+      className="
+        sticky top-0 z-30
+        border-b border-slate-200
+        bg-white/85 backdrop-blur-xl
+      "
+    >
+      <div
+        className="
+          flex h-16 items-center
+          justify-between
+          gap-4 px-4
+          lg:px-8
+        "
+      >
+        <div className="flex items-center gap-4">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setMobileOpen(true)}
+            className="
+              h-10 w-10
+              rounded-xl
+              lg:hidden
+            "
+            aria-label="Buka sidebar"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+
+          <div className="min-w-0">
+            <h1
+              className="
+                truncate font-heading
+                text-xl font-bold
+                tracking-tight text-slate-900
+                lg:text-2xl
+              "
+            >
+              {pageInfo.title}
+            </h1>
+
+            <p
+              className="
+                mt-0.5 hidden
+                truncate text-sm
+                text-slate-500 sm:block
+              "
+            >
+              {pageInfo.description}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-3">
+          <div
+            className="
+              flex h-9 items-center
+              gap-2 rounded-full
+              border border-slate-200
+              bg-slate-50 px-3
+              text-sm font-semibold
+              text-slate-700
+            "
+          >
+            <CalendarDays className="h-4 w-4 text-slate-500" />
+            <span className="hidden text-slate-500 sm:inline">TA</span>
+            <span>{tahunAnggaran}</span>
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="
+                  flex h-10 items-center
+                  gap-2 rounded-full
+                  px-1.5 pr-3
+                  transition
+                  hover:bg-slate-50
+                "
+                type="button"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback
+                    className="
+                      bg-[#072B61]
+                      text-xs
+                      font-bold
+                      text-white
+                    "
+                  >
+                    AP
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="hidden min-w-0 text-left md:block">
+                  <p className="text-sm font-semibold leading-4 text-slate-900">
+                    Admin PBD
+                  </p>
+
+                  <p className="text-xs leading-4 text-slate-500">
+                    Super Admin
+                  </p>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="w-52 rounded-2xl">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="
+                  cursor-pointer
+                  text-red-600
+                  focus:text-red-600
+                "
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </header>
+  );
+}
