@@ -34,7 +34,7 @@ import {
   defaultRegionData,
   formatArea,
   formatNumber,
-  getProvinceTotals,
+  getTotalIdmVillages,
 } from "@/lib/data-wilayah";
 import { cn } from "@/lib/utils";
 import type { RegionData } from "@/types/data-wilayah";
@@ -104,7 +104,6 @@ const getDataGroups = (tahunAnggaran: string): FieldGroup[] => [
     description: `Luas wilayah dan komposisi penduduk ${tahunAnggaran}.`,
     icon: UserRound,
     fields: [
-      { label: "Luas Wilayah", path: "oap.luasWilayah", step: "0.01" },
       { label: "Jumlah OAP", path: "oap.jumlahOap" },
       { label: "Jumlah Non-OAP", path: "oap.jumlahNonOap" },
       { label: "Jumlah Orang", path: "oap.jumlahJiwa" },
@@ -144,10 +143,41 @@ const setNumericValue = (
   };
 };
 
+const zeroRegionData: RegionData[] = defaultRegionData.map((region) => ({
+  ...region,
+  idm: {
+    sangatTertinggal: 0,
+    tertinggal: 0,
+    berkembang: 0,
+    maju: 0,
+    mandiri: 0,
+  },
+  registration: {
+    penerbitanKk: 0,
+    perubahanKk: 0,
+    kia: 0,
+    nikWni: 0,
+    perekamanKtpEl: 0,
+    pencetakanKtpEl: 0,
+  },
+  oap: {
+    luasWilayah: 0,
+    jumlahOap: 0,
+    jumlahNonOap: 0,
+    jumlahJiwa: 0,
+  },
+  civil: {
+    aktaKelahiran: 0,
+    aktaKematian: 0,
+    aktaPerkawinan: 0,
+    aktaPerceraian: 0,
+  },
+}));
+
 export default function DashboardDataWilayahPage() {
-  const [regions, setRegions] = useState<RegionData[]>(defaultRegionData);
+  const [regions, setRegions] = useState<RegionData[]>(zeroRegionData);
   const [selectedRegionId, setSelectedRegionId] = useState(
-    defaultRegionData[0].id,
+    zeroRegionData[0].id,
   );
   const [tahunAnggaran, setTahunAnggaran] = useState("2026");
   const [activeTab, setActiveTab] = useState<TabKey>("identity");
@@ -170,7 +200,7 @@ export default function DashboardDataWilayahPage() {
       } catch (loadError) {
         console.error(loadError);
         if (mounted) {
-          setError("Data dari server belum dapat dimuat. Menampilkan data default.");
+          setError("Data dari server belum dapat dimuat. Angka sementara ditampilkan nol sampai data berhasil dimuat.");
         }
       } finally {
         if (mounted) {
@@ -188,7 +218,15 @@ export default function DashboardDataWilayahPage() {
 
   const selectedRegion =
     regions.find((region) => region.id === selectedRegionId) ?? regions[0];
-  const totals = useMemo(() => getProvinceTotals(regions), [regions]);
+  const selectedSummary = useMemo(
+    () => ({
+      totalJiwa: selectedRegion.oap.jumlahJiwa,
+      totalOap: selectedRegion.oap.jumlahOap,
+      totalKtpEl: selectedRegion.registration.pencetakanKtpEl,
+      totalDesaIdm: getTotalIdmVillages(selectedRegion.idm),
+    }),
+    [selectedRegion],
+  );
   const dataGroups = useMemo(
     () => getDataGroups(tahunAnggaran),
     [tahunAnggaran],
@@ -254,17 +292,29 @@ export default function DashboardDataWilayahPage() {
       />
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard icon={Users} label="Total Orang" value={totals.totalJiwa} />
-        <SummaryCard icon={UserRound} label="Total OAP" value={totals.totalOap} />
+        <SummaryCard
+          icon={Users}
+          label="Total Orang"
+          scope={selectedRegion.shortName}
+          value={selectedSummary.totalJiwa}
+        />
+        <SummaryCard
+          icon={UserRound}
+          label="Total OAP"
+          scope={selectedRegion.shortName}
+          value={selectedSummary.totalOap}
+        />
         <SummaryCard
           icon={IdCard}
           label="Pencetakan KTP-EL"
-          value={totals.totalKtpEl}
+          scope={selectedRegion.shortName}
+          value={selectedSummary.totalKtpEl}
         />
         <SummaryCard
           icon={Building2}
           label="Total Desa IDM"
-          value={totals.totalDesaIdm}
+          scope={selectedRegion.shortName}
+          value={selectedSummary.totalDesaIdm}
         />
       </div>
 
@@ -406,6 +456,20 @@ export default function DashboardDataWilayahPage() {
                       }))
                     }
                   />
+                  <NumberField
+                    label="Luas Wilayah"
+                    value={selectedRegion.oap.luasWilayah}
+                    step="0.01"
+                    onChange={(value) =>
+                      updateSelectedRegion((region) => ({
+                        ...region,
+                        oap: {
+                          ...region.oap,
+                          luasWilayah: value,
+                        },
+                      }))
+                    }
+                  />
                 </div>
               </div>
             ) : activeGroup ? (
@@ -442,10 +506,12 @@ export default function DashboardDataWilayahPage() {
 function SummaryCard({
   icon: Icon,
   label,
+  scope,
   value,
 }: {
   icon: React.ElementType;
   label: string;
+  scope: string;
   value: number;
 }) {
   return (
@@ -455,6 +521,7 @@ function SummaryCard({
       </div>
       <div>
         <p className="text-sm font-semibold text-slate-500">{label}</p>
+        <p className="mt-1 text-xs font-medium text-slate-400">{scope}</p>
         <p className="mt-2 text-3xl font-extrabold tracking-tight text-pbd-navy">
           {formatNumber(value)}
         </p>

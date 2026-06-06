@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Menu, X } from "lucide-react";
+import { ExternalLink, Menu, Search, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { publicMenus } from "@/lib/navigation";
 
 /* =========================
@@ -27,60 +28,36 @@ export default function Navbar() {
   };
 
   return (
-    <header
-      className="
-        sticky top-0 z-50
-        border-b border-white/10
-        bg-pbd-navy/95 text-white
-        backdrop-blur-md
-      "
-    >
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 text-slate-900 backdrop-blur-md">
       <div
         className="
-          mx-auto flex h-20 max-w-7xl
+          mx-auto flex h-16 max-w-7xl
           items-center justify-between
-          px-6
+          px-4 sm:px-6 lg:px-8
         "
       >
-        {/* LEFT */}
-        <Link href="/" className="flex min-w-0 items-center gap-4">
-          {/* LOGO */}
-          <div
-            className="
-              flex h-14 w-14 shrink-0
-              items-center justify-center
-              rounded-full bg-white/10
-            "
-          >
+        <Link href="/" className="flex min-w-0 items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-100">
             <Image
               src="/logo-pbd.png"
               alt="Logo Papua Barat Daya"
-              width={36}
-              height={36}
+              width={30}
+              height={30}
               priority
             />
           </div>
 
-          {/* TITLE */}
-          <div className="hidden min-w-0 xl:block">
-            <h1
-              className="
-                max-w-md truncate
-                text-sm font-bold
-                uppercase leading-tight
-              "
-            >
-              Dinas Kependudukan dan Pencatatan Sipil
-              <br />
-              dan Pemberdayaan Masyarakat dan Kampung
-            </h1>
-
-            <p className="text-sm text-white/70">Provinsi Papua Barat Daya</p>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-extrabold leading-tight text-pbd-navy">
+              Dukcapil & PMK
+            </p>
+            <p className="hidden text-xs font-medium text-slate-500 sm:block">
+              Provinsi Papua Barat Daya
+            </p>
           </div>
         </Link>
 
-        {/* DESKTOP MENU */}
-        <nav className="hidden items-center gap-6 lg:flex">
+        <nav aria-label="Navigasi utama" className="hidden items-center gap-1 lg:flex">
           {publicMenus.map((menu) => {
             const active = isActive(menu.href);
 
@@ -89,38 +66,46 @@ export default function Navbar() {
                 key={menu.href}
                 href={menu.href}
                 className={`
-                  relative whitespace-nowrap
-                  text-sm font-medium transition
-                  ${active ? "text-pbd-gold" : "text-white/80 hover:text-white"}
+                  rounded-md px-3 py-2 text-sm font-semibold transition
+                  ${active ? "bg-blue-50 text-pbd-blue" : "text-slate-600 hover:bg-slate-100 hover:text-pbd-navy"}
                 `}
               >
                 {menu.label}
-
-                {/* ACTIVE INDICATOR */}
-                {active && (
-                  <span
-                    className="
-                      absolute -bottom-2 left-0
-                      h-0.5 w-full rounded-full
-                      bg-pbd-gold
-                    "
-                  />
-                )}
               </Link>
             );
           })}
         </nav>
 
-        {/* MOBILE BUTTON */}
+        <div className="hidden items-center gap-2 lg:flex">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-10 rounded-md"
+          >
+            <Link href="/#search">
+              <Search className="h-4 w-4" />
+              Cari
+            </Link>
+          </Button>
+          <Button asChild size="sm" className="h-10 rounded-md">
+            <Link href="/login">
+              Dashboard
+              <ExternalLink className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle mobile menu"
+          aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
+          aria-expanded={mobileMenuOpen}
           className="
             flex h-10 w-10 items-center
             justify-center rounded-lg
-            border border-white/10
-            bg-white/5 transition
-            hover:bg-white/10
+            border border-slate-200
+            bg-white transition
+            hover:bg-slate-100
             lg:hidden
           "
         >
@@ -132,9 +117,8 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* MOBILE MENU */}
       {mobileMenuOpen && (
-        <div className="border-t border-white/10 bg-pbd-navy lg:hidden">
+        <div className="border-t border-slate-200 bg-white shadow-lg lg:hidden">
           <nav className="flex flex-col px-6 py-6">
             {publicMenus.map((menu) => {
               const active = isActive(menu.href);
@@ -145,12 +129,12 @@ export default function Navbar() {
                   href={menu.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`
-                    rounded-xl px-4 py-3
+                    rounded-lg px-4 py-3
                     text-sm font-medium transition
                     ${
                       active
-                        ? "bg-white/10 text-pbd-gold"
-                        : "text-white/80 hover:bg-white/5 hover:text-white"
+                        ? "bg-blue-50 text-pbd-blue"
+                        : "text-slate-700 hover:bg-slate-100 hover:text-pbd-navy"
                     }
                   `}
                 >
@@ -158,6 +142,20 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            <div className="mt-4 grid gap-2 border-t border-slate-200 pt-4">
+              <Button asChild variant="outline" className="justify-start">
+                <Link href="/#search" onClick={() => setMobileMenuOpen(false)}>
+                  <Search className="h-4 w-4" />
+                  Cari Informasi
+                </Link>
+              </Button>
+              <Button asChild className="justify-start">
+                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <ExternalLink className="h-4 w-4" />
+                  Masuk Dashboard
+                </Link>
+              </Button>
+            </div>
           </nav>
         </div>
       )}

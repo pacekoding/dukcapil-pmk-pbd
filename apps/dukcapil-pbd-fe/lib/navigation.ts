@@ -25,12 +25,24 @@ export const publicMenus: PublicMenuItem[] = [
     href: "/",
   },
   {
+    label: "Profil",
+    href: "/profil",
+  },
+  {
     label: "Data Wilayah",
     href: "/data-wilayah",
   },
   {
-    label: "Profil",
-    href: "/profil",
+    label: "Layanan",
+    href: "/#layanan",
+  },
+  {
+    label: "Pengumuman",
+    href: "/#pengumuman",
+  },
+  {
+    label: "Kontak",
+    href: "/#kontak",
   },
 ];
 

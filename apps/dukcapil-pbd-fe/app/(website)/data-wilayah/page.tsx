@@ -15,6 +15,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
+import { Breadcrumb } from "@/components/website/breadcrumb";
 import { getWebsiteDataWilayah } from "@/lib/api/data-wilayah";
 import {
   defaultRegionData,
@@ -132,6 +133,7 @@ export default function DataWilayahPage() {
 
   return (
     <main className="min-h-screen bg-[#f6f8fb]">
+      <Breadcrumb items={[{ label: "Data Wilayah" }]} />
       <section className="bg-pbd-navy px-4 py-16 text-white sm:px-6 lg:py-20">
         <div className="mx-auto max-w-7xl">
           <motion.div

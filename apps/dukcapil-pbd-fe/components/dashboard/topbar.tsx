@@ -2,13 +2,28 @@
 
 "use client";
 
-import { CalendarDays, KeyRound, LogOut, Menu } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  KeyRound,
+  Loader2,
+  LogOut,
+  Menu,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +39,8 @@ type SessionUser = {
   name: string;
   role: string;
 };
+
+const tahunAnggaranOptions = ["2026", "2025"];
 
 const menuTitles: Record<
   string,
@@ -103,10 +120,24 @@ export default function DashboardTopbar({
   const pageInfo = getPageInfo(pathname);
 
   const [tahunAnggaran, setTahunAnggaran] = useState("2026");
+  const [pendingTahunAnggaran, setPendingTahunAnggaran] = useState<
+    string | null
+  >(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [switchingYear, setSwitchingYear] = useState(false);
+  const [switchYearError, setSwitchYearError] = useState<string | null>(null);
   const [user, setUser] = useState<SessionUser>({
     name: "Admin PBD",
     role: "superadmin",
   });
+
+  const yearOptions = useMemo(
+    () =>
+      Array.from(new Set([tahunAnggaran, ...tahunAnggaranOptions])).filter(
+        Boolean,
+      ),
+    [tahunAnggaran],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -150,6 +181,67 @@ export default function DashboardTopbar({
       window.location.href = "/login";
     } catch (error) {
       console.error(error);
+    }
+  };
+
+  const openSwitchYearConfirmation = (value: string) => {
+    if (value === tahunAnggaran || switchingYear) {
+      return;
+    }
+
+    setPendingTahunAnggaran(value);
+    setSwitchYearError(null);
+    setConfirmOpen(true);
+  };
+
+  const cancelSwitchYear = () => {
+    if (switchingYear) {
+      return;
+    }
+
+    setConfirmOpen(false);
+    setPendingTahunAnggaran(null);
+    setSwitchYearError(null);
+  };
+
+  const confirmSwitchYear = async () => {
+    if (!pendingTahunAnggaran) {
+      return;
+    }
+
+    try {
+      setSwitchingYear(true);
+      setSwitchYearError(null);
+
+      const response = await fetch("/api/auth/switch-year", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tahunAnggaran: pendingTahunAnggaran,
+        }),
+      });
+
+      const result = (await response.json().catch(() => null)) as
+        | { message?: string; tahunAnggaran?: string }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(result?.message ?? "Tahun anggaran gagal diganti.");
+      }
+
+      setTahunAnggaran(result?.tahunAnggaran ?? pendingTahunAnggaran);
+      window.location.href = "/dashboard";
+    } catch (error) {
+      console.error(error);
+      setSwitchYearError(
+        error instanceof Error
+          ? error.message
+          : "Tahun anggaran gagal diganti.",
+      );
+    } finally {
+      setSwitchingYear(false);
     }
   };
 
@@ -209,19 +301,45 @@ export default function DashboardTopbar({
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
-          <div
-            className="
-              flex h-8 items-center
-              gap-2 rounded-md
-              border border-slate-200
-              bg-slate-50 px-3
-              text-sm font-semibold
-              text-slate-700
-            "
-          >
-            <CalendarDays className="h-4 w-4 text-slate-500" />
-            <span className="hidden text-slate-500 sm:inline">TA</span>
-            <span>{tahunAnggaran}</span>
+          <div className="relative h-9 w-[128px] shrink-0">
+            <div
+              aria-hidden="true"
+              className="
+                pointer-events-none flex h-9 items-center
+                gap-2 rounded-md border border-slate-200
+                bg-slate-50 px-3 pr-8 text-sm
+                font-semibold text-slate-800
+              "
+            >
+              <CalendarDays className="h-4 w-4 shrink-0 text-slate-500" />
+              <span className="text-slate-500">TA</span>
+              <span className="tabular-nums">{tahunAnggaran}</span>
+            </div>
+            <select
+              value={tahunAnggaran}
+              onChange={(event) =>
+                openSwitchYearConfirmation(event.target.value)
+              }
+              disabled={switchingYear}
+              aria-label="Pilih tahun anggaran"
+              className="
+                absolute inset-0 h-9 w-full cursor-pointer
+                appearance-none rounded-md border border-transparent
+                bg-transparent px-3 text-transparent outline-none
+                focus:border-pbd-blue focus:ring-2 focus:ring-pbd-blue/15
+                disabled:cursor-not-allowed disabled:opacity-60
+              "
+            >
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  Tahun Anggaran {year}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              aria-hidden="true"
+              className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+            />
           </div>
 
           <DropdownMenu>
@@ -284,6 +402,47 @@ export default function DashboardTopbar({
           </DropdownMenu>
         </div>
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={(open) => !open && cancelSwitchYear()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ganti Tahun Anggaran?</DialogTitle>
+            <DialogDescription>
+              Anda akan mengganti Tahun Anggaran dari {tahunAnggaran} ke{" "}
+              {pendingTahunAnggaran}. Setelah dikonfirmasi, dashboard akan
+              kembali ke halaman utama dan seluruh data dimuat berdasarkan tahun
+              anggaran baru.
+            </DialogDescription>
+          </DialogHeader>
+
+          {switchYearError ? (
+            <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {switchYearError}
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={cancelSwitchYear}
+              disabled={switchingYear}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void confirmSwitchYear()}
+              disabled={switchingYear}
+            >
+              {switchingYear ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : null}
+              Yes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

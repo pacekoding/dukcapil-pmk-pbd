@@ -51,6 +51,7 @@ func New(config Config) *echo.Echo {
 	}
 	protected := api.Group("", config.AuthMiddleware.RequireRoles(adminRoles...))
 	protected.GET("/auth/me", config.Auth.Me)
+	protected.POST("/auth/switch-year", config.Auth.SwitchTahunAnggaran)
 	protected.POST("/account/change-password", config.Users.ChangePassword)
 	protected.GET("/dashboard", config.Dashboard.Overview)
 	protected.GET("/data-wilayah", config.DataWilayah.List)

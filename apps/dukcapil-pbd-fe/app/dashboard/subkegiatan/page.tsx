@@ -83,6 +83,17 @@ const emptyForm: SubkegiatanPayload = {
 const bidangLabel = (bidang: SubkegiatanBidang) =>
   bidangOptions.find((item) => item.value === bidang)?.label ?? bidang;
 
+const detectBidangByKode = (kode: string): SubkegiatanBidang => {
+  const normalized = kode.trim();
+  if (normalized.startsWith("2.12.")) {
+    return "dukcapil";
+  }
+  if (normalized.startsWith("2.13")) {
+    return "pmk";
+  }
+  return "umum";
+};
+
 const PAGE_SIZE = 12;
 
 export default function DashboardSubkegiatanPage() {
@@ -170,6 +181,10 @@ export default function DashboardSubkegiatanPage() {
       ),
     [form.ssdIds, ssdItems, ssdQuery],
   );
+  const detectedBidang = useMemo(
+    () => detectBidangByKode(form.kode),
+    [form.kode],
+  );
 
   const openCreateDialog = () => {
     setEditingItem(null);
@@ -184,7 +199,7 @@ export default function DashboardSubkegiatanPage() {
     setForm({
       kode: item.kode,
       nama: item.nama,
-      bidang: item.bidang,
+      bidang: detectBidangByKode(item.kode),
       ssdIds: item.ssdItems.map((ssd) => ssd.id),
     });
     setSSDQuery("");
@@ -217,7 +232,7 @@ export default function DashboardSubkegiatanPage() {
     const payload = {
       kode: form.kode.trim(),
       nama: form.nama.trim(),
-      bidang: form.bidang,
+      bidang: detectBidangByKode(form.kode),
       ssdIds: form.ssdIds,
     };
 
@@ -516,7 +531,11 @@ export default function DashboardSubkegiatanPage() {
                 id="kode"
                 value={form.kode}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, kode: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    kode: event.target.value,
+                    bidang: detectBidangByKode(event.target.value),
+                  }))
                 }
                 placeholder="Contoh: 2.12.01.1.01.0001"
                 className="h-11 rounded-lg"
@@ -538,26 +557,39 @@ export default function DashboardSubkegiatanPage() {
 
             <div className="space-y-2">
               <Label>Bidang</Label>
-              <Select
-                value={form.bidang}
-                onValueChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    bidang: value as SubkegiatanBidang,
-                  }))
-                }
+              <div
+                className={cn(
+                  "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2",
+                  detectedBidang === "dukcapil" &&
+                    "border-blue-200 bg-blue-50 text-blue-700",
+                  detectedBidang === "pmk" &&
+                    "border-emerald-200 bg-emerald-50 text-emerald-700",
+                  detectedBidang === "umum" &&
+                    "border-slate-200 bg-slate-50 text-slate-700",
+                )}
               >
-                <SelectTrigger className="h-11 w-full rounded-lg">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {bidangOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "bg-white font-semibold",
+                    detectedBidang === "dukcapil" &&
+                      "border-blue-200 text-blue-700",
+                    detectedBidang === "pmk" &&
+                      "border-emerald-200 text-emerald-700",
+                    detectedBidang === "umum" &&
+                      "border-slate-200 text-slate-700",
+                  )}
+                >
+                  {bidangLabel(detectedBidang)}
+                </Badge>
+                <span className="text-xs font-medium text-current/70">
+                  Otomatis dari kode
+                </span>
+              </div>
+              <p className="text-xs leading-5 text-slate-500">
+                Prefix 2.12. terdeteksi Dukcapil, prefix 2.13 terdeteksi PMK,
+                kode lainnya terdeteksi Umum.
+              </p>
             </div>
 
             <div className="space-y-3">

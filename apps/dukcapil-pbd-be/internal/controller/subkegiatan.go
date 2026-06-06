@@ -54,6 +54,7 @@ func (s *SubkegiatanController) Create(c echo.Context) error {
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "payload subkegiatan tidak valid")
 	}
+	payload.Bidang = detectSubkegiatanBidang(payload.Kode)
 	if err := validateSubkegiatanPayload(payload); err != nil {
 		return err
 	}
@@ -81,6 +82,7 @@ func (s *SubkegiatanController) Update(c echo.Context) error {
 	if err := c.Bind(&payload); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "payload subkegiatan tidak valid")
 	}
+	payload.Bidang = detectSubkegiatanBidang(payload.Kode)
 	if err := validateSubkegiatanPayload(payload); err != nil {
 		return err
 	}
@@ -167,4 +169,15 @@ func validSubkegiatanBidang(bidang model.SubkegiatanBidang) bool {
 	default:
 		return false
 	}
+}
+
+func detectSubkegiatanBidang(kode string) model.SubkegiatanBidang {
+	normalized := strings.TrimSpace(kode)
+	if strings.HasPrefix(normalized, "2.12.") {
+		return model.SubkegiatanBidangDukcapil
+	}
+	if strings.HasPrefix(normalized, "2.13") {
+		return model.SubkegiatanBidangPMK
+	}
+	return model.SubkegiatanBidangUmum
 }

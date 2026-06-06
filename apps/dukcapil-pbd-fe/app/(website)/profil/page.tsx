@@ -13,6 +13,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { Breadcrumb } from "@/components/website/breadcrumb";
+import { PageHeader } from "@/components/website/page-header";
+import { ErrorState } from "@/components/website/state";
 import { getWebsiteProfile } from "@/lib/api/website";
 import type { WebsiteProfileResponse } from "@/types/website";
 
@@ -91,10 +94,9 @@ export default function ProfilePage() {
   if (!data) {
     return (
       <main className="min-h-screen bg-pbd-bg">
+        <Breadcrumb items={[{ label: "Profil" }]} />
         <Container className="py-20">
-          <div className="rounded-lg border border-red-100 bg-red-50 p-6 text-sm font-medium text-red-700">
-            {error || "Data profil tidak tersedia."}
-          </div>
+          <ErrorState message={error || "Data profil tidak tersedia."} />
         </Container>
       </main>
     );
@@ -102,26 +104,13 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-pbd-bg">
-      <section className="bg-pbd-navy">
-        <Container className="py-16 md:py-20">
-          <div className="max-w-4xl">
-            <span className="rounded-full bg-pbd-gold/20 px-4 py-2 text-sm font-semibold text-pbd-gold">
-              Profil Dinas
-            </span>
-
-            <h1 className="mt-6 text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-5xl">
-              {data.title}
-            </h1>
-
-            <p className="mt-5 text-base leading-8 text-white/80 md:text-lg">
-              Dinas Dukcapil dan PMK Provinsi berperan dalam pembinaan,
-              fasilitasi, supervisi, koordinasi, monitoring, dan evaluasi urusan
-              administrasi kependudukan serta pemberdayaan masyarakat
-              kampung/desa pada kabupaten/kota.
-            </p>
-          </div>
-        </Container>
-      </section>
+      <Breadcrumb items={[{ label: "Profil" }]} />
+      <PageHeader
+        icon={Landmark}
+        eyebrow="Profil Dinas"
+        title={data.title}
+        description="Dinas Dukcapil dan PMK Provinsi berperan dalam pembinaan, fasilitasi, supervisi, koordinasi, monitoring, dan evaluasi urusan administrasi kependudukan serta pemberdayaan masyarakat kampung/desa pada kabupaten/kota."
+      />
 
       <Container className="py-12 md:py-16">
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">

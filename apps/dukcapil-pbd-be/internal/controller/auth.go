@@ -79,3 +79,36 @@ func (a *AuthController) Me(c echo.Context) error {
 		TahunAnggaran: claims.TahunAnggaran,
 	})
 }
+
+func (a *AuthController) SwitchTahunAnggaran(c echo.Context) error {
+	claims, ok := authmiddleware.ClaimsFromContext(c)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "session login tidak valid")
+	}
+
+	var request model.SwitchTahunAnggaranRequest
+	if err := c.Bind(&request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "payload tahun anggaran tidak valid")
+	}
+
+	request.TahunAnggaran = strings.TrimSpace(request.TahunAnggaran)
+	if !tahunAnggaranPattern.MatchString(request.TahunAnggaran) {
+		return echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran tidak valid")
+	}
+
+	user := model.User{
+		Username: claims.Username,
+		Name:     claims.Name,
+		Role:     claims.Role,
+	}
+	token, err := a.tokens.Issue(user, request.TahunAnggaran)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "token login gagal dibuat")
+	}
+
+	return jsonData(c, http.StatusOK, model.LoginResponse{
+		Token:         token,
+		User:          user,
+		TahunAnggaran: request.TahunAnggaran,
+	})
+}

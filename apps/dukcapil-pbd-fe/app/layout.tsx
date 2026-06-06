@@ -44,13 +44,13 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://dukcapilpmk-pbd.go.id"),
 
   title: {
-    default: "Portal Statistik Dukcapil & PMK Papua Barat Daya",
+    default: "Dinas Dukcapil & PMK Provinsi Papua Barat Daya",
 
     template: "%s | Dukcapil & PMK Papua Barat Daya",
   },
 
   description:
-    "Portal statistik, data wilayah, dan informasi layanan resmi Dinas Kependudukan dan Pencatatan Sipil dan Pemberdayaan Masyarakat dan Kampung Provinsi Papua Barat Daya.",
+    "Website resmi Dinas Kependudukan dan Pencatatan Sipil dan Pemberdayaan Masyarakat dan Kampung Provinsi Papua Barat Daya untuk profil dinas, data wilayah, layanan publik, pengumuman, dan informasi resmi.",
 
   keywords: [
     "Papua Barat Daya",
@@ -59,17 +59,17 @@ export const metadata: Metadata = {
 
     "PMK",
 
-    "Dashboard OPD",
+    "Website Resmi",
 
     "Data Wilayah",
 
-    "Digitalisasi Pelaporan",
+    "Layanan Publik",
 
     "Statistik Kependudukan",
 
     "Administrasi Kependudukan",
 
-    "Kampung",
+    "Pemberdayaan Masyarakat Kampung",
 
     "OAP",
   ],
@@ -85,16 +85,33 @@ export const metadata: Metadata = {
   publisher: "Dinas Dukcapil & PMK Papua Barat Daya",
 
   openGraph: {
-    title: "Portal Statistik Dukcapil & PMK Papua Barat Daya",
+    title: "Dinas Dukcapil & PMK Provinsi Papua Barat Daya",
 
     description:
-      "Platform data wilayah dan monitoring layanan OPD Papua Barat Daya.",
+      "Website resmi untuk profil dinas, data wilayah, layanan publik, dan informasi resmi Dukcapil dan PMK Papua Barat Daya.",
 
     type: "website",
 
     locale: "id_ID",
 
     siteName: "Dukcapil & PMK Papua Barat Daya",
+
+    images: [
+      {
+        url: "/hero-pbd.png",
+        width: 1200,
+        height: 630,
+        alt: "Papua Barat Daya",
+      },
+    ],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Dinas Dukcapil & PMK Provinsi Papua Barat Daya",
+    description:
+      "Website resmi Dinas Dukcapil dan PMK Provinsi Papua Barat Daya.",
+    images: ["/hero-pbd.png"],
   },
 
   robots: {

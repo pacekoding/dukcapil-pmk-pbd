@@ -107,6 +107,10 @@ type LoginResponse struct {
 	TahunAnggaran string `json:"tahunAnggaran"`
 }
 
+type SwitchTahunAnggaranRequest struct {
+	TahunAnggaran string `json:"tahunAnggaran"`
+}
+
 type SessionResponse struct {
 	Authenticated bool   `json:"authenticated"`
 	User          User   `json:"user"`
