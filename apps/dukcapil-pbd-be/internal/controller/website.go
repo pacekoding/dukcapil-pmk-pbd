@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"net/http"
 
 	"dukcapil-pbd-be/internal/model"
@@ -9,53 +8,32 @@ import (
 	"github.com/labstack/echo"
 )
 
-type WebsiteKegiatanStore interface {
-	WebsiteHome(ctx context.Context) (model.WebsiteHomeResponse, error)
-	WebsiteKegiatan(ctx context.Context) (model.WebsiteKegiatanResponse, error)
-	WebsiteKegiatanDetail(ctx context.Context, id int) (model.PublicKegiatanItem, bool, error)
-}
+type WebsiteController struct{}
 
-type WebsiteController struct {
-	kegiatan WebsiteKegiatanStore
-}
-
-func NewWebsiteController(kegiatan WebsiteKegiatanStore) *WebsiteController {
-	return &WebsiteController{kegiatan: kegiatan}
+func NewWebsiteController() *WebsiteController {
+	return &WebsiteController{}
 }
 
 func (w *WebsiteController) Home(c echo.Context) error {
-	response, err := w.kegiatan.WebsiteHome(c.Request().Context())
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "data website gagal dimuat")
+	response := model.WebsiteHomeResponse{
+		Stats: []model.WebsiteStat{
+			{Label: "Wilayah", Value: "6", Description: "Kabupaten/kota Papua Barat Daya"},
+			{Label: "Layanan", Value: "2", Description: "Dukcapil dan PMK"},
+			{Label: "Data", Value: "Aktif", Description: "Dashboard data wilayah tersedia"},
+		},
+		Highlights: []model.WebsiteHighlight{
+			{Title: "Administrasi Kependudukan", Description: "Pelayanan kependudukan, pencatatan sipil, dan pengelolaan data layanan publik."},
+			{Title: "Pemberdayaan Masyarakat Kampung", Description: "Penguatan tata kelola kampung dan pemberdayaan masyarakat."},
+			{Title: "Data Wilayah", Description: "Statistik wilayah Papua Barat Daya tersedia melalui kanal publik dan dashboard internal."},
+		},
 	}
+	response.Hero.Eyebrow = "Portal Resmi"
+	response.Hero.Title = "Dukcapil & PMK Papua Barat Daya"
+	response.Hero.Description = "Portal data wilayah dan profil Dinas Kependudukan dan Pencatatan Sipil dan Pemberdayaan Masyarakat dan Kampung Provinsi Papua Barat Daya."
+	response.ProfileSummary.Title = "Profil Dinas Dukcapil & PMK"
+	response.ProfileSummary.Description = "Dinas menyelenggarakan urusan administrasi kependudukan, pencatatan sipil, pemberdayaan masyarakat kampung, dan pengelolaan data layanan publik."
 
 	return jsonData(c, http.StatusOK, response)
-}
-
-func (w *WebsiteController) Kegiatan(c echo.Context) error {
-	response, err := w.kegiatan.WebsiteKegiatan(c.Request().Context())
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "data kegiatan website gagal dimuat")
-	}
-
-	return jsonData(c, http.StatusOK, response)
-}
-
-func (w *WebsiteController) KegiatanDetail(c echo.Context) error {
-	id, err := paramInt(c, "id")
-	if err != nil {
-		return err
-	}
-
-	item, found, err := w.kegiatan.WebsiteKegiatanDetail(c.Request().Context(), id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "data kegiatan website gagal dimuat")
-	}
-	if !found {
-		return echo.NewHTTPError(http.StatusNotFound, "kegiatan tidak ditemukan")
-	}
-
-	return jsonData(c, http.StatusOK, item)
 }
 
 func (w *WebsiteController) Profile(c echo.Context) error {

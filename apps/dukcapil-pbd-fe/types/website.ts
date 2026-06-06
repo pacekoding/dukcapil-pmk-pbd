@@ -1,5 +1,3 @@
-import type { Kegiatan, KegiatanJenis } from "@/types/kegiatan";
-
 export type StrukturOrganisasiItem = {
   id: number;
   name: string;
@@ -21,15 +19,6 @@ export type WebsiteHighlight = {
   description: string;
 };
 
-export type PublicKegiatanItem = Kegiatan & {
-  ringkasan: string;
-  dokumen: {
-    tor: number;
-    laporan: number;
-    total: number;
-  };
-};
-
 export type WebsiteHomeResponse = {
   hero: {
     eyebrow: string;
@@ -38,20 +27,11 @@ export type WebsiteHomeResponse = {
   };
   stats: WebsiteStat[];
   highlights: WebsiteHighlight[];
-  latestKegiatan: PublicKegiatanItem[];
   profileSummary: {
     title: string;
     description: string;
   };
 };
-
-export type WebsiteKegiatanResponse = {
-  items: PublicKegiatanItem[];
-  jenisOptions: KegiatanJenis[];
-  stats: WebsiteStat[];
-};
-
-export type WebsiteKegiatanDetailResponse = PublicKegiatanItem;
 
 export type WebsiteProfileResponse = {
   title: string;

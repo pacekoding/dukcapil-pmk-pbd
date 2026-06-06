@@ -26,14 +26,16 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-development}
       PORT: 8080
-      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:3000}
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-*}
       DATABASE_URL: postgres://${POSTGRES_USER:-dukcapil_pbd}:${POSTGRES_PASSWORD:-dukcapil_pbd_password}@dukcapil-pbd-db:5432/${POSTGRES_DB:-dukcapil_pbd}?sslmode=disable
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
     depends_on:
       dukcapil-pbd-db:
         condition: service_healthy
+    volumes:
+      - dukcapil-pbd-uploads:/app/uploads
     ports:
-      - "${BE_PORT:-8080}:8080"
+      - "${BE_HOST:-0.0.0.0}:${BE_PORT:-8080}:8080"
     restart: unless-stopped
 
   dukcapil-pbd-fe:
@@ -47,6 +49,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      HOSTNAME: 0.0.0.0
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
       NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/backend}
       SERVER_API_BASE_URL: ${SERVER_API_BASE_URL:-http://dukcapil-pbd-be:8080}
@@ -55,8 +59,9 @@ services:
     depends_on:
       - dukcapil-pbd-be
     ports:
-      - "${FE_PORT:-3000}:3000"
+      - "${FE_HOST:-0.0.0.0}:${FE_PORT:-3000}:3000"
     restart: unless-stopped
 
 volumes:
   dukcapil-pbd-postgres-data:
+  dukcapil-pbd-uploads:

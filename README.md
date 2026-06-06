@@ -14,7 +14,7 @@ DUKCAPIL-PBD/
 └── README.md
 ```
 
-Backend Go memakai struktur `cmd/api` sebagai entrypoint dan `internal/` untuk `controller`, `middleware`, `model`, `repository`, dan `router`. Data admin, kegiatan, dokumentasi kegiatan, dan dokumen tersimpan di Postgres melalui migrasi SQL dan repository GORM.
+Backend Go memakai struktur `cmd/api` sebagai entrypoint dan `internal/` untuk `controller`, `middleware`, `model`, `repository`, dan `router`. Data admin dan data wilayah tersimpan di Postgres melalui migrasi SQL dan repository GORM.
 
 ## Menjalankan dengan Docker
 
@@ -25,6 +25,8 @@ docker compose up --build
 Frontend berjalan di `http://localhost:3000`.
 Backend health check berjalan di `http://localhost:8080/health`.
 Postgres berjalan di `localhost:5432`.
+
+Untuk akses dari perangkat lain di jaringan lokal, buka `http://<IP-komputer-host>:3000`. Compose melakukan bind frontend dan backend ke `0.0.0.0` secara default; override dengan `FE_HOST` atau `BE_HOST` jika perlu membatasi interface.
 
 ## Menjalankan Frontend Saja
 
@@ -52,7 +54,9 @@ Root `.env` dipakai oleh Docker Compose.
 
 ```env
 FE_PORT=3000
+FE_HOST=0.0.0.0
 BE_PORT=8080
+BE_HOST=0.0.0.0
 POSTGRES_DB=dukcapil_pbd
 POSTGRES_USER=dukcapil_pbd
 POSTGRES_PASSWORD=dukcapil_pbd_password
@@ -61,6 +65,8 @@ NEXT_PUBLIC_API_BASE_URL=
 NEXT_PUBLIC_API_PREFIX=/api/backend
 SERVER_API_BASE_URL=http://dukcapil-pbd-be:8080
 SERVER_API_PREFIX=/api/v1
+CORS_ALLOWED_ORIGIN=*
+AUTH_COOKIE_SECURE=false
 JWT_SECRET=dev-secret-change-me
 ```
 

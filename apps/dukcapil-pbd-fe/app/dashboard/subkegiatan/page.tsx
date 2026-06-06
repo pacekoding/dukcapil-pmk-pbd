@@ -1,0 +1,928 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  Edit3,
+  Eye,
+  ListChecks,
+  MoreHorizontal,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+
+import { PageHero } from "@/components/dashboard/page-hero";
+import { Pagination } from "@/components/dashboard/pagination";
+import { SearchInput } from "@/components/dashboard/search-input";
+import { SectionCard } from "@/components/dashboard/section-card";
+import { EmptyState, ErrorState, SuccessState } from "@/components/dashboard/state";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  createSubkegiatan,
+  deleteSubkegiatan,
+  getSubkegiatan,
+  updateSubkegiatan,
+} from "@/lib/api/subkegiatan";
+import { getSSD } from "@/lib/api/ssd";
+import { cn } from "@/lib/utils";
+import type { SSD } from "@/types/ssd";
+import type {
+  Subkegiatan,
+  SubkegiatanBidang,
+  SubkegiatanPayload,
+} from "@/types/subkegiatan";
+
+const bidangOptions: Array<{ value: SubkegiatanBidang; label: string }> = [
+  { value: "dukcapil", label: "Dukcapil" },
+  { value: "pmk", label: "PMK" },
+  { value: "umum", label: "Umum" },
+];
+
+const emptyForm: SubkegiatanPayload = {
+  kode: "",
+  nama: "",
+  bidang: "dukcapil",
+  ssdIds: [],
+};
+
+const bidangLabel = (bidang: SubkegiatanBidang) =>
+  bidangOptions.find((item) => item.value === bidang)?.label ?? bidang;
+
+const PAGE_SIZE = 12;
+
+export default function DashboardSubkegiatanPage() {
+  const [items, setItems] = useState<Subkegiatan[]>([]);
+  const [ssdItems, setSSDItems] = useState<SSD[]>([]);
+  const [tahunAnggaran, setTahunAnggaran] = useState("2026");
+  const [form, setForm] = useState<SubkegiatanPayload>(emptyForm);
+  const [editingItem, setEditingItem] = useState<Subkegiatan | null>(null);
+  const [detailItem, setDetailItem] = useState<Subkegiatan | null>(null);
+  const [questionnaireItem, setQuestionnaireItem] = useState<Subkegiatan | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [questionnaireOpen, setQuestionnaireOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [ssdQuery, setSSDQuery] = useState("");
+  const [bidangFilter, setBidangFilter] = useState<SubkegiatanBidang | "semua">(
+    "semua",
+  );
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadItems = async () => {
+      try {
+        const [data, ssdResponse] = await Promise.all([getSubkegiatan(), getSSD()]);
+        if (mounted) {
+          setTahunAnggaran(data.tahunAnggaran);
+          setItems(data.items);
+          setSSDItems(ssdResponse.items);
+          setError(null);
+        }
+      } catch (loadError) {
+        console.error(loadError);
+        if (mounted) {
+          setError("Subkegiatan gagal dimuat.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadItems();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredItems = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return items.filter((item) => {
+      const matchesQuery =
+        normalizedQuery === "" ||
+        item.kode.toLowerCase().includes(normalizedQuery) ||
+        item.nama.toLowerCase().includes(normalizedQuery);
+      const matchesBidang =
+        bidangFilter === "semua" || item.bidang === bidangFilter;
+
+      return matchesQuery && matchesBidang;
+    });
+  }, [bidangFilter, items, query]);
+
+  const paginatedItems = useMemo(
+    () => filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredItems, page],
+  );
+
+  const selectableSSDItems = useMemo(
+    () =>
+      ssdItems.filter(
+        (item) =>
+          (item.isActive || form.ssdIds.includes(item.id)) &&
+          (ssdQuery.trim() === "" ||
+            item.kode.toLowerCase().includes(ssdQuery.trim().toLowerCase()) ||
+            item.uraian.toLowerCase().includes(ssdQuery.trim().toLowerCase()) ||
+            item.satuan.toLowerCase().includes(ssdQuery.trim().toLowerCase())),
+      ),
+    [form.ssdIds, ssdItems, ssdQuery],
+  );
+
+  const openCreateDialog = () => {
+    setEditingItem(null);
+    setForm(emptyForm);
+    setSSDQuery("");
+    setError(null);
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (item: Subkegiatan) => {
+    setEditingItem(item);
+    setForm({
+      kode: item.kode,
+      nama: item.nama,
+      bidang: item.bidang,
+      ssdIds: item.ssdItems.map((ssd) => ssd.id),
+    });
+    setSSDQuery("");
+    setError(null);
+    setDialogOpen(true);
+  };
+
+  const openDetailDialog = (item: Subkegiatan) => {
+    setDetailItem(item);
+    setDetailOpen(true);
+  };
+
+  const openQuestionnaireDialog = (item: Subkegiatan) => {
+    setQuestionnaireItem(item);
+    setQuestionnaireOpen(true);
+  };
+
+  const closeDialog = () => {
+    if (saving) {
+      return;
+    }
+    setDialogOpen(false);
+    setEditingItem(null);
+    setForm(emptyForm);
+    setSSDQuery("");
+    setError(null);
+  };
+
+  const handleSubmit = async () => {
+    const payload = {
+      kode: form.kode.trim(),
+      nama: form.nama.trim(),
+      bidang: form.bidang,
+      ssdIds: form.ssdIds,
+    };
+
+    if (!payload.kode || !payload.nama) {
+      setError("Kode dan nama subkegiatan wajib diisi.");
+      setMessage(null);
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      if (editingItem) {
+        const updated = await updateSubkegiatan(editingItem.id, payload);
+        setItems((current) =>
+          current.map((item) => (item.id === updated.id ? updated : item)),
+        );
+        setMessage(`${updated.kode} berhasil diperbarui.`);
+      } else {
+        const created = await createSubkegiatan(payload);
+        setItems((current) =>
+          [...current, created].sort((a, b) => a.kode.localeCompare(b.kode)),
+        );
+        setMessage(`${created.kode} berhasil ditambahkan.`);
+      }
+      setDialogOpen(false);
+      setForm(emptyForm);
+      setEditingItem(null);
+    } catch (saveError) {
+      console.error(saveError);
+      setError(
+        "Subkegiatan gagal disimpan. Pastikan kode belum dipakai pada tahun ini.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (item: Subkegiatan) => {
+    const confirmed = window.confirm(
+      `Hapus subkegiatan ${item.kode} - ${item.nama}?`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingId(item.id);
+    setMessage(null);
+    setError(null);
+    try {
+      await deleteSubkegiatan(item.id);
+      setItems((current) => current.filter((entry) => entry.id !== item.id));
+      if (editingItem?.id === item.id) {
+        setForm(emptyForm);
+        setEditingItem(null);
+        setDialogOpen(false);
+      }
+      setMessage(`${item.kode} berhasil dihapus.`);
+    } catch (deleteError) {
+      console.error(deleteError);
+      setError("Subkegiatan gagal dihapus.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <PageHero
+        icon={ListChecks}
+        eyebrow="Subkegiatan"
+        title="Kelola Master Subkegiatan"
+        description="Data subkegiatan tersimpan sesuai tahun anggaran yang dipilih saat login."
+        meta={
+          <p className="inline-flex rounded-full bg-blue-50 px-4 py-2 text-sm font-bold text-pbd-blue">
+            Tahun Anggaran {tahunAnggaran}
+          </p>
+        }
+        aside={
+          <Button
+            type="button"
+            onClick={openCreateDialog}
+            className="h-12 rounded-xl bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
+          >
+            <Plus className="h-4 w-4" />
+            Tambah Subkegiatan
+          </Button>
+        }
+      />
+
+      <SectionCard contentClassName="p-0">
+        <div className="border-b border-slate-200 p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="font-bold text-pbd-navy">Daftar Subkegiatan</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {filteredItems.length} dari {items.length} data ditampilkan.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <SearchInput
+                value={query}
+                onChange={(value) => {
+                  setQuery(value);
+                  setPage(1);
+                }}
+                placeholder="Cari kode atau nama..."
+                className="sm:w-72"
+              />
+              <Select
+                value={bidangFilter}
+                onValueChange={(value) => {
+                  setBidangFilter(value as SubkegiatanBidang | "semua");
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-11 w-full rounded-lg sm:w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semua">Semua Bidang</SelectItem>
+                  {bidangOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {message ? (
+            <SuccessState message={message} className="mt-4" />
+          ) : null}
+          {error && !dialogOpen ? (
+            <ErrorState message={error} className="mt-4" />
+          ) : null}
+        </div>
+
+        <div className="p-5">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[64px]">No</TableHead>
+                <TableHead className="w-[220px]">Kode</TableHead>
+                <TableHead>Nama</TableHead>
+                <TableHead className="w-[150px]">Bidang</TableHead>
+                <TableHead className="w-[180px]">SSD</TableHead>
+                <TableHead className="w-[80px] text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-10 text-center text-slate-500">
+                    Memuat subkegiatan...
+                  </TableCell>
+                </TableRow>
+              ) : paginatedItems.length > 0 ? (
+                paginatedItems.map((item, index) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="text-slate-500">
+                      {(page - 1) * PAGE_SIZE + index + 1}
+                    </TableCell>
+                    <TableCell className="font-semibold text-pbd-navy">
+                      {item.kode}
+                    </TableCell>
+                    <TableCell className="min-w-[320px] whitespace-normal text-slate-700">
+                      {item.nama}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "border-pbd-blue/30 bg-pbd-blue/5 text-pbd-blue",
+                          item.bidang === "pmk" &&
+                            "border-emerald-200 bg-emerald-50 text-emerald-700",
+                          item.bidang === "umum" &&
+                            "border-slate-200 bg-slate-50 text-slate-700",
+                        )}
+                      >
+                        {bidangLabel(item.bidang)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                        {item.ssdItems.length > 0 ? (
+                          <>
+                            <Badge
+                              variant="outline"
+                              className="border-blue-200 bg-blue-50 text-blue-700"
+                            >
+                              {item.ssdItems.length} SSD
+                            </Badge>
+                            {item.ssdItems.slice(0, 2).map((ssd) => (
+                              <Badge
+                                key={ssd.id}
+                                variant="outline"
+                                className="max-w-[160px] truncate border-slate-200 bg-slate-50 text-slate-700"
+                              >
+                                {ssd.kode}
+                              </Badge>
+                            ))}
+                          </>
+                        ) : (
+                          <span className="text-sm text-slate-400">Belum dipilih</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-9 w-9 rounded-lg"
+                              aria-label={`Aksi ${item.kode}`}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuItem onSelect={() => openDetailDialog(item)}>
+                              <Eye className="h-4 w-4" />
+                              Lihat details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => openQuestionnaireDialog(item)}
+                            >
+                              <ListChecks className="h-4 w-4" />
+                              Lihat Kuisioner
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => openEditDialog(item)}>
+                              <Edit3 className="h-4 w-4" />
+                              Ubah
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              disabled={deletingId === item.id}
+                              onSelect={() => handleDelete(item)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Hapus
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-6">
+                    <EmptyState title="Subkegiatan belum tersedia" />
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <Pagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={filteredItems.length}
+          onPageChange={setPage}
+        />
+      </SectionCard>
+
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setDialogOpen(true);
+          } else {
+            closeDialog();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingItem ? "Edit Subkegiatan" : "Tambah Subkegiatan"}
+            </DialogTitle>
+            <DialogDescription>
+              Data disimpan untuk Tahun Anggaran {tahunAnggaran}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="kode">Kode</Label>
+              <Input
+                id="kode"
+                value={form.kode}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, kode: event.target.value }))
+                }
+                placeholder="Contoh: 2.12.01.1.01.0001"
+                className="h-11 rounded-lg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nama">Nama</Label>
+              <Input
+                id="nama"
+                value={form.nama}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, nama: event.target.value }))
+                }
+                placeholder="Nama subkegiatan"
+                className="h-11 rounded-lg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Bidang</Label>
+              <Select
+                value={form.bidang}
+                onValueChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    bidang: value as SubkegiatanBidang,
+                  }))
+                }
+              >
+                <SelectTrigger className="h-11 w-full rounded-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {bidangOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <Label>SSD Terkait</Label>
+                <p className="mt-1 text-xs text-slate-500">
+                  Pilih satu atau lebih SSD aktif untuk diintegrasikan ke subkegiatan ini.
+                </p>
+              </div>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={ssdQuery}
+                  onChange={(event) => setSSDQuery(event.target.value)}
+                  placeholder="Cari kode atau uraian DSSD..."
+                  className="h-11 rounded-lg pl-9"
+                />
+              </div>
+              <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-3">
+                {selectableSSDItems.length > 0 ? (
+                  selectableSSDItems.map((ssd) => {
+                      const checked = form.ssdIds.includes(ssd.id);
+                      return (
+                        <label
+                          key={ssd.id}
+                          className={cn(
+                            "flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 transition",
+                            checked
+                              ? "border-pbd-blue bg-blue-50/70"
+                              : "border-slate-200 hover:border-slate-300",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(event) =>
+                              setForm((current) => ({
+                                ...current,
+                                ssdIds: event.target.checked
+                                  ? [...current.ssdIds, ssd.id]
+                                  : current.ssdIds.filter((id) => id !== ssd.id),
+                              }))
+                            }
+                            className="mt-1 h-4 w-4 rounded border-slate-300 text-pbd-blue"
+                          />
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-pbd-navy">
+                                {ssd.kode}
+                              </span>
+                              {!ssd.isActive ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-amber-200 bg-amber-50 text-amber-700"
+                                >
+                                  Nonaktif
+                                </Badge>
+                              ) : null}
+                              {ssd.satuan ? (
+                                <Badge variant="outline" className="border-slate-200 bg-white text-slate-600">
+                                  {ssd.satuan}
+                                </Badge>
+                              ) : null}
+                            </div>
+                            <p className="mt-1 text-sm text-slate-600">{ssd.uraian}</p>
+                          </div>
+                        </label>
+                      );
+                    })
+                ) : (
+                  <p className="text-sm text-slate-500">
+                    {ssdQuery.trim()
+                      ? "DSSD tidak ditemukan."
+                      : "Belum ada SSD aktif. Import SSD terlebih dahulu."}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {error ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+                {error}
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                className="h-10 rounded-lg"
+              >
+                <X className="h-4 w-4" />
+                Batal
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saving}
+              className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={questionnaireOpen}
+        onOpenChange={(open) => {
+          setQuestionnaireOpen(open);
+          if (!open) {
+            setQuestionnaireItem(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Pertanyaan Kuisioner</DialogTitle>
+            <DialogDescription>
+              Daftar pertanyaan dari metadata variable SSD pada subkegiatan ini untuk Tahun Anggaran {tahunAnggaran}.
+            </DialogDescription>
+          </DialogHeader>
+
+          {questionnaireItem ? (
+            <div className="space-y-5">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Subkegiatan
+                </p>
+                <p className="mt-2 font-semibold text-pbd-navy">
+                  {questionnaireItem.kode} - {questionnaireItem.nama}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white">
+                <div className="border-b border-slate-200 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold text-pbd-navy">Pertanyaan Kuesioner</h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Diambil dari metadata variable pada SSD yang terhubung.
+                      </p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="border-indigo-200 bg-indigo-50 text-indigo-700"
+                    >
+                      {questionnaireItem.ssdItems.reduce(
+                        (total, ssd) =>
+                          total +
+                          ssd.variables.filter((variable) =>
+                            variable.kalimatPertanyaan.trim(),
+                          ).length,
+                        0,
+                      )}{" "}
+                      Pertanyaan
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="max-h-96 space-y-4 overflow-y-auto p-4">
+                  {questionnaireItem.ssdItems.some((ssd) =>
+                    ssd.variables.some((variable) =>
+                      variable.kalimatPertanyaan.trim(),
+                    ),
+                  ) ? (
+                    questionnaireItem.ssdItems.map((ssd) => {
+                      const questionVariables = ssd.variables.filter((variable) =>
+                        variable.kalimatPertanyaan.trim(),
+                      );
+
+                      if (questionVariables.length === 0) {
+                        return null;
+                      }
+
+                      return (
+                        <div
+                          key={`questionnaire-${ssd.id}`}
+                          className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-pbd-navy">{ssd.kode}</span>
+                            <Badge
+                              variant="outline"
+                              className="border-slate-200 bg-white text-slate-600"
+                            >
+                              {questionVariables.length} Pertanyaan
+                            </Badge>
+                          </div>
+                          <p className="mt-2 text-sm text-slate-600">{ssd.uraian}</p>
+
+                          <div className="mt-4 space-y-3">
+                            {questionVariables.map((variable, index) => (
+                              <div
+                                key={`${ssd.id}-questionnaire-${variable.id}`}
+                                className="rounded-lg border border-slate-200 bg-white p-3"
+                              >
+                                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                                  Variabel {index + 1}
+                                </p>
+                                <p className="mt-1 font-medium text-pbd-navy">
+                                  {variable.namaVariabel}
+                                </p>
+                                <p className="mt-2 text-sm leading-6 text-slate-700">
+                                  {variable.kalimatPertanyaan}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+                      Belum ada pertanyaan kuesioner dari metadata variable SSD.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="h-10 rounded-lg">
+                <X className="h-4 w-4" />
+                Tutup
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) {
+            setDetailItem(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Detail Subkegiatan</DialogTitle>
+            <DialogDescription>
+              Informasi subkegiatan dan SSD yang terintegrasi pada Tahun Anggaran {tahunAnggaran}.
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailItem ? (
+            <div className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Kode
+                  </p>
+                  <p className="mt-2 font-semibold text-pbd-navy">{detailItem.kode}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Bidang
+                  </p>
+                  <div className="mt-2">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "border-pbd-blue/30 bg-pbd-blue/5 text-pbd-blue",
+                        detailItem.bidang === "pmk" &&
+                          "border-emerald-200 bg-emerald-50 text-emerald-700",
+                        detailItem.bidang === "umum" &&
+                          "border-slate-200 bg-slate-50 text-slate-700",
+                      )}
+                    >
+                      {bidangLabel(detailItem.bidang)}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Nama Subkegiatan
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-700">{detailItem.nama}</p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white">
+                <div className="border-b border-slate-200 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold text-pbd-navy">SSD Terkait</h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {detailItem.ssdItems.length} SSD terhubung ke subkegiatan ini.
+                      </p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="border-blue-200 bg-blue-50 text-blue-700"
+                    >
+                      {detailItem.ssdItems.length} SSD
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="max-h-80 space-y-3 overflow-y-auto p-4">
+                  {detailItem.ssdItems.length > 0 ? (
+                    detailItem.ssdItems.map((ssd) => (
+                      <div
+                        key={ssd.id}
+                        className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-pbd-navy">{ssd.kode}</span>
+                          {ssd.satuan ? (
+                            <Badge
+                              variant="outline"
+                              className="border-slate-200 bg-white text-slate-600"
+                            >
+                              {ssd.satuan}
+                            </Badge>
+                          ) : null}
+                          {!ssd.isActive ? (
+                            <Badge
+                              variant="outline"
+                              className="border-amber-200 bg-amber-50 text-amber-700"
+                            >
+                              Nonaktif
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="mt-2 text-sm leading-6 text-slate-700">{ssd.uraian}</p>
+                        {ssd.definisiOperasional ? (
+                          <p className="mt-2 text-xs leading-5 text-slate-500">
+                            {ssd.definisiOperasional}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+                      Belum ada SSD yang terhubung ke subkegiatan ini.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="h-10 rounded-lg">
+                <X className="h-4 w-4" />
+                Tutup
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

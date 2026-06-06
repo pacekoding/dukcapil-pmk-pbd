@@ -5,8 +5,10 @@ export type PublicMenuItem = {
 
 export type DashboardMenuIcon =
   | "home"
-  | "calendar"
+  | "map"
   | "fileText"
+  | "listChecks"
+  | "clipboardList"
   | "users"
   | "keyRound";
 
@@ -23,8 +25,8 @@ export const publicMenus: PublicMenuItem[] = [
     href: "/",
   },
   {
-    label: "Kegiatan",
-    href: "/kegiatan",
+    label: "Data Wilayah",
+    href: "/data-wilayah",
   },
   {
     label: "Profil",
@@ -39,24 +41,29 @@ export const dashboardMenus: DashboardMenuItem[] = [
     icon: "home",
   },
   {
-    title: "Kegiatan",
-    href: "/dashboard/kegiatan",
-    icon: "calendar",
+    title: "Data Wilayah",
+    href: "/dashboard/data-wilayah",
+    icon: "map",
   },
   {
-    title: "Dokumen",
-    href: "/dashboard/dokumen",
+    title: "Data SSD",
+    href: "/dashboard/ssd",
     icon: "fileText",
+  },
+  {
+    title: "Subkegiatan",
+    href: "/dashboard/subkegiatan",
+    icon: "listChecks",
+  },
+  {
+    title: "Realisasi Subkegiatan",
+    href: "/dashboard/realisasi-subkegiatan",
+    icon: "clipboardList",
   },
   {
     title: "User Admin",
     href: "/dashboard/users",
     icon: "users",
     roles: ["superadmin"],
-  },
-  {
-    title: "Akun",
-    href: "/dashboard/akun",
-    icon: "keyRound",
   },
 ];

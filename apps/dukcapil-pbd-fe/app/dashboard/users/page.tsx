@@ -11,9 +11,11 @@ import {
   X,
 } from "lucide-react";
 
+import { PageHero } from "@/components/dashboard/page-hero";
+import { SectionCard } from "@/components/dashboard/section-card";
+import { EmptyState, ErrorState, LoadingState, SuccessState } from "@/components/dashboard/state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -287,7 +289,7 @@ export default function UsersPage() {
   if (loading) {
     return (
       <main className="space-y-6">
-        <div className="h-40 animate-pulse rounded-lg bg-white" />
+        <LoadingState message="Memuat user admin..." />
       </main>
     );
   }
@@ -295,50 +297,41 @@ export default function UsersPage() {
   if (!isSuperAdmin) {
     return (
       <main className="space-y-6">
-        <section className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm font-medium text-amber-800">
-          Halaman ini hanya dapat diakses oleh Super Admin.
-        </section>
+        <ErrorState message="Halaman ini hanya dapat diakses oleh Super Admin." />
       </main>
     );
   }
 
   return (
     <main className="space-y-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <Badge className="rounded-md">Super Admin</Badge>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-              User Admin
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Kelola akun dashboard, role admin bidang, status akses, dan reset
-              password.
-            </p>
-          </div>
-
+      <PageHero
+        icon={ShieldCheck}
+        eyebrow="User Admin"
+        title="Kelola Akses Dashboard"
+        description="Kelola akun dashboard, role admin bidang, status akses, dan reset password."
+        meta={
+          <p className="inline-flex rounded-full bg-blue-50 px-4 py-2 text-sm font-bold text-pbd-blue">
+            Akses Super Admin
+          </p>
+        }
+        aside={
           <div className="grid grid-cols-2 gap-3 text-sm">
             <Summary label="Total User" value={String(users.length)} />
             <Summary label="Aktif" value={String(activeUsers)} />
           </div>
-        </div>
-      </section>
+        }
+      />
 
       {pageError ? (
-        <section className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-          {pageError}
-        </section>
+        <ErrorState message={pageError} />
       ) : null}
 
       {message ? (
-        <section className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
-          {message}
-        </section>
+        <SuccessState message={message} />
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
-        <Card className="rounded-lg border border-slate-200 shadow-sm">
-          <CardContent className="p-5">
+        <SectionCard id="user-form-panel">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
@@ -453,9 +446,7 @@ export default function UsersPage() {
               </div>
 
               {formError ? (
-                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-                  {formError}
-                </p>
+                <ErrorState message={formError} />
               ) : null}
 
               <Button
@@ -475,7 +466,7 @@ export default function UsersPage() {
             {resetTarget ? (
               <form
                 onSubmit={handleResetPassword}
-                className="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-4"
+                className="mt-5 rounded-lg border border-blue-100 bg-blue-50 p-4"
               >
                 <h3 className="font-semibold text-slate-900">
                   Reset Password
@@ -514,11 +505,9 @@ export default function UsersPage() {
                 </div>
               </form>
             ) : null}
-          </CardContent>
-        </Card>
+        </SectionCard>
 
-        <Card className="rounded-lg border border-slate-200 shadow-sm">
-          <CardContent className="p-0">
+        <SectionCard contentClassName="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -529,7 +518,8 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {users.length > 0 ? (
+                users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -606,11 +596,17 @@ export default function UsersPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-6">
+                      <EmptyState title="User admin belum tersedia" />
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+        </SectionCard>
       </div>
     </main>
   );

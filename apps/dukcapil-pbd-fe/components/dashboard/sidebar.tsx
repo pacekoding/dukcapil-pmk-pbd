@@ -9,10 +9,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
-  CalendarDays,
-  FileText,
   Home,
   KeyRound,
+  ListChecks,
+  MapPinned,
+  ClipboardList,
+  FileText,
   PanelLeftClose,
   PanelLeftOpen,
   UsersRound,
@@ -23,10 +25,7 @@ import { Button } from "@/components/ui/button";
 
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
-import {
-  dashboardMenus,
-  type DashboardMenuIcon,
-} from "@/lib/navigation";
+import { dashboardMenus, type DashboardMenuIcon } from "@/lib/navigation";
 
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -47,8 +46,10 @@ type SidebarProps = {
 
 const dashboardMenuIconMap: Record<DashboardMenuIcon, LucideIcon> = {
   home: Home,
-  calendar: CalendarDays,
+  map: MapPinned,
   fileText: FileText,
+  listChecks: ListChecks,
+  clipboardList: ClipboardList,
   users: UsersRound,
   keyRound: KeyRound,
 };
@@ -82,10 +83,9 @@ function SidebarContent({
     <div
       className="
         flex h-full flex-col
-        bg-gradient-to-b
-        from-[#072B61]
-        to-[#041C42]
-        text-white
+        border-r border-slate-200
+        bg-white
+        text-slate-900
       "
     >
       {/* HEADER */}
@@ -94,8 +94,8 @@ function SidebarContent({
         className={cn(
           `
             flex items-center
-            border-b border-white/10
-            px-4 py-5 sm:px-5 sm:py-6
+            border-b border-slate-200
+            px-4 py-4 sm:px-5
           `,
           collapsed ? "justify-center" : "justify-between",
         )}
@@ -114,12 +114,15 @@ function SidebarContent({
             <div>
               <h2
                 className="
-                  text-sm font-semibold
-                  leading-7
+                  text-sm font-bold
+                  leading-5 text-pbd-navy
                 "
               >
-                Dinas Kependudukan dan Pencatatan Sipil
+                Dinas Dukcapil & PMK
               </h2>
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                Papua Barat Daya
+              </p>
             </div>
           </div>
         ) : (
@@ -139,9 +142,9 @@ function SidebarContent({
             variant="ghost"
             onClick={() => setCollapsed(true)}
             className="
-              text-white
-              hover:bg-white/10
-              hover:text-white
+              text-slate-500
+              hover:bg-slate-100
+              hover:text-pbd-navy
             "
           >
             <PanelLeftClose className="h-5 w-5" />
@@ -158,9 +161,9 @@ function SidebarContent({
             variant="ghost"
             onClick={() => setCollapsed(false)}
             className="
-              text-white
-              hover:bg-white/10
-              hover:text-white
+              text-slate-500
+              hover:bg-slate-100
+              hover:text-pbd-navy
             "
           >
             <PanelLeftOpen className="h-5 w-5" />
@@ -171,7 +174,7 @@ function SidebarContent({
       {/* MENU */}
 
       <div className="flex-1 px-3 py-4">
-        <nav className="space-y-2">
+        <nav className="space-y-1">
           {visibleMenus.map((menu) => {
             const Icon = dashboardMenuIconMap[menu.icon];
 
@@ -189,28 +192,27 @@ function SidebarContent({
                 className={cn(
                   `
                       flex items-center
-                      rounded-lg
+                      rounded-md
                       transition-all
                     `,
                   collapsed
                     ? `
                         justify-center
-                        px-0 py-4
+                        px-0 py-3
                       `
                     : `
                         gap-4 px-5
-                        py-4
+                        py-3
                       `,
                   active
                     ? `
-                        bg-gradient-to-r
-                        from-blue-600
-                        to-blue-500
+                        bg-pbd-navy
                         text-white
                       `
                     : `
-                        text-white/80
-                        hover:bg-white/10
+                        text-slate-600
+                        hover:bg-slate-100
+                        hover:text-pbd-navy
                       `,
                 )}
               >

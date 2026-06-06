@@ -31,7 +31,7 @@ export default function DashboardLayout({
     <div
       className="
         min-h-screen
-        bg-[#F5F7FB]
+        bg-slate-50
       "
     >
       {/* =========================
@@ -71,8 +71,8 @@ export default function DashboardLayout({
 
         <main
           className="
-            px-4 py-5 sm:px-5 sm:py-6
-            lg:px-8 lg:py-8
+            px-4 py-4 sm:px-5 sm:py-5
+            lg:px-6 lg:py-6
           "
         >
           {/* CONTAINER */}
@@ -81,7 +81,7 @@ export default function DashboardLayout({
             className="
               mx-auto
               w-full
-              max-w-[1600px]
+              max-w-[1440px]
             "
           >
             {children}

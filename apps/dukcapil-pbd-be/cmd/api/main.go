@@ -43,8 +43,11 @@ func main() {
 	}
 
 	userRepo := repository.NewUserRepository(db)
-	kegiatanRepo := repository.NewKegiatanRepository(db)
-	dokumenRepo := repository.NewDokumenRepository(db)
+	dashboardRepo := repository.NewDashboardRepository(db)
+	dataWilayahRepo := repository.NewDataWilayahRepository(db)
+	ssdRepo := repository.NewSSDRepository(db)
+	subkegiatanRepo := repository.NewSubkegiatanRepository(db)
+	realisasiRepo := repository.NewRealisasiSubkegiatanRepository(db)
 	tokenManager := security.NewManager(env("JWT_SECRET", "dev-secret-change-me"), 24*time.Hour)
 	authMiddleware := authmiddleware.NewAuthMiddleware(tokenManager)
 
@@ -52,11 +55,13 @@ func main() {
 		AllowedOrigin:  allowedOrigin,
 		Health:         controller.NewHealthController(db),
 		Auth:           controller.NewAuthController(userRepo, tokenManager),
-		Dashboard:      controller.NewDashboardController(kegiatanRepo),
-		Kegiatan:       controller.NewKegiatanController(kegiatanRepo),
-		Dokumen:        controller.NewDokumenController(dokumenRepo),
+		Dashboard:      controller.NewDashboardController(dashboardRepo),
+		DataWilayah:    controller.NewDataWilayahController(dataWilayahRepo),
+		SSD:            controller.NewSSDController(ssdRepo),
+		Subkegiatan:    controller.NewSubkegiatanController(subkegiatanRepo),
+		Realisasi:      controller.NewRealisasiSubkegiatanController(realisasiRepo),
 		Users:          controller.NewUserController(userRepo),
-		Website:        controller.NewWebsiteController(kegiatanRepo),
+		Website:        controller.NewWebsiteController(),
 		AuthMiddleware: authMiddleware,
 	})
 

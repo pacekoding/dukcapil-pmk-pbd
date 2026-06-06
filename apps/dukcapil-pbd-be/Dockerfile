@@ -15,6 +15,7 @@ RUN adduser -D -H appuser
 WORKDIR /app
 
 COPY --from=build /out/api /app/api
+RUN mkdir -p /app/uploads && chown -R appuser:appuser /app/uploads
 
 USER appuser
 

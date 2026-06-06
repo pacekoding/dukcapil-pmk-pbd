@@ -50,7 +50,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    "Portal statistik, monitoring kegiatan, dan digitalisasi pelaporan resmi Dinas Kependudukan dan Pencatatan Sipil dan Pemberdayaan Masyarakat dan Kampung Provinsi Papua Barat Daya.",
+    "Portal statistik, data wilayah, dan informasi layanan resmi Dinas Kependudukan dan Pencatatan Sipil dan Pemberdayaan Masyarakat dan Kampung Provinsi Papua Barat Daya.",
 
   keywords: [
     "Papua Barat Daya",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
 
     "Dashboard OPD",
 
-    "Monitoring Kegiatan",
+    "Data Wilayah",
 
     "Digitalisasi Pelaporan",
 
@@ -88,7 +88,7 @@ export const metadata: Metadata = {
     title: "Portal Statistik Dukcapil & PMK Papua Barat Daya",
 
     description:
-      "Platform digitalisasi pelaporan kegiatan dan monitoring OPD Papua Barat Daya.",
+      "Platform data wilayah dan monitoring layanan OPD Papua Barat Daya.",
 
     type: "website",
 

@@ -26,6 +26,11 @@ type LoginResponse = {
   message?: string;
 };
 
+const shouldUseSecureCookie = () =>
+  process.env.AUTH_COOKIE_SECURE === "true" ||
+  (process.env.NODE_ENV === "production" &&
+    process.env.AUTH_COOKIE_SECURE !== "false");
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as LoginPayload;
@@ -63,7 +68,7 @@ export async function POST(request: Request) {
 
     const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: shouldUseSecureCookie(),
       sameSite: "lax" as const,
       path: "/",
       maxAge: 60 * 60 * 24,

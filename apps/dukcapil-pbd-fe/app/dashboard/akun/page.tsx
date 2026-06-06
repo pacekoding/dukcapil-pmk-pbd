@@ -3,9 +3,10 @@
 import { FormEvent, useEffect, useState, type ReactNode } from "react";
 import { KeyRound, Save, ShieldCheck } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { PageHero } from "@/components/dashboard/page-hero";
+import { SectionCard } from "@/components/dashboard/section-card";
+import { ErrorState, SuccessState } from "@/components/dashboard/state";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { changePassword } from "@/lib/api/account";
@@ -101,59 +102,52 @@ export default function AccountPage() {
 
   return (
     <main className="space-y-6">
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <Badge className="rounded-md">Keamanan Akun</Badge>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
-          Ganti Password
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-          Perbarui password login dashboard secara berkala untuk menjaga akses
-          akun tetap aman.
-        </p>
-      </section>
+      <PageHero
+        icon={KeyRound}
+        eyebrow="Keamanan Akun"
+        title="Ganti Password"
+        description="Perbarui password login dashboard untuk menjaga akses akun tetap aman."
+      />
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        <Card className="rounded-lg border border-slate-200 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                <ShieldCheck className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="font-bold text-slate-900">Akun Login</h2>
-                <p className="text-sm text-slate-500">
-                  {loading ? "Memuat..." : user?.username ?? "-"}
-                </p>
-              </div>
+        <SectionCard>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+              <ShieldCheck className="h-6 w-6" />
             </div>
-
-            <div className="mt-5 space-y-3 rounded-xl bg-slate-50 p-4 text-sm">
-              <InfoRow label="Nama" value={user?.name ?? "-"} />
-              <InfoRow
-                label="Role"
-                value={user?.role?.replaceAll("_", " ") ?? "-"}
-              />
+            <div>
+              <h2 className="font-bold text-slate-900">Akun Login</h2>
+              <p className="text-sm text-slate-500">
+                {loading ? "Memuat..." : user?.username ?? "-"}
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="rounded-lg border border-slate-200 shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
-                <KeyRound className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">
-                  Password Baru
-                </h2>
-                <p className="text-sm text-slate-500">
-                  Password baru minimal 8 karakter.
-                </p>
-              </div>
+          <div className="mt-5 space-y-3 rounded-lg bg-slate-50 p-4 text-sm">
+            <InfoRow label="Nama" value={user?.name ?? "-"} />
+            <InfoRow
+              label="Role"
+              value={user?.role?.replaceAll("_", " ") ?? "-"}
+            />
+          </div>
+        </SectionCard>
+
+        <SectionCard>
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+              <KeyRound className="h-5 w-5" />
             </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                Password Baru
+              </h2>
+              <p className="text-sm text-slate-500">
+                Password baru minimal 8 karakter.
+              </p>
+            </div>
+          </div>
 
-            <form onSubmit={handleSubmit} className="mt-5 max-w-xl space-y-4">
+          <form onSubmit={handleSubmit} className="mt-5 max-w-xl space-y-4">
               <FormField label="Password Saat Ini">
                 <Input
                   value={currentPassword}
@@ -185,15 +179,11 @@ export default function AccountPage() {
               </FormField>
 
               {error ? (
-                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
-                  {error}
-                </p>
+                <ErrorState message={error} />
               ) : null}
 
               {message ? (
-                <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
-                  {message}
-                </p>
+                <SuccessState message={message} />
               ) : null}
 
               <Button
@@ -204,9 +194,8 @@ export default function AccountPage() {
                 <Save className="mr-2 h-4 w-4" />
                 Simpan Password
               </Button>
-            </form>
-          </CardContent>
-        </Card>
+          </form>
+        </SectionCard>
       </div>
     </main>
   );

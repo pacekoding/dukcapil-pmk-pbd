@@ -11,7 +11,7 @@ import (
 )
 
 type DashboardStore interface {
-	DashboardOverview(ctx context.Context, tahunAnggaran string) (model.DashboardOverview, error)
+	Overview(ctx context.Context, tahunAnggaran string) (model.DashboardOverview, error)
 }
 
 type DashboardController struct {
@@ -28,9 +28,9 @@ func (d *DashboardController) Overview(c echo.Context) error {
 		tahunAnggaran = claims.TahunAnggaran
 	}
 
-	overview, err := d.dashboard.DashboardOverview(c.Request().Context(), tahunAnggaran)
+	overview, err := d.dashboard.Overview(c.Request().Context(), tahunAnggaran)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "data dashboard gagal dimuat")
+		return echo.NewHTTPError(http.StatusInternalServerError, "ringkasan dashboard gagal dimuat")
 	}
 
 	return jsonData(c, http.StatusOK, overview)

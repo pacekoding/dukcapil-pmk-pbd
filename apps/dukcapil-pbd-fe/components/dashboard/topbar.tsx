@@ -34,17 +34,27 @@ const menuTitles: Record<
 > = {
   "/dashboard": {
     title: "Dashboard",
-    description: "Overview statistik dan aktivitas sistem",
+    description: "Overview statistik dan administrasi sistem",
   },
 
-  "/dashboard/kegiatan": {
-    title: "Kegiatan",
-    description: "Daftar dan pengelolaan kegiatan",
+  "/dashboard/data-wilayah": {
+    title: "Data Wilayah",
+    description: "Kelola statistik kabupaten/kota untuk halaman website",
   },
 
-  "/dashboard/dokumen": {
-    title: "Dokumen",
-    description: "Kelola dokumen kegiatan (TOR & Laporan)",
+  "/dashboard/ssd": {
+    title: "Data SSD",
+    description: "Kelola master SSD melalui import XLSX dan pemutakhiran data",
+  },
+
+  "/dashboard/subkegiatan": {
+    title: "Subkegiatan",
+    description: "Kelola master subkegiatan berdasarkan tahun anggaran",
+  },
+
+  "/dashboard/realisasi-subkegiatan": {
+    title: "Realisasi Subkegiatan",
+    description: "Kelola realisasi, foto dokumentasi, dan dokumen pendukung",
   },
 
   "/dashboard/users": {
@@ -63,12 +73,20 @@ function getPageInfo(pathname: string) {
     return menuTitles[pathname];
   }
 
-  if (pathname.startsWith("/dashboard/kegiatan")) {
-    return menuTitles["/dashboard/kegiatan"];
+  if (pathname.startsWith("/dashboard/data-wilayah")) {
+    return menuTitles["/dashboard/data-wilayah"];
   }
 
-  if (pathname.startsWith("/dashboard/dokumen")) {
-    return menuTitles["/dashboard/dokumen"];
+  if (pathname.startsWith("/dashboard/subkegiatan")) {
+    return menuTitles["/dashboard/subkegiatan"];
+  }
+
+  if (pathname.startsWith("/dashboard/ssd")) {
+    return menuTitles["/dashboard/ssd"];
+  }
+
+  if (pathname.startsWith("/dashboard/realisasi-subkegiatan")) {
+    return menuTitles["/dashboard/realisasi-subkegiatan"];
   }
 
   return {
@@ -140,12 +158,12 @@ export default function DashboardTopbar({
       className="
         sticky top-0 z-30
         border-b border-slate-200
-        bg-white/85 backdrop-blur-xl
+        bg-white/95 backdrop-blur
       "
     >
       <div
         className="
-          flex h-16 items-center
+          flex h-14 items-center
           justify-between
           gap-4 px-4
           lg:px-8
@@ -157,8 +175,8 @@ export default function DashboardTopbar({
             variant="ghost"
             onClick={() => setMobileOpen(true)}
             className="
-              h-10 w-10
-              rounded-xl
+              h-9 w-9
+              rounded-md
               lg:hidden
             "
             aria-label="Buka sidebar"
@@ -170,9 +188,9 @@ export default function DashboardTopbar({
             <h1
               className="
                 truncate font-heading
-                text-xl font-bold
-                tracking-tight text-slate-900
-                lg:text-2xl
+                text-lg font-semibold
+                text-slate-900
+                lg:text-xl
               "
             >
               {pageInfo.title}
@@ -193,8 +211,8 @@ export default function DashboardTopbar({
         <div className="flex shrink-0 items-center gap-3">
           <div
             className="
-              flex h-9 items-center
-              gap-2 rounded-full
+              flex h-8 items-center
+              gap-2 rounded-md
               border border-slate-200
               bg-slate-50 px-3
               text-sm font-semibold
@@ -210,8 +228,8 @@ export default function DashboardTopbar({
             <DropdownMenuTrigger asChild>
               <button
                 className="
-                  flex h-10 items-center
-                  gap-2 rounded-full
+                  flex h-9 items-center
+                  gap-2 rounded-md
                   px-1.5 pr-3
                   transition
                   hover:bg-slate-50

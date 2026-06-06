@@ -222,7 +222,7 @@ export default function LoginPage() {
               text-white/75
             "
           >
-            Portal internal untuk pengelolaan statistik, dokumen kegiatan, dan
+            Portal internal untuk pengelolaan statistik, data wilayah, dan
             monitoring layanan Pemerintah Provinsi Papua Barat Daya.
           </p>
 

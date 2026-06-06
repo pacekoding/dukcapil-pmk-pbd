@@ -16,8 +16,10 @@ type Config struct {
 	Health         *controller.HealthController
 	Auth           *controller.AuthController
 	Dashboard      *controller.DashboardController
-	Kegiatan       *controller.KegiatanController
-	Dokumen        *controller.DokumenController
+	DataWilayah    *controller.DataWilayahController
+	SSD            *controller.SSDController
+	Subkegiatan    *controller.SubkegiatanController
+	Realisasi      *controller.RealisasiSubkegiatanController
 	Users          *controller.UserController
 	Website        *controller.WebsiteController
 	AuthMiddleware *authmiddleware.AuthMiddleware
@@ -35,6 +37,7 @@ func New(config Config) *echo.Echo {
 	}))
 
 	e.GET("/health", config.Health.Show)
+	e.Static("/uploads", "uploads")
 
 	api := e.Group("/api/v1")
 	api.GET("/health", config.Health.Show)
@@ -50,21 +53,24 @@ func New(config Config) *echo.Echo {
 	protected.GET("/auth/me", config.Auth.Me)
 	protected.POST("/account/change-password", config.Users.ChangePassword)
 	protected.GET("/dashboard", config.Dashboard.Overview)
-	protected.GET("/kegiatan", config.Kegiatan.List)
-	protected.POST("/kegiatan", config.Kegiatan.Create)
-	protected.GET("/kegiatan/:id", config.Kegiatan.Detail)
-	protected.PUT("/kegiatan/:id", config.Kegiatan.Update)
-	protected.DELETE("/kegiatan/:id", config.Kegiatan.Delete)
-	protected.GET("/kegiatan/:id/dokumentasi", config.Kegiatan.ListDokumentasi)
-	protected.POST("/kegiatan/:id/dokumentasi", config.Kegiatan.AddDokumentasi)
-	protected.DELETE("/kegiatan/:id/dokumentasi/:documentationId", config.Kegiatan.DeleteDokumentasi)
-	protected.GET("/dokumen", config.Dokumen.List)
-	protected.POST("/dokumen", config.Dokumen.Create)
-	protected.GET("/dokumen/form-meta", config.Dokumen.FormMeta)
-	protected.GET("/dokumen/:id", config.Dokumen.Detail)
-	protected.PUT("/dokumen/:id", config.Dokumen.Update)
-	protected.DELETE("/dokumen/:id", config.Dokumen.Delete)
-	protected.GET("/dokumen/:id/preview", config.Dokumen.Preview)
+	protected.GET("/data-wilayah", config.DataWilayah.List)
+	protected.PUT("/data-wilayah/:id", config.DataWilayah.Update)
+	protected.GET("/ssd", config.SSD.List)
+	protected.GET("/ssd/:id", config.SSD.Detail)
+	protected.POST("/ssd/import", config.SSD.Import)
+	protected.PUT("/ssd/:id", config.SSD.Update)
+	protected.PATCH("/ssd/:id/status", config.SSD.SetStatus)
+	protected.GET("/subkegiatan", config.Subkegiatan.List)
+	protected.POST("/subkegiatan", config.Subkegiatan.Create)
+	protected.PUT("/subkegiatan/:id", config.Subkegiatan.Update)
+	protected.DELETE("/subkegiatan/:id", config.Subkegiatan.Delete)
+	protected.GET("/realisasi-subkegiatan", config.Realisasi.List)
+	protected.POST("/realisasi-subkegiatan", config.Realisasi.Create)
+	protected.GET("/realisasi-subkegiatan/:id", config.Realisasi.Detail)
+	protected.PUT("/realisasi-subkegiatan/:id", config.Realisasi.Update)
+	protected.DELETE("/realisasi-subkegiatan/:id", config.Realisasi.Delete)
+	protected.POST("/realisasi-subkegiatan/:id/foto", config.Realisasi.UploadFoto)
+	protected.POST("/realisasi-subkegiatan/:id/dokumen", config.Realisasi.UploadDokumen)
 
 	superAdmin := api.Group("", config.AuthMiddleware.RequireRoles(model.RoleSuperAdmin))
 	superAdmin.GET("/users", config.Users.List)
@@ -75,8 +81,7 @@ func New(config Config) *echo.Echo {
 
 	website := api.Group("/website")
 	website.GET("/home", config.Website.Home)
-	website.GET("/kegiatan", config.Website.Kegiatan)
-	website.GET("/kegiatan/:id", config.Website.KegiatanDetail)
+	website.GET("/data-wilayah", config.DataWilayah.WebsiteList)
 	website.GET("/profile", config.Website.Profile)
 
 	return e
