@@ -28,11 +28,13 @@ export function StatCard({
   tone = "blue",
 }: StatCardProps) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="app-surface rounded-lg p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-500">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-pbd-navy">{value}</p>
+          <p className="text-sm font-semibold text-slate-500">{label}</p>
+          <p className="mt-2 text-2xl font-bold tracking-tight text-pbd-navy">
+            {value}
+          </p>
           {description ? (
             <p className="mt-1 text-sm leading-6 text-slate-500">
               {description}
@@ -42,7 +44,7 @@ export function StatCard({
         {Icon ? (
           <div
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 ring-current/10",
               toneClasses[tone],
             )}
           >

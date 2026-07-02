@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Download,
   FileSpreadsheet,
   MoreHorizontal,
+  Plus,
+  Save,
   ToggleLeft,
   ToggleRight,
   Upload,
@@ -36,6 +39,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -43,18 +53,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getSSD, importSSD, setSSDStatus } from "@/lib/api/ssd";
-import type { SSD } from "@/types/ssd";
+import { Textarea } from "@/components/ui/textarea";
+import { createSSD, getSSD, importSSD, setSSDStatus } from "@/lib/api/ssd";
+import type { SSD, SSDPayload } from "@/types/ssd";
 
 const PAGE_SIZE = 12;
+type StatusFilter = "all" | "active" | "inactive";
+
+const emptyForm: SSDPayload = {
+  kode: "",
+  uraian: "",
+  satuan: "",
+  definisiOperasional: "",
+};
 
 export default function DashboardSSDPage() {
   const [items, setItems] = useState<SSD[]>([]);
   const [tahunAnggaran, setTahunAnggaran] = useState("2026");
+  const [form, setForm] = useState<SSDPayload>(emptyForm);
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
+  const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -90,19 +113,45 @@ export default function DashboardSSDPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session", {
+          cache: "no-store",
+        });
+        const result = await response.json();
+        if (mounted) {
+          setIsSuperAdmin(result.user?.role === "superadmin");
+        }
+      } catch (sessionError) {
+        console.error(sessionError);
+      }
+    };
+
+    void loadSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return items.filter((item) => {
-      if (!normalizedQuery) {
-        return true;
-      }
-      return (
+      const matchesQuery =
+        !normalizedQuery ||
         item.kode.toLowerCase().includes(normalizedQuery) ||
         item.uraian.toLowerCase().includes(normalizedQuery) ||
-        item.satuan.toLowerCase().includes(normalizedQuery)
-      );
+        item.satuan.toLowerCase().includes(normalizedQuery);
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" ? item.isActive : !item.isActive);
+
+      return matchesQuery && matchesStatus;
     });
-  }, [items, query]);
+  }, [items, query, statusFilter]);
 
   const paginatedItems = useMemo(
     () => filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
@@ -114,12 +163,71 @@ export default function DashboardSSDPage() {
     [items],
   );
 
-  const totalIndicators = useMemo(
-    () => items.reduce((sum, item) => sum + item.jumlahIndikator, 0),
-    [items],
-  );
+  const openCreateDialog = () => {
+    if (!isSuperAdmin) {
+      setError("Hanya superadmin yang dapat menambah SSD.");
+      return;
+    }
+    setForm(emptyForm);
+    setError(null);
+    setCreateOpen(true);
+  };
+
+  const closeCreateDialog = () => {
+    if (saving) {
+      return;
+    }
+    setCreateOpen(false);
+    setForm(emptyForm);
+    setError(null);
+  };
+
+  const handleCreate = async () => {
+    if (!isSuperAdmin) {
+      setError("Hanya superadmin yang dapat menambah SSD.");
+      return;
+    }
+
+    const payload: SSDPayload = {
+      kode: form.kode.trim(),
+      uraian: form.uraian.trim(),
+      satuan: form.satuan.trim(),
+      definisiOperasional: form.definisiOperasional.trim(),
+    };
+    if (!payload.kode || !payload.uraian) {
+      setError("Kode dan uraian SSD wajib diisi.");
+      setMessage(null);
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const created = await createSSD(payload);
+      setItems((current) =>
+        [...current, created].sort((a, b) => a.kode.localeCompare(b.kode)),
+      );
+      setCreateOpen(false);
+      setForm(emptyForm);
+      setMessage(`${created.kode} berhasil ditambahkan.`);
+    } catch (createError) {
+      console.error(createError);
+      setError(
+        createError instanceof Error
+          ? createError.message
+          : "SSD gagal ditambahkan. Pastikan kode belum dipakai pada tahun ini.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleImport = async () => {
+    if (!isSuperAdmin) {
+      setError("Hanya superadmin yang dapat import SSD.");
+      return;
+    }
     if (!selectedFile) {
       setError("Pilih file XLSX terlebih dahulu.");
       return;
@@ -147,6 +255,11 @@ export default function DashboardSSDPage() {
   };
 
   const handleToggleStatus = async (item: SSD) => {
+    if (!isSuperAdmin) {
+      setError("Hanya superadmin yang dapat mengubah status SSD.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -177,36 +290,54 @@ export default function DashboardSSDPage() {
     <main className="space-y-6">
       <PageHero
         icon={FileSpreadsheet}
-        eyebrow="Metadata Data"
+        eyebrow="Identitas Data"
         title="Kelola Data SSD"
-        description="Setiap SSD dapat memiliki banyak variabel dan banyak indikator. Setiap indikator disusun dari satu atau lebih variabel SSD."
+        description="Kelola identitas SSD yang digunakan sebagai referensi data pada subkegiatan."
         meta={
           <p className="inline-flex rounded-full bg-blue-50 px-4 py-2 text-sm font-bold text-pbd-blue">
             Tahun Anggaran {tahunAnggaran}
           </p>
         }
         aside={
-          <Button
-            type="button"
-            onClick={() => {
-              setImportOpen(true);
-              setError(null);
-            }}
-            className="h-12 rounded-xl bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
-          >
-            <Upload className="h-4 w-4" />
-            Import XLSX
-          </Button>
+          isSuperAdmin ? (
+            <div className="flex flex-col items-start gap-3 sm:items-end">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  onClick={openCreateDialog}
+                  className="h-12 rounded-xl bg-white px-5 text-pbd-navy ring-1 ring-slate-200 hover:bg-slate-50"
+                >
+                  <Plus className="h-4 w-4" />
+                  Tambah SSD
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setImportOpen(true);
+                    setError(null);
+                  }}
+                  className="h-12 rounded-xl bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
+                >
+                  <Upload className="h-4 w-4" />
+                  Import XLSX
+                </Button>
+              </div>
+              <a
+                href="/api/backend/ssd/template"
+                download="template-upload-ssd.xlsx"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-pbd-blue underline-offset-4 hover:underline"
+              >
+                <Download className="h-4 w-4" />
+                Download template XLSX
+              </a>
+            </div>
+          ) : null
         }
       />
 
-      <div className="grid gap-5 md:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-2">
         <StatCard label="Total SSD" value={String(items.length)} />
-        <StatCard
-          label="Variabel Metadata"
-          value={String(items.reduce((sum, item) => sum + item.jumlahVariabel, 0))}
-        />
-        <StatCard label="Indikator Metadata" value={String(totalIndicators)} />
+        <StatCard label="SSD Aktif" value={String(activeCount)} />
       </div>
 
       <SectionCard contentClassName="p-0">
@@ -218,21 +349,39 @@ export default function DashboardSSDPage() {
                 {filteredItems.length} dari {items.length} data ditampilkan. {activeCount} aktif.
               </p>
             </div>
-            <SearchInput
-              value={query}
-              onChange={(value) => {
-                setQuery(value);
-                setPage(1);
-              }}
-              placeholder="Cari kode, uraian, atau satuan..."
-              className="sm:w-96"
-            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <SearchInput
+                value={query}
+                onChange={(value) => {
+                  setQuery(value);
+                  setPage(1);
+                }}
+                placeholder="Cari kode, uraian, atau satuan..."
+                className="sm:w-96"
+              />
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  setStatusFilter(value as StatusFilter);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-10 w-full rounded-md sm:w-[180px]">
+                  <SelectValue placeholder="Semua status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua status</SelectItem>
+                  <SelectItem value="active">Aktif</SelectItem>
+                  <SelectItem value="inactive">Nonaktif</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {message ? (
             <SuccessState message={message} className="mt-4" />
           ) : null}
-          {error && !importOpen ? (
+          {error && !createOpen && !importOpen ? (
             <ErrorState message={error} className="mt-4" />
           ) : null}
         </div>
@@ -244,8 +393,6 @@ export default function DashboardSSDPage() {
                 <TableHead className="w-[64px]">No</TableHead>
                 <TableHead className="w-[180px]">Kode</TableHead>
                 <TableHead>Uraian SSD</TableHead>
-                <TableHead className="w-[140px]">Variabel</TableHead>
-                <TableHead className="w-[140px]">Indikator</TableHead>
                 <TableHead className="w-[120px]">Status</TableHead>
                 <TableHead className="w-[80px] text-right">Aksi</TableHead>
               </TableRow>
@@ -253,7 +400,7 @@ export default function DashboardSSDPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-10 text-center text-slate-500">
+                  <TableCell colSpan={5} className="py-10 text-center text-slate-500">
                     Memuat data SSD...
                   </TableCell>
                 </TableRow>
@@ -269,16 +416,6 @@ export default function DashboardSSDPage() {
                       <p className="mt-1 text-xs leading-5 text-slate-500">
                         {item.satuan || "Tanpa satuan"}{item.definisiOperasional ? ` • ${item.definisiOperasional}` : ""}
                       </p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">
-                        {item.jumlahVariabel} variabel
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="border-indigo-200 bg-indigo-50 text-indigo-700">
-                        {item.jumlahIndikator} indikator
-                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -310,20 +447,22 @@ export default function DashboardSSDPage() {
                             <DropdownMenuItem asChild>
                               <Link href={`/dashboard/ssd/${item.id}`}>
                                 <FileSpreadsheet className="h-4 w-4" />
-                                Kelola Metadata
+                                {isSuperAdmin ? "Kelola Identitas" : "Lihat Detail"}
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={saving}
-                              onSelect={() => void handleToggleStatus(item)}
-                            >
-                              {item.isActive ? (
-                                <ToggleRight className="h-4 w-4 text-emerald-700" />
-                              ) : (
-                                <ToggleLeft className="h-4 w-4 text-slate-500" />
-                              )}
-                              {item.isActive ? "Nonaktifkan SSD" : "Aktifkan SSD"}
-                            </DropdownMenuItem>
+                            {isSuperAdmin ? (
+                              <DropdownMenuItem
+                                disabled={saving}
+                                onSelect={() => void handleToggleStatus(item)}
+                              >
+                                {item.isActive ? (
+                                  <ToggleRight className="h-4 w-4 text-emerald-700" />
+                                ) : (
+                                  <ToggleLeft className="h-4 w-4 text-slate-500" />
+                                )}
+                                {item.isActive ? "Nonaktifkan SSD" : "Aktifkan SSD"}
+                              </DropdownMenuItem>
+                            ) : null}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -332,8 +471,14 @@ export default function DashboardSSDPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-6">
-                    <EmptyState title="Data SSD belum tersedia" />
+                  <TableCell colSpan={5} className="py-6">
+                    <EmptyState
+                      title={
+                        items.length === 0
+                          ? "Data SSD belum tersedia"
+                          : "Tidak ada SSD yang sesuai filter"
+                      }
+                    />
                   </TableCell>
                 </TableRow>
               )}
@@ -349,6 +494,123 @@ export default function DashboardSSDPage() {
       </SectionCard>
 
       <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setCreateOpen(true);
+          } else {
+            closeCreateDialog();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tambah SSD</DialogTitle>
+            <DialogDescription>
+              Data disimpan untuk Tahun Anggaran {tahunAnggaran}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700" htmlFor="ssd-kode">
+                Kode DSSD *
+              </label>
+              <Input
+                id="ssd-kode"
+                value={form.kode}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, kode: event.target.value }))
+                }
+                placeholder="Contoh: DSSD-001"
+                className="h-11 rounded-lg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700" htmlFor="ssd-satuan">
+                Satuan
+              </label>
+              <Input
+                id="ssd-satuan"
+                value={form.satuan}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, satuan: event.target.value }))
+                }
+                placeholder="Contoh: Orang"
+                className="h-11 rounded-lg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700" htmlFor="ssd-uraian">
+                Uraian DSSD *
+              </label>
+              <Textarea
+                id="ssd-uraian"
+                value={form.uraian}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, uraian: event.target.value }))
+                }
+                placeholder="Uraian SSD"
+                className="min-h-24 rounded-lg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium text-slate-700"
+                htmlFor="ssd-definisi-operasional"
+              >
+                Definisi Operasional
+              </label>
+              <Textarea
+                id="ssd-definisi-operasional"
+                value={form.definisiOperasional}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    definisiOperasional: event.target.value,
+                  }))
+                }
+                placeholder="Definisi operasional SSD"
+                className="min-h-24 rounded-lg"
+              />
+            </div>
+
+            {error ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+                {error}
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                className="h-10 rounded-lg"
+              >
+                <X className="h-4 w-4" />
+                Batal
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              onClick={handleCreate}
+              disabled={saving}
+              className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={importOpen}
         onOpenChange={(open) => {
           if (!saving) {
@@ -360,7 +622,7 @@ export default function DashboardSSDPage() {
           <DialogHeader>
             <DialogTitle>Import Data SSD</DialogTitle>
             <DialogDescription>
-              Upload file XLSX dengan kolom Kode DSSD, Uraian DSSD, Satuan, dan Definisi Operasional.
+              Upload file XLSX dengan kolom No, Kode DSSD, Uraian DSSD, Satuan, dan Definisi Operasional.
             </DialogDescription>
           </DialogHeader>
 
@@ -392,7 +654,7 @@ export default function DashboardSSDPage() {
               className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
             >
               <Upload className="h-4 w-4" />
-              {saving ? "Mengupload..." : "Upload XLSX"}
+              {saving ? "Mengunggah..." : "Unggah XLSX"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -78,6 +78,114 @@ func (r *SubkegiatanRepository) Create(ctx context.Context, tahunAnggaran string
 	return items[0], nil
 }
 
+func (r *SubkegiatanRepository) Import(ctx context.Context, tahunAnggaran string, payloads []model.SubkegiatanImportPayload) (model.SubkegiatanImportResult, error) {
+	db, err := r.session(ctx)
+	if err != nil {
+		return model.SubkegiatanImportResult{}, err
+	}
+
+	tahunAnggaran = strings.TrimSpace(tahunAnggaran)
+	result := model.SubkegiatanImportResult{
+		TahunAnggaran: tahunAnggaran,
+		Total:         len(payloads),
+	}
+	if len(payloads) == 0 {
+		return result, nil
+	}
+
+	err = db.Transaction(func(tx *gorm.DB) error {
+		ssdByCode, err := r.activeSSDByCode(tx, tahunAnggaran)
+		if err != nil {
+			return err
+		}
+
+		kodes := make([]string, 0, len(payloads))
+		for _, payload := range payloads {
+			kodes = append(kodes, strings.ToLower(strings.TrimSpace(payload.Kode)))
+		}
+
+		var existing []model.SubkegiatanEntity
+		if err := tx.
+			Where("tahun_anggaran = ? AND LOWER(kode) IN ?", tahunAnggaran, kodes).
+			Find(&existing).Error; err != nil {
+			return err
+		}
+
+		existingByCode := make(map[string]model.SubkegiatanEntity, len(existing))
+		for _, record := range existing {
+			existingByCode[strings.ToLower(strings.TrimSpace(record.Kode))] = record
+		}
+
+		for _, payload := range payloads {
+			ssdIDs := make([]int64, 0, len(payload.SSDCodes))
+			for _, ssdCode := range payload.SSDCodes {
+				ssd, exists := ssdByCode[strings.ToLower(strings.TrimSpace(ssdCode))]
+				if !exists {
+					return fmt.Errorf("baris %d: kode dssd %s tidak ditemukan atau tidak aktif", payload.Row, ssdCode)
+				}
+				ssdIDs = append(ssdIDs, ssd.ID)
+			}
+
+			normalizedCode := strings.ToLower(strings.TrimSpace(payload.Kode))
+			if record, exists := existingByCode[normalizedCode]; exists {
+				if err := tx.Model(&model.SubkegiatanEntity{}).
+					Where("tahun_anggaran = ? AND id = ?", tahunAnggaran, record.ID).
+					Updates(map[string]any{
+						"kode":       strings.TrimSpace(payload.Kode),
+						"nama":       strings.TrimSpace(payload.Nama),
+						"bidang":     payload.Bidang,
+						"updated_at": gorm.Expr("NOW()"),
+					}).Error; err != nil {
+					return err
+				}
+				if err := r.replaceSSDRelations(tx, tahunAnggaran, record.ID, ssdIDs); err != nil {
+					return err
+				}
+				result.Updated++
+				continue
+			}
+
+			record := model.SubkegiatanEntity{
+				TahunAnggaran: tahunAnggaran,
+				Kode:          strings.TrimSpace(payload.Kode),
+				Nama:          strings.TrimSpace(payload.Nama),
+				Bidang:        payload.Bidang,
+			}
+			if err := tx.Create(&record).Error; err != nil {
+				return err
+			}
+			if err := r.replaceSSDRelations(tx, tahunAnggaran, record.ID, ssdIDs); err != nil {
+				return err
+			}
+			existingByCode[normalizedCode] = record
+			result.Created++
+		}
+
+		return nil
+	})
+	if err != nil {
+		return model.SubkegiatanImportResult{}, fmt.Errorf("import subkegiatan: %w", err)
+	}
+
+	return result, nil
+}
+
+func (r *SubkegiatanRepository) activeSSDByCode(db *gorm.DB, tahunAnggaran string) (map[string]model.SSD, error) {
+	var records []model.SSDEntity
+	if err := db.
+		Where("tahun_anggaran = ? AND is_active = TRUE", tahunAnggaran).
+		Find(&records).Error; err != nil {
+		return nil, fmt.Errorf("load active ssd: %w", err)
+	}
+
+	items := make(map[string]model.SSD, len(records))
+	for _, record := range records {
+		item := record.ToSSD()
+		items[strings.ToLower(strings.TrimSpace(item.Kode))] = item
+	}
+	return items, nil
+}
+
 func (r *SubkegiatanRepository) Update(ctx context.Context, tahunAnggaran string, id int64, payload model.SubkegiatanPayload) (model.Subkegiatan, bool, error) {
 	db, err := r.session(ctx)
 	if err != nil {
@@ -127,14 +235,29 @@ func (r *SubkegiatanRepository) Delete(ctx context.Context, tahunAnggaran string
 		return false, err
 	}
 
-	result := db.
-		Where("tahun_anggaran = ? AND id = ?", strings.TrimSpace(tahunAnggaran), id).
-		Delete(&model.SubkegiatanEntity{})
-	if result.Error != nil {
-		return false, fmt.Errorf("delete subkegiatan: %w", result.Error)
+	tahunAnggaran = strings.TrimSpace(tahunAnggaran)
+	var deleted bool
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.
+			Where("tahun_anggaran = ? AND subkegiatan_id = ?", tahunAnggaran, id).
+			Delete(&model.RealisasiSubkegiatanEntity{}).Error; err != nil {
+			return err
+		}
+
+		result := tx.
+			Where("tahun_anggaran = ? AND id = ?", tahunAnggaran, id).
+			Delete(&model.SubkegiatanEntity{})
+		if result.Error != nil {
+			return result.Error
+		}
+		deleted = result.RowsAffected > 0
+		return nil
+	})
+	if err != nil {
+		return false, fmt.Errorf("delete subkegiatan: %w", err)
 	}
 
-	return result.RowsAffected > 0, nil
+	return deleted, nil
 }
 
 func (r *SubkegiatanRepository) session(ctx context.Context) (*gorm.DB, error) {
@@ -228,19 +351,6 @@ func (r *SubkegiatanRepository) attachSSDItems(ctx context.Context, db *gorm.DB,
 	ssdMap := make(map[int64]model.SSD, len(ssdRecords))
 	for _, record := range ssdRecords {
 		ssdMap[record.ID] = record.ToSSD()
-	}
-
-	var variableRecords []model.SSDVariableEntity
-	if err := db.WithContext(ctx).
-		Where("tahun_anggaran = ? AND ssd_id IN ?", tahunAnggaran, ssdIDs).
-		Order("ssd_id ASC, sort_order ASC, id ASC").
-		Find(&variableRecords).Error; err != nil {
-		return nil, fmt.Errorf("load subkegiatan ssd variables: %w", err)
-	}
-	for _, variableRecord := range variableRecords {
-		ssd := ssdMap[variableRecord.SSDID]
-		ssd.Variables = append(ssd.Variables, variableRecord.ToSSDVariable())
-		ssdMap[variableRecord.SSDID] = ssd
 	}
 
 	relMap := make(map[int64][]model.SSD, len(items))

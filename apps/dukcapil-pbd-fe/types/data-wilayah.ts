@@ -45,3 +45,12 @@ export type DataWilayahResponse = {
   tahunAnggaran: string;
   regions: RegionData[];
 };
+
+export type DataWilayahWebsiteSettings = {
+  featuredTahunAnggaran: string;
+  publishedTahunAnggaran: string[];
+};
+
+export type DataWilayahWebsiteSettingsResponse = DataWilayahWebsiteSettings & {
+  availableTahunAnggaran: string[];
+};

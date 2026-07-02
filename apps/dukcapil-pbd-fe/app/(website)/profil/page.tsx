@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  Building2,
   CheckCircle2,
   Landmark,
   MapPin,
@@ -21,8 +20,8 @@ import type { WebsiteProfileResponse } from "@/types/website";
 
 const provinceRoles = [
   "Pembinaan dan supervisi administrasi kependudukan kabupaten/kota.",
-  "Fasilitasi pemberdayaan masyarakat, pemerintahan kampung/desa, dan kelembagaan kampung.",
-  "Monitoring intervensi program, perangkat kampung, serta hibah daerah.",
+  "Fasilitasi pemberdayaan masyarakat dan pemerintahan kampung/desa.",
+  "Monitoring dan evaluasi program lintas kabupaten/kota.",
   "Sinkronisasi kebijakan pusat, provinsi, dan kabupaten/kota.",
 ];
 
@@ -30,19 +29,19 @@ const focusAreas = [
   {
     title: "Dukcapil",
     description:
-      "Fasilitasi pendaftaran penduduk, pencatatan sipil, pengelolaan informasi adminduk, dan pemanfaatan data.",
+      "Administrasi kependudukan, pencatatan sipil, pengelolaan informasi adminduk, dan pemanfaatan data.",
     icon: ShieldCheck,
   },
   {
     title: "PMK",
     description:
-      "Pembinaan pemerintahan kampung/desa, pemberdayaan masyarakat, kelembagaan, dan kapasitas aparatur kampung.",
+      "Pembinaan pemerintahan kampung/desa, kelembagaan, pemberdayaan masyarakat, dan kapasitas aparatur.",
     icon: Users2,
   },
   {
     title: "Koordinasi Wilayah",
     description:
-      "Supervisi, monitoring, evaluasi, dan konsolidasi program pada kabupaten/kota serta kampung/desa.",
+      "Supervisi, monitoring, evaluasi, dan konsolidasi program bersama kabupaten/kota.",
     icon: Network,
   },
 ];
@@ -83,9 +82,22 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const contacts = useMemo(() => data?.contacts ?? [], [data?.contacts]);
-  const wilayah = useMemo(() => data?.wilayah ?? [], [data?.wilayah]);
-  const struktur = useMemo(() => data?.struktur ?? [], [data?.struktur]);
+  const contacts = useMemo(
+    () =>
+      data?.contacts.length
+        ? data.contacts
+        : [
+            {
+              title: "Alamat",
+              content: "Kantor Gubernur Papua Barat Daya, Kota Sorong",
+            },
+            {
+              title: "Jam Pelayanan",
+              content: "Senin-Jumat, 08.00-16.00 WIT",
+            },
+          ],
+    [data],
+  );
 
   if (loading) {
     return <ProfileSkeleton />;
@@ -109,7 +121,7 @@ export default function ProfilePage() {
         icon={Landmark}
         eyebrow="Profil Dinas"
         title={data.title}
-        description="Dinas Dukcapil dan PMK Provinsi berperan dalam pembinaan, fasilitasi, supervisi, koordinasi, monitoring, dan evaluasi urusan administrasi kependudukan serta pemberdayaan masyarakat kampung/desa pada kabupaten/kota."
+        description="Informasi ringkas tentang peran Dinas Dukcapil dan PMK Provinsi Papua Barat Daya."
       />
 
       <Container className="py-12 md:py-16">
@@ -117,26 +129,18 @@ export default function ProfilePage() {
           <Card>
             <SectionTitle
               icon={Landmark}
-              title="Kedudukan Instansi"
-              description="Peran kelembagaan di tingkat pemerintah provinsi."
+              title="Profil Singkat"
+              description="Peran kelembagaan tingkat provinsi."
             />
-
-            <p className="mt-5 leading-8 text-gray-700">{data.description}</p>
-
-            <div className="mt-6 rounded-lg bg-pbd-blue/5 p-5 text-sm leading-7 text-gray-700">
-              Fokus provinsi bukan pelayanan langsung harian kepada masyarakat,
-              tetapi penguatan kapasitas, fasilitasi, supervisi, dan evaluasi
-              penyelenggaraan urusan oleh kabupaten/kota dan kampung/desa.
-            </div>
+            <p className="mt-5 leading-8 text-slate-700">{data.description}</p>
           </Card>
 
           <Card>
             <SectionTitle
               icon={CheckCircle2}
-              title="Fokus Utama"
-              description="Ruang kerja prioritas level provinsi."
+              title="Peran Utama"
+              description="Fokus informasi yang relevan untuk publik."
             />
-
             <ul className="mt-5 space-y-4">
               {provinceRoles.map((item) => (
                 <CleanListItem key={item}>{item}</CleanListItem>
@@ -148,12 +152,10 @@ export default function ProfilePage() {
 
       <section className="bg-white">
         <Container className="py-12 md:py-16">
-          <SectionEyebrow>Bidang Urusan</SectionEyebrow>
-
-          <h2 className="mt-2 text-3xl font-bold text-pbd-navy">
-            Tugas dan Fungsi
+          <SectionEyebrow>Fokus Urusan</SectionEyebrow>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-pbd-navy sm:text-3xl">
+            Layanan dan Koordinasi
           </h2>
-
           <div className="mt-8 grid gap-6 md:grid-cols-3">
             {focusAreas.map((item) => (
               <InfoCard
@@ -168,70 +170,11 @@ export default function ProfilePage() {
       </section>
 
       <Container className="py-12 md:py-16">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <SectionTitle
-              icon={Building2}
-              title="Visi"
-              description="Arah pembangunan dan tata kelola layanan daerah."
-            />
-
-            <p className="mt-5 text-lg font-semibold leading-8 text-pbd-navy">
-              {data.visi}
-            </p>
-          </Card>
-
-          <Card>
-            <SectionTitle
-              icon={Users2}
-              title="Misi"
-              description="Prioritas kerja organisasi perangkat daerah."
-            />
-
-            <ul className="mt-5 space-y-4">
-              {data.misi.map((item) => (
-                <CleanListItem key={item}>{item}</CleanListItem>
-              ))}
-            </ul>
-          </Card>
-        </div>
-      </Container>
-
-      <section className="bg-white">
-        <Container className="py-12 md:py-16">
-          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
-            <div>
-              <SectionEyebrow>Organisasi</SectionEyebrow>
-
-              <h2 className="mt-2 text-3xl font-bold text-pbd-navy">
-                Struktur dan Wilayah Kerja
-              </h2>
-
-              <p className="mt-4 leading-7 text-gray-600">
-                Ringkasan unit kerja dan cakupan kabupaten/kota yang menjadi
-                objek fasilitasi, supervisi, pembinaan, dan monitoring.
-              </p>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <SimplePanel title="Struktur Organisasi">
-                {struktur.slice(0, 6).map((item) => (
-                  <CleanListItem key={item.id}>{item.name}</CleanListItem>
-                ))}
-              </SimplePanel>
-
-              <SimplePanel title="Wilayah Kerja">
-                {wilayah.slice(0, 8).map((item) => (
-                  <CleanListItem key={item}>{item}</CleanListItem>
-                ))}
-              </SimplePanel>
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      <Container className="py-12 md:py-16">
-        <div className="grid gap-6 lg:grid-cols-3">
+        <SectionEyebrow>Kontak</SectionEyebrow>
+        <h2 className="mt-2 text-2xl font-bold tracking-tight text-pbd-navy sm:text-3xl">
+          Kanal Resmi Dinas
+        </h2>
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
           {contacts.map((item) => (
             <Card key={item.title}>
               <SectionTitle
@@ -240,8 +183,7 @@ export default function ProfilePage() {
                 }
                 title={item.title}
               />
-
-              <p className="mt-5 leading-7 text-gray-700">{item.content}</p>
+              <p className="mt-5 leading-7 text-slate-700">{item.content}</p>
             </Card>
           ))}
         </div>
@@ -255,14 +197,14 @@ function ProfileSkeleton() {
     <main className="min-h-screen bg-pbd-bg">
       <section className="bg-pbd-navy">
         <Container className="py-20">
-          <div className="h-56 animate-pulse rounded-lg bg-white/10" />
+          <div className="h-48 animate-pulse rounded-lg bg-white/10" />
         </Container>
       </section>
 
       <Container className="py-12">
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-64 animate-pulse rounded-lg bg-white" />
-          <div className="h-64 animate-pulse rounded-lg bg-white" />
+          <div className="h-56 animate-pulse rounded-lg bg-white" />
+          <div className="h-56 animate-pulse rounded-lg bg-white" />
         </div>
       </Container>
     </main>
@@ -283,7 +225,7 @@ function Container({
 
 function Card({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-gray-100 bg-white p-7 shadow-sm">
+    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-[0_14px_34px_rgba(15,35,80,0.06)]">
       {children}
     </div>
   );
@@ -303,12 +245,10 @@ function SectionTitle({
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-pbd-blue/10 text-pbd-blue">
         <Icon className="h-5 w-5" />
       </div>
-
       <div>
         <h2 className="text-xl font-bold text-pbd-navy">{title}</h2>
-
         {description ? (
-          <p className="mt-1 text-sm leading-6 text-gray-500">{description}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
         ) : null}
       </div>
     </div>
@@ -333,37 +273,19 @@ function InfoCard({
   description: string;
 }) {
   return (
-    <div className="rounded-lg border border-gray-100 bg-pbd-bg p-6">
-      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-pbd-blue shadow-sm">
+    <div className="h-full rounded-lg border border-slate-200 bg-pbd-bg p-6">
+      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-pbd-blue shadow-sm ring-1 ring-slate-200">
         <Icon className="h-5 w-5" />
       </div>
-
       <h3 className="mt-5 text-xl font-bold text-pbd-navy">{title}</h3>
-
-      <p className="mt-3 leading-7 text-gray-600">{description}</p>
-    </div>
-  );
-}
-
-function SimplePanel({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-gray-100 bg-pbd-bg p-6">
-      <h3 className="text-lg font-bold text-pbd-navy">{title}</h3>
-
-      <ul className="mt-5 space-y-4">{children}</ul>
+      <p className="mt-3 leading-7 text-slate-600">{description}</p>
     </div>
   );
 }
 
 function CleanListItem({ children }: { children: ReactNode }) {
   return (
-    <li className="flex gap-3 leading-7 text-gray-700">
+    <li className="flex gap-3 leading-7 text-slate-700">
       <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-pbd-gold" />
       <span>{children}</span>
     </li>

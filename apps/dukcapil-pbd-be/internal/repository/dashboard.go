@@ -55,6 +55,22 @@ func (r *DashboardRepository) Overview(ctx context.Context, tahunAnggaran string
 		return model.DashboardOverview{}, fmt.Errorf("dashboard subkegiatan count: %w", err)
 	}
 
+	var ssdSummary struct {
+		TotalSSD    int64
+		ActiveSSD   int64
+		InactiveSSD int64
+	}
+	if err := db.Model(&model.SSDEntity{}).
+		Select(`
+			COUNT(*) AS total_ssd,
+			COALESCE(SUM(CASE WHEN is_active THEN 1 ELSE 0 END), 0) AS active_ssd,
+			COALESCE(SUM(CASE WHEN is_active THEN 0 ELSE 1 END), 0) AS inactive_ssd
+		`).
+		Where("tahun_anggaran = ?", tahunAnggaran).
+		Scan(&ssdSummary).Error; err != nil {
+		return model.DashboardOverview{}, fmt.Errorf("dashboard ssd summary: %w", err)
+	}
+
 	var realisasiSummary struct {
 		TotalRealisasi int64
 		TotalFoto      int64
@@ -116,6 +132,20 @@ func (r *DashboardRepository) Overview(ctx context.Context, tahunAnggaran string
 			Icon:        "listChecks",
 			Color:       "bg-cyan-50 text-cyan-700",
 			Description: "Master subkegiatan tahun berjalan",
+		},
+		{
+			Title:       "Total Data SSD",
+			Value:       formatDashboardNumber(ssdSummary.TotalSSD),
+			Icon:        "database",
+			Color:       "bg-sky-50 text-sky-700",
+			Description: "Mengetahui jumlah data sektoral yang tersedia",
+		},
+		{
+			Title:       "SSD Aktif/Nonaktif",
+			Value:       fmt.Sprintf("%s / %s", formatDashboardNumber(ssdSummary.ActiveSSD), formatDashboardNumber(ssdSummary.InactiveSSD)),
+			Icon:        "fileText",
+			Color:       "bg-teal-50 text-teal-700",
+			Description: "Melihat data yang masih digunakan",
 		},
 		{
 			Title:       "Realisasi",

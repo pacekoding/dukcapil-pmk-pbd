@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { DataWilayahYearSettings } from "@/components/dashboard/data-wilayah-year-settings";
 import { PageHero } from "@/components/dashboard/page-hero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import {
   getDataWilayah,
+  getDataWilayahSettings,
   updateDataWilayahRegion,
 } from "@/lib/api/data-wilayah";
 import {
@@ -37,7 +39,10 @@ import {
   getTotalIdmVillages,
 } from "@/lib/data-wilayah";
 import { cn } from "@/lib/utils";
-import type { RegionData } from "@/types/data-wilayah";
+import type {
+  DataWilayahWebsiteSettingsResponse,
+  RegionData,
+} from "@/types/data-wilayah";
 
 type NumericPath =
   | "idm.sangatTertinggal"
@@ -180,6 +185,8 @@ export default function DashboardDataWilayahPage() {
     zeroRegionData[0].id,
   );
   const [tahunAnggaran, setTahunAnggaran] = useState("2026");
+  const [websiteSettings, setWebsiteSettings] =
+    useState<DataWilayahWebsiteSettingsResponse | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("identity");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -191,11 +198,15 @@ export default function DashboardDataWilayahPage() {
 
     const loadData = async () => {
       try {
-        const data = await getDataWilayah();
+        const [data, settings] = await Promise.all([
+          getDataWilayah(),
+          getDataWilayahSettings(),
+        ]);
         if (mounted && data.regions.length > 0) {
           setTahunAnggaran(data.tahunAnggaran);
           setRegions(data.regions);
           setSelectedRegionId(data.regions[0].id);
+          setWebsiteSettings(settings);
         }
       } catch (loadError) {
         console.error(loadError);
@@ -283,7 +294,6 @@ export default function DashboardDataWilayahPage() {
             className="relative h-12 rounded-xl border-slate-200 bg-white px-5 text-pbd-navy shadow-sm"
           >
             <Link href="/data-wilayah" target="_blank">
-              <ArrowUpRight className="h-4 w-4" />
               Lihat Website
               <ArrowUpRight className="h-4 w-4" />
             </Link>
@@ -317,6 +327,11 @@ export default function DashboardDataWilayahPage() {
           value={selectedSummary.totalDesaIdm}
         />
       </div>
+
+      <DataWilayahYearSettings
+        settings={websiteSettings}
+        onSettingsChange={setWebsiteSettings}
+      />
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_50px_rgba(15,35,80,0.08)] lg:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">

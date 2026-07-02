@@ -22,3 +22,10 @@ export type SubkegiatanListResponse = {
   tahunAnggaran: string;
   items: Subkegiatan[];
 };
+
+export type SubkegiatanImportResult = {
+  tahunAnggaran: string;
+  total: number;
+  created: number;
+  updated: number;
+};

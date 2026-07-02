@@ -10,7 +10,7 @@ export default function Footer() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1.2fr_0.8fr_0.8fr] lg:px-8">
         <div className="max-w-md">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white ring-1 ring-white/20">
               <Image
                 src="/logo-pbd.png"
                 alt="Logo Papua Barat Daya"
@@ -24,8 +24,8 @@ export default function Footer() {
             </div>
           </div>
           <p className="mt-5 text-sm leading-7 text-white/70">
-            Kanal informasi resmi Dinas Kependudukan dan Pencatatan Sipil dan
-            Pemberdayaan Masyarakat dan Kampung Provinsi Papua Barat Daya.
+            Kanal resmi berisi profil, data wilayah, fokus layanan, dan kontak
+            Dinas Dukcapil dan PMK Provinsi Papua Barat Daya.
           </p>
         </div>
 
@@ -37,8 +37,8 @@ export default function Footer() {
             <li><Link href="/" className="hover:text-white">Beranda</Link></li>
             <li><Link href="/profil" className="hover:text-white">Profil Dinas</Link></li>
             <li><Link href="/data-wilayah" className="hover:text-white">Data Wilayah</Link></li>
-            <li><Link href="/#layanan" className="hover:text-white">Layanan Publik</Link></li>
-            <li><Link href="/login" className="hover:text-white">Dashboard Admin</Link></li>
+            <li><Link href="/#layanan" className="hover:text-white">Layanan</Link></li>
+            <li><Link href="/#kontak" className="hover:text-white">Kontak</Link></li>
           </ul>
         </div>
 

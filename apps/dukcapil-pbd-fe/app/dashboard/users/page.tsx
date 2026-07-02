@@ -16,6 +16,14 @@ import { SectionCard } from "@/components/dashboard/section-card";
 import { EmptyState, ErrorState, LoadingState, SuccessState } from "@/components/dashboard/state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -86,6 +94,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [formData, setFormData] = useState<UserFormState>(defaultForm);
   const [resetPassword, setResetPassword] = useState("");
   const [loading, setLoading] = useState(true);
@@ -233,11 +242,12 @@ export default function UsersPage() {
     }
   };
 
-  const handleDelete = async (user: AdminUser) => {
-    if (!window.confirm(`Hapus user ${user.username}?`)) {
+  const confirmDelete = async () => {
+    if (!deleteTarget) {
       return;
     }
 
+    const user = deleteTarget;
     try {
       setSaving(true);
       setMessage("");
@@ -247,6 +257,7 @@ export default function UsersPage() {
         resetForm();
       }
       setMessage("User berhasil dihapus.");
+      setDeleteTarget(null);
     } catch (error) {
       console.error(error);
       setPageError(error instanceof Error ? error.message : "User gagal dihapus.");
@@ -587,7 +598,7 @@ export default function UsersPage() {
                           type="button"
                           size="icon"
                           variant="outline"
-                          onClick={() => void handleDelete(user)}
+                          onClick={() => setDeleteTarget(user)}
                           className="h-9 w-9 rounded-lg text-red-600 hover:text-red-700"
                           aria-label={`Hapus ${user.username}`}
                         >
@@ -608,6 +619,44 @@ export default function UsersPage() {
             </Table>
         </SectionCard>
       </div>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !saving) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus User Admin?</DialogTitle>
+            <DialogDescription>
+              User {deleteTarget?.username} akan dihapus dari akses dashboard.
+              Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={saving}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={saving}
+              onClick={() => void confirmDelete()}
+            >
+              <Trash2 className="h-4 w-4" />
+              {saving ? "Menghapus..." : "Hapus"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

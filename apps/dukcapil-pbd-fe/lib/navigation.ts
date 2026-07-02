@@ -37,10 +37,6 @@ export const publicMenus: PublicMenuItem[] = [
     href: "/#layanan",
   },
   {
-    label: "Pengumuman",
-    href: "/#pengumuman",
-  },
-  {
     label: "Kontak",
     href: "/#kontak",
   },

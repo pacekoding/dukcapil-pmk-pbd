@@ -17,6 +17,12 @@ var dataWilayahTahunAnggaranPattern = regexp.MustCompile(`^\d{4}$`)
 type DataWilayahStore interface {
 	List(ctx context.Context, tahunAnggaran string) (model.DataWilayahResponse, error)
 	Update(ctx context.Context, tahunAnggaran string, id string, payload model.RegionData) (model.RegionData, bool, error)
+	GetWebsiteSettings(ctx context.Context) (model.DataWilayahWebsiteSettingsResponse, error)
+	UpdateWebsiteSettings(
+		ctx context.Context,
+		featuredTahunAnggaran string,
+		publishedTahunAnggaran []string,
+	) (model.DataWilayahWebsiteSettingsResponse, error)
 }
 
 type DataWilayahController struct {
@@ -42,9 +48,75 @@ func (d *DataWilayahController) List(c echo.Context) error {
 }
 
 func (d *DataWilayahController) WebsiteList(c echo.Context) error {
-	response, err := d.dataWilayah.List(c.Request().Context(), "2026")
+	settings, err := d.dataWilayah.GetWebsiteSettings(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "pengaturan data wilayah gagal dimuat")
+	}
+
+	tahunAnggaran := strings.TrimSpace(c.QueryParam("tahunAnggaran"))
+	if tahunAnggaran == "" {
+		tahunAnggaran = settings.FeaturedTahunAnggaran
+	}
+	if !dataWilayahTahunAnggaranPattern.MatchString(tahunAnggaran) {
+		return echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran tidak valid")
+	}
+	if !containsDataWilayahYear(settings.PublishedTahunAnggaran, tahunAnggaran) {
+		return echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran tidak dipublikasikan")
+	}
+
+	response, err := d.dataWilayah.List(c.Request().Context(), tahunAnggaran)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "data wilayah gagal dimuat")
+	}
+
+	return jsonData(c, http.StatusOK, response)
+}
+
+func (d *DataWilayahController) Settings(c echo.Context) error {
+	response, err := d.dataWilayah.GetWebsiteSettings(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "pengaturan data wilayah gagal dimuat")
+	}
+
+	return jsonData(c, http.StatusOK, response)
+}
+
+func (d *DataWilayahController) WebsiteSettings(c echo.Context) error {
+	response, err := d.dataWilayah.GetWebsiteSettings(c.Request().Context())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "pengaturan data wilayah gagal dimuat")
+	}
+
+	return jsonData(c, http.StatusOK, model.DataWilayahWebsiteSettings{
+		FeaturedTahunAnggaran:  response.FeaturedTahunAnggaran,
+		PublishedTahunAnggaran: response.PublishedTahunAnggaran,
+	})
+}
+
+func (d *DataWilayahController) UpdateSettings(c echo.Context) error {
+	var payload model.DataWilayahWebsiteSettings
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "payload pengaturan data wilayah tidak valid")
+	}
+	if !dataWilayahTahunAnggaranPattern.MatchString(strings.TrimSpace(payload.FeaturedTahunAnggaran)) {
+		return echo.NewHTTPError(http.StatusBadRequest, "tahun ringkasan wilayah tidak valid")
+	}
+	if len(payload.PublishedTahunAnggaran) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "pilih minimal satu tahun untuk ditampilkan")
+	}
+	for _, year := range payload.PublishedTahunAnggaran {
+		if !dataWilayahTahunAnggaranPattern.MatchString(strings.TrimSpace(year)) {
+			return echo.NewHTTPError(http.StatusBadRequest, "daftar tahun publik tidak valid")
+		}
+	}
+
+	response, err := d.dataWilayah.UpdateWebsiteSettings(
+		c.Request().Context(),
+		payload.FeaturedTahunAnggaran,
+		payload.PublishedTahunAnggaran,
+	)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	return jsonData(c, http.StatusOK, response)
@@ -153,4 +225,15 @@ func hasNegativeDataWilayahValue(payload model.RegionData) bool {
 	}
 
 	return payload.Oap.LuasWilayah < 0
+}
+
+func containsDataWilayahYear(years []string, target string) bool {
+	target = strings.TrimSpace(target)
+	for _, year := range years {
+		if strings.TrimSpace(year) == target {
+			return true
+		}
+	}
+
+	return false
 }

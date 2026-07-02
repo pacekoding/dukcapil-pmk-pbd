@@ -26,9 +26,24 @@ type SubkegiatanPayload struct {
 	SSDIDs []int64           `json:"ssdIds"`
 }
 
+type SubkegiatanImportPayload struct {
+	Row      int
+	Kode     string
+	Nama     string
+	Bidang   SubkegiatanBidang
+	SSDCodes []string
+}
+
 type SubkegiatanListResponse struct {
 	TahunAnggaran string        `json:"tahunAnggaran"`
 	Items         []Subkegiatan `json:"items"`
+}
+
+type SubkegiatanImportResult struct {
+	TahunAnggaran string `json:"tahunAnggaran"`
+	Total         int    `json:"total"`
+	Created       int    `json:"created"`
+	Updated       int    `json:"updated"`
 }
 
 type SubkegiatanEntity struct {

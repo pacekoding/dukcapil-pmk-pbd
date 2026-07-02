@@ -22,6 +22,13 @@ export function importSSD(file: File) {
   });
 }
 
+export function createSSD(payload: SSDPayload) {
+  return apiRequest<SSDDetail>(apiEndpoints.ssd, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getSSDDetail(id: number) {
   return apiRequest<SSDDetail>(apiEndpoints.ssdDetail(id));
 }

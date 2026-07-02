@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   Building2,
   ClipboardList,
+  Database,
   FileText,
   IdCard,
   Image,
@@ -32,6 +33,7 @@ const dashboardIconMap: Record<DashboardIcon, LucideIcon> = {
   userRound: UserRound,
   idCard: IdCard,
   building2: Building2,
+  database: Database,
   listChecks: ListChecks,
   clipboardList: ClipboardList,
   image: Image,
@@ -129,7 +131,7 @@ export default function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {loading
-          ? Array.from({ length: 8 }).map((_, index) => (
+          ? Array.from({ length: 10 }).map((_, index) => (
               <div
                 key={index}
                 className="h-32 animate-pulse rounded-lg border border-slate-200 bg-white"

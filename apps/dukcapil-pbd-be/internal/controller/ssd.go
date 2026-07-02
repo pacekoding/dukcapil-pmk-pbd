@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 type SSDStore interface {
 	List(ctx context.Context, tahunAnggaran string) (model.SSDListResponse, error)
 	Detail(ctx context.Context, tahunAnggaran string, id int64) (model.SSDDetail, bool, error)
+	Create(ctx context.Context, tahunAnggaran string, payload model.SSDPayload) (model.SSDDetail, error)
 	Import(ctx context.Context, tahunAnggaran string, payloads []model.SSDPayload) (model.SSDImportResult, error)
 	Update(ctx context.Context, tahunAnggaran string, id int64, payload model.SSDPayload) (model.SSDDetail, bool, error)
 	SetStatus(ctx context.Context, tahunAnggaran string, id int64, isActive bool) (model.SSD, bool, error)
@@ -65,6 +67,28 @@ func (s *SSDController) Detail(c echo.Context) error {
 	return jsonData(c, http.StatusOK, item)
 }
 
+func (s *SSDController) Create(c echo.Context) error {
+	tahunAnggaran, err := subkegiatanTahunAnggaran(c)
+	if err != nil {
+		return err
+	}
+
+	var payload model.SSDPayload
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "payload ssd tidak valid")
+	}
+	if err := validateSSDPayload(payload); err != nil {
+		return err
+	}
+
+	item, err := s.ssd.Create(c.Request().Context(), tahunAnggaran, payload)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "ssd gagal dibuat")
+	}
+
+	return jsonData(c, http.StatusCreated, item)
+}
+
 func (s *SSDController) Import(c echo.Context) error {
 	tahunAnggaran, err := subkegiatanTahunAnggaran(c)
 	if err != nil {
@@ -96,6 +120,111 @@ func (s *SSDController) Import(c echo.Context) error {
 	}
 
 	return jsonData(c, http.StatusOK, result)
+}
+
+func (s *SSDController) Template(c echo.Context) error {
+	file := excelize.NewFile()
+	defer func() {
+		_ = file.Close()
+	}()
+
+	const sheet = "Template SSD"
+	defaultSheet := file.GetSheetName(0)
+	if err := file.SetSheetName(defaultSheet, sheet); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+	}
+
+	headers := []string{"No", "Kode DSSD", "Uraian DSSD", "Satuan", "Definisi Operasional"}
+	examples := [][]interface{}{
+		{1, "DSSD-001", "Jumlah penduduk yang memiliki KTP-el", "Orang", "Jumlah penduduk wajib KTP yang sudah melakukan perekaman dan memiliki KTP-el."},
+		{2, "DSSD-002", "Jumlah penerbitan Kartu Keluarga", "Dokumen", "Jumlah Kartu Keluarga yang diterbitkan selama periode pelaporan."},
+	}
+
+	for index, header := range headers {
+		cell, err := excelize.CoordinatesToCellName(index+1, 1)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+		}
+		if err := file.SetCellValue(sheet, cell, header); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+		}
+	}
+
+	for rowIndex, row := range examples {
+		for columnIndex, value := range row {
+			cell, err := excelize.CoordinatesToCellName(columnIndex+1, rowIndex+2)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+			}
+			if err := file.SetCellValue(sheet, cell, value); err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+			}
+		}
+	}
+
+	headerStyle, err := file.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Color: "FFFFFF"},
+		Fill:      excelize.Fill{Type: "pattern", Color: []string{"1F3B63"}, Pattern: 1},
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+	}
+	bodyStyle, err := file.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{Vertical: "top", WrapText: true},
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+	}
+	if err := file.SetCellStyle(sheet, "A1", "E1", headerStyle); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+	}
+	if err := file.SetCellStyle(sheet, "A2", "E3", bodyStyle); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+	}
+
+	widths := map[string]float64{
+		"A": 8,
+		"B": 18,
+		"C": 48,
+		"D": 16,
+		"E": 64,
+	}
+	for column, width := range widths {
+		if err := file.SetColWidth(sheet, column, column, width); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+		}
+	}
+	if err := file.SetRowHeight(sheet, 1, 24); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+	}
+	for row := 2; row <= 3; row++ {
+		if err := file.SetRowHeight(sheet, row, 44); err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+		}
+	}
+	if err := file.SetPanes(sheet, &excelize.Panes{
+		Freeze:      true,
+		Split:       false,
+		XSplit:      0,
+		YSplit:      1,
+		TopLeftCell: "A2",
+		ActivePane:  "bottomLeft",
+	}); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+	}
+
+	var buffer bytes.Buffer
+	if err := file.Write(&buffer); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "template xlsx gagal dibuat")
+	}
+
+	c.Response().Header().Set(echo.HeaderContentDisposition, `attachment; filename="template-upload-ssd.xlsx"`)
+	return c.Blob(
+		http.StatusOK,
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		buffer.Bytes(),
+	)
 }
 
 func (s *SSDController) Update(c echo.Context) error {
@@ -159,27 +288,6 @@ func validateSSDPayload(payload model.SSDPayload) error {
 	}
 	if strings.TrimSpace(payload.Uraian) == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "uraian ssd wajib diisi")
-	}
-	for variableIndex, variable := range payload.Variables {
-		if strings.TrimSpace(variable.NamaVariabel) == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "nama variabel pada urutan "+strconv.Itoa(variableIndex+1)+" wajib diisi")
-		}
-	}
-	if len(payload.Indicators) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "minimal satu indikator wajib diisi")
-	}
-	for indicatorIndex, indicator := range payload.Indicators {
-		if strings.TrimSpace(indicator.NamaIndikator) == "" {
-			return echo.NewHTTPError(http.StatusBadRequest, "nama indikator pada urutan "+strconv.Itoa(indicatorIndex+1)+" wajib diisi")
-		}
-		if len(indicator.VariableIDs) == 0 {
-			return echo.NewHTTPError(http.StatusBadRequest, "indikator pada urutan "+strconv.Itoa(indicatorIndex+1)+" wajib memiliki minimal satu variabel")
-		}
-		for _, variableID := range indicator.VariableIDs {
-			if variableID <= 0 || variableID > int64(len(payload.Variables)) {
-				return echo.NewHTTPError(http.StatusBadRequest, "relasi variabel pada indikator tidak valid")
-			}
-		}
 	}
 	return nil
 }

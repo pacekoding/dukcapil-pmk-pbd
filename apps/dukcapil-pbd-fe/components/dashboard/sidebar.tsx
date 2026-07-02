@@ -86,6 +86,7 @@ function SidebarContent({
         border-r border-slate-200
         bg-white
         text-slate-900
+        shadow-[1px_0_0_rgba(15,35,80,0.03)]
       "
     >
       {/* HEADER */}
@@ -95,14 +96,14 @@ function SidebarContent({
           `
             flex items-center
             border-b border-slate-200
-            px-4 py-4 sm:px-5
+            px-4 py-4
           `,
           collapsed ? "justify-center" : "justify-between",
         )}
       >
         {!collapsed ? (
           <div className="flex items-start gap-4">
-            <div className="relative h-14 w-14 shrink-0">
+            <div className="relative h-12 w-12 shrink-0">
               <Image
                 src="/logo-pbd.png"
                 alt="Logo"
@@ -201,13 +202,13 @@ function SidebarContent({
                         px-0 py-3
                       `
                     : `
-                        gap-4 px-5
+                        gap-3 px-4
                         py-3
                       `,
                   active
                     ? `
                         bg-pbd-navy
-                        text-white
+                        text-white shadow-sm
                       `
                     : `
                         text-slate-600
@@ -303,7 +304,7 @@ export default function DashboardSidebar({
             duration-300
             lg:block
           `,
-          collapsed ? "w-[96px]" : "w-[320px]",
+          collapsed ? "w-[88px]" : "w-[288px]",
         )}
       >
         <SidebarContent

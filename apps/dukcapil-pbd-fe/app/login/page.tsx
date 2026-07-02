@@ -23,7 +23,12 @@ import {
   User,
 } from "lucide-react";
 
-const tahunAnggaranOptions = ["2026", "2025", "2024"];
+import {
+  getCurrentTahunAnggaran,
+  getTahunAnggaranOptions,
+} from "@/lib/tahun-anggaran";
+
+const tahunAnggaranOptions = getTahunAnggaranOptions();
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,7 +41,7 @@ export default function LoginPage() {
 
   const [password, setPassword] = useState("");
 
-  const [tahunAnggaran, setTahunAnggaran] = useState("2026");
+  const [tahunAnggaran, setTahunAnggaran] = useState(getCurrentTahunAnggaran);
 
   const [loading, setLoading] = useState(false);
 
@@ -182,7 +187,7 @@ export default function LoginPage() {
               className="
                 flex h-20 w-20
                 items-center justify-center
-                rounded-[28px]
+                rounded-lg
                 bg-white
                 shadow-2xl shadow-black/20
               "
@@ -229,7 +234,7 @@ export default function LoginPage() {
           <div className="mt-10 grid max-w-2xl gap-4 sm:grid-cols-2">
             <div
               className="
-                rounded-3xl
+                rounded-lg
                 border border-white/10
                 bg-white/10 p-5
                 backdrop-blur
@@ -246,7 +251,7 @@ export default function LoginPage() {
 
             <div
               className="
-                rounded-3xl
+                rounded-lg
                 border border-white/10
                 bg-white/10 p-5
                 backdrop-blur
@@ -268,7 +273,7 @@ export default function LoginPage() {
         <div
           className="
             w-full overflow-hidden
-            rounded-[28px]
+            rounded-lg
             border border-white/20
             bg-white shadow-2xl
             shadow-black/25
@@ -289,7 +294,7 @@ export default function LoginPage() {
                   className="
                     flex h-14 w-14
                     items-center justify-center
-                    rounded-2xl
+                    rounded-lg
                     bg-pbd-navy/5
                   "
                 >
@@ -345,7 +350,7 @@ export default function LoginPage() {
               <div
                 className="
                   mb-6 flex items-start
-                  gap-3 rounded-2xl
+                  gap-3 rounded-lg
                   border border-red-200
                   bg-red-50
                   px-4 py-4
@@ -392,7 +397,7 @@ export default function LoginPage() {
                   disabled={loading}
                   className="
                     h-14 w-full
-                    rounded-2xl
+                    rounded-lg
                     border border-slate-200
                     bg-slate-50
                     py-4 pl-12 pr-4
@@ -445,7 +450,7 @@ export default function LoginPage() {
                   disabled={loading}
                   className="
                     h-14 w-full
-                    rounded-2xl
+                    rounded-lg
                     border border-slate-200
                     bg-slate-50
                     py-4 pl-12 pr-14
@@ -520,7 +525,7 @@ export default function LoginPage() {
                   className="
                     h-14 w-full
                     appearance-none
-                    rounded-2xl
+                    rounded-lg
                     border border-slate-200
                     bg-slate-50
                     py-4 pl-12 pr-12
@@ -563,13 +568,12 @@ export default function LoginPage() {
               className="
                 mt-7 flex h-14 w-full
                 items-center justify-center
-                gap-3 rounded-2xl
-                bg-gradient-to-r
-                from-pbd-navy to-pbd-blue
+                gap-3 rounded-lg
+                bg-pbd-navy
                 px-6
                 font-semibold text-white
                 shadow-lg
-                shadow-pbd-blue/20
+                shadow-pbd-blue/10
                 transition
                 hover:opacity-95
                 focus:outline-none

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  Download,
   Edit3,
   Eye,
   ListChecks,
@@ -10,8 +11,10 @@ import {
   Save,
   Search,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
+import Link from "next/link";
 
 import { PageHero } from "@/components/dashboard/page-hero";
 import { Pagination } from "@/components/dashboard/pagination";
@@ -56,8 +59,10 @@ import {
   createSubkegiatan,
   deleteSubkegiatan,
   getSubkegiatan,
+  importSubkegiatan,
   updateSubkegiatan,
 } from "@/lib/api/subkegiatan";
+import { ApiError } from "@/lib/api/http";
 import { getSSD } from "@/lib/api/ssd";
 import { cn } from "@/lib/utils";
 import type { SSD } from "@/types/ssd";
@@ -79,6 +84,9 @@ const emptyForm: SubkegiatanPayload = {
   bidang: "dukcapil",
   ssdIds: [],
 };
+
+const subkegiatanKodePattern = /^\d+(?:\.\d+)+$/;
+const maxSubkegiatanKodeLength = 64;
 
 const bidangLabel = (bidang: SubkegiatanBidang) =>
   bidangOptions.find((item) => item.value === bidang)?.label ?? bidang;
@@ -103,19 +111,21 @@ export default function DashboardSubkegiatanPage() {
   const [form, setForm] = useState<SubkegiatanPayload>(emptyForm);
   const [editingItem, setEditingItem] = useState<Subkegiatan | null>(null);
   const [detailItem, setDetailItem] = useState<Subkegiatan | null>(null);
-  const [questionnaireItem, setQuestionnaireItem] = useState<Subkegiatan | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Subkegiatan | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [questionnaireOpen, setQuestionnaireOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [ssdQuery, setSSDQuery] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [bidangFilter, setBidangFilter] = useState<SubkegiatanBidang | "semua">(
     "semua",
   );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -150,13 +160,43 @@ export default function DashboardSubkegiatanPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session", {
+          cache: "no-store",
+        });
+        const result = await response.json();
+        if (mounted) {
+          setIsSuperAdmin(result.user?.role === "superadmin");
+        }
+      } catch (sessionError) {
+        console.error(sessionError);
+      }
+    };
+
+    void loadSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return items.filter((item) => {
       const matchesQuery =
         normalizedQuery === "" ||
         item.kode.toLowerCase().includes(normalizedQuery) ||
-        item.nama.toLowerCase().includes(normalizedQuery);
+        item.nama.toLowerCase().includes(normalizedQuery) ||
+        (item.ssdItems ?? []).some(
+          (ssd) =>
+            ssd.kode.toLowerCase().includes(normalizedQuery) ||
+            ssd.uraian.toLowerCase().includes(normalizedQuery) ||
+            ssd.satuan.toLowerCase().includes(normalizedQuery),
+        );
       const matchesBidang =
         bidangFilter === "semua" || item.bidang === bidangFilter;
 
@@ -187,6 +227,10 @@ export default function DashboardSubkegiatanPage() {
   );
 
   const openCreateDialog = () => {
+    if (!isSuperAdmin) {
+      setError("Hanya superadmin yang dapat menambah subkegiatan.");
+      return;
+    }
     setEditingItem(null);
     setForm(emptyForm);
     setSSDQuery("");
@@ -195,6 +239,10 @@ export default function DashboardSubkegiatanPage() {
   };
 
   const openEditDialog = (item: Subkegiatan) => {
+    if (!isSuperAdmin) {
+      setError("Hanya superadmin yang dapat mengubah subkegiatan.");
+      return;
+    }
     setEditingItem(item);
     setForm({
       kode: item.kode,
@@ -212,11 +260,6 @@ export default function DashboardSubkegiatanPage() {
     setDetailOpen(true);
   };
 
-  const openQuestionnaireDialog = (item: Subkegiatan) => {
-    setQuestionnaireItem(item);
-    setQuestionnaireOpen(true);
-  };
-
   const closeDialog = () => {
     if (saving) {
       return;
@@ -228,7 +271,21 @@ export default function DashboardSubkegiatanPage() {
     setError(null);
   };
 
+  const closeImportDialog = () => {
+    if (saving) {
+      return;
+    }
+    setImportOpen(false);
+    setSelectedFile(null);
+    setError(null);
+  };
+
   const handleSubmit = async () => {
+    if (!isSuperAdmin) {
+      setError("Hanya superadmin yang dapat menyimpan subkegiatan.");
+      return;
+    }
+
     const payload = {
       kode: form.kode.trim(),
       nama: form.nama.trim(),
@@ -238,6 +295,24 @@ export default function DashboardSubkegiatanPage() {
 
     if (!payload.kode || !payload.nama) {
       setError("Kode dan nama subkegiatan wajib diisi.");
+      setMessage(null);
+      return;
+    }
+    if (
+      subkegiatanKodePattern.test(payload.nama) &&
+      !subkegiatanKodePattern.test(payload.kode)
+    ) {
+      setError("Kode dan nama subkegiatan tampak tertukar.");
+      setMessage(null);
+      return;
+    }
+    if (payload.kode.length > maxSubkegiatanKodeLength) {
+      setError("Kode subkegiatan maksimal 64 karakter.");
+      setMessage(null);
+      return;
+    }
+    if (!subkegiatanKodePattern.test(payload.kode)) {
+      setError("Format kode subkegiatan tidak valid. Contoh: 2.13.03.4.01.0004.");
       setMessage(null);
       return;
     }
@@ -265,21 +340,60 @@ export default function DashboardSubkegiatanPage() {
     } catch (saveError) {
       console.error(saveError);
       setError(
-        "Subkegiatan gagal disimpan. Pastikan kode belum dipakai pada tahun ini.",
+        saveError instanceof Error
+          ? saveError.message
+          : "Subkegiatan gagal disimpan. Pastikan kode belum dipakai pada tahun ini.",
       );
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (item: Subkegiatan) => {
-    const confirmed = window.confirm(
-      `Hapus subkegiatan ${item.kode} - ${item.nama}?`,
-    );
-    if (!confirmed) {
+  const handleImport = async () => {
+    if (!isSuperAdmin) {
+      setError("Hanya superadmin yang dapat import subkegiatan.");
+      return;
+    }
+    if (!selectedFile) {
+      setError("Pilih file XLSX terlebih dahulu.");
       return;
     }
 
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await importSubkegiatan(selectedFile);
+      const refreshed = await getSubkegiatan();
+      setItems(refreshed.items);
+      setTahunAnggaran(refreshed.tahunAnggaran);
+      setImportOpen(false);
+      setSelectedFile(null);
+      setMessage(
+        `Import subkegiatan selesai. ${result.created} data baru dan ${result.updated} data diperbarui.`,
+      );
+    } catch (importError) {
+      console.error(importError);
+      setError(
+        importError instanceof Error
+          ? importError.message
+          : "Import subkegiatan gagal diproses.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+    if (!isSuperAdmin) {
+      setError("Hanya superadmin yang dapat menghapus subkegiatan.");
+      return;
+    }
+
+    const item = deleteTarget;
     setDeletingId(item.id);
     setMessage(null);
     setError(null);
@@ -292,9 +406,20 @@ export default function DashboardSubkegiatanPage() {
         setDialogOpen(false);
       }
       setMessage(`${item.kode} berhasil dihapus.`);
+      setDeleteTarget(null);
     } catch (deleteError) {
       console.error(deleteError);
-      setError("Subkegiatan gagal dihapus.");
+      if (deleteError instanceof ApiError && deleteError.status === 404) {
+        setItems((current) => current.filter((entry) => entry.id !== item.id));
+        setMessage(`${item.kode} tidak ditemukan di server. Daftar diperbarui.`);
+        setDeleteTarget(null);
+        return;
+      }
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Subkegiatan gagal dihapus.",
+      );
     } finally {
       setDeletingId(null);
     }
@@ -313,14 +438,39 @@ export default function DashboardSubkegiatanPage() {
           </p>
         }
         aside={
-          <Button
-            type="button"
-            onClick={openCreateDialog}
-            className="h-12 rounded-xl bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
-          >
-            <Plus className="h-4 w-4" />
-            Tambah Subkegiatan
-          </Button>
+          isSuperAdmin ? (
+            <div className="flex flex-col items-start gap-3 sm:items-end">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button
+                  type="button"
+                  onClick={openCreateDialog}
+                  className="h-12 rounded-xl bg-white px-5 text-pbd-navy ring-1 ring-slate-200 hover:bg-slate-50"
+                >
+                  <Plus className="h-4 w-4" />
+                  Tambah Subkegiatan
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setImportOpen(true);
+                    setError(null);
+                  }}
+                  className="h-12 rounded-xl bg-pbd-navy px-5 text-white hover:bg-pbd-navy/90"
+                >
+                  <Upload className="h-4 w-4" />
+                  Import XLSX
+                </Button>
+              </div>
+              <a
+                href="/api/backend/subkegiatan/template"
+                download="template-upload-subkegiatan.xlsx"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-pbd-blue underline-offset-4 hover:underline"
+              >
+                <Download className="h-4 w-4" />
+                Download template XLSX
+              </a>
+            </div>
+          ) : null
         }
       />
 
@@ -340,7 +490,7 @@ export default function DashboardSubkegiatanPage() {
                   setQuery(value);
                   setPage(1);
                 }}
-                placeholder="Cari kode atau nama..."
+                placeholder="Cari kode, nama, atau kode SSD..."
                 className="sm:w-72"
               />
               <Select
@@ -368,7 +518,7 @@ export default function DashboardSubkegiatanPage() {
           {message ? (
             <SuccessState message={message} className="mt-4" />
           ) : null}
-          {error && !dialogOpen ? (
+          {error && !dialogOpen && !importOpen ? (
             <ErrorState message={error} className="mt-4" />
           ) : null}
         </div>
@@ -431,10 +581,11 @@ export default function DashboardSubkegiatanPage() {
                             {item.ssdItems.slice(0, 2).map((ssd) => (
                               <Badge
                                 key={ssd.id}
+                                asChild
                                 variant="outline"
                                 className="max-w-[160px] truncate border-slate-200 bg-slate-50 text-slate-700"
                               >
-                                {ssd.kode}
+                                <Link href={`/dashboard/ssd/${ssd.id}`}>{ssd.kode}</Link>
                               </Badge>
                             ))}
                           </>
@@ -460,26 +611,24 @@ export default function DashboardSubkegiatanPage() {
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem onSelect={() => openDetailDialog(item)}>
                               <Eye className="h-4 w-4" />
-                              Lihat details
+                              Lihat detail
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onSelect={() => openQuestionnaireDialog(item)}
-                            >
-                              <ListChecks className="h-4 w-4" />
-                              Lihat Kuisioner
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => openEditDialog(item)}>
-                              <Edit3 className="h-4 w-4" />
-                              Ubah
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              variant="destructive"
-                              disabled={deletingId === item.id}
-                              onSelect={() => handleDelete(item)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Hapus
-                            </DropdownMenuItem>
+                            {isSuperAdmin ? (
+                              <>
+                                <DropdownMenuItem onSelect={() => openEditDialog(item)}>
+                                  <Edit3 className="h-4 w-4" />
+                                  Ubah
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  disabled={deletingId === item.id}
+                                  onSelect={() => setDeleteTarget(item)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Hapus
+                                </DropdownMenuItem>
+                              </>
+                            ) : null}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -530,6 +679,7 @@ export default function DashboardSubkegiatanPage() {
               <Input
                 id="kode"
                 value={form.kode}
+                maxLength={maxSubkegiatanKodeLength}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
@@ -540,6 +690,10 @@ export default function DashboardSubkegiatanPage() {
                 placeholder="Contoh: 2.12.01.1.01.0001"
                 className="h-11 rounded-lg"
               />
+              <p className="text-xs leading-5 text-slate-500">
+                Isi hanya kode angka bertitik, maksimal 64 karakter. Nama
+                subkegiatan diisi pada kolom Nama.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -702,128 +856,68 @@ export default function DashboardSubkegiatanPage() {
       </Dialog>
 
       <Dialog
-        open={questionnaireOpen}
+        open={importOpen}
         onOpenChange={(open) => {
-          setQuestionnaireOpen(open);
-          if (!open) {
-            setQuestionnaireItem(null);
+          if (open) {
+            setImportOpen(true);
+          } else {
+            closeImportDialog();
           }
         }}
       >
-        <DialogContent className="max-w-3xl">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Pertanyaan Kuisioner</DialogTitle>
+            <DialogTitle>Import Subkegiatan</DialogTitle>
             <DialogDescription>
-              Daftar pertanyaan dari metadata variable SSD pada subkegiatan ini untuk Tahun Anggaran {tahunAnggaran}.
+              Gunakan template XLSX dengan kolom No, Kode Subkegiatan, Nama
+              Subkegiatan, dan Kode DSSD Terkait. Isi beberapa Kode DSSD dengan
+              pemisah koma.
             </DialogDescription>
           </DialogHeader>
 
-          {questionnaireItem ? (
-            <div className="space-y-5">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Subkegiatan
-                </p>
-                <p className="mt-2 font-semibold text-pbd-navy">
-                  {questionnaireItem.kode} - {questionnaireItem.nama}
-                </p>
+          <div className="space-y-4">
+            <a
+              href="/api/backend/subkegiatan/template"
+              download="template-upload-subkegiatan.xlsx"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-pbd-blue underline-offset-4 hover:underline"
+            >
+              <Download className="h-4 w-4" />
+              Download template XLSX
+            </a>
+            <Input
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+              className="h-11 rounded-lg"
+            />
+            {error ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+                {error}
               </div>
-
-              <div className="rounded-xl border border-slate-200 bg-white">
-                <div className="border-b border-slate-200 px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="font-semibold text-pbd-navy">Pertanyaan Kuesioner</h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Diambil dari metadata variable pada SSD yang terhubung.
-                      </p>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className="border-indigo-200 bg-indigo-50 text-indigo-700"
-                    >
-                      {questionnaireItem.ssdItems.reduce(
-                        (total, ssd) =>
-                          total +
-                          ssd.variables.filter((variable) =>
-                            variable.kalimatPertanyaan.trim(),
-                          ).length,
-                        0,
-                      )}{" "}
-                      Pertanyaan
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="max-h-96 space-y-4 overflow-y-auto p-4">
-                  {questionnaireItem.ssdItems.some((ssd) =>
-                    ssd.variables.some((variable) =>
-                      variable.kalimatPertanyaan.trim(),
-                    ),
-                  ) ? (
-                    questionnaireItem.ssdItems.map((ssd) => {
-                      const questionVariables = ssd.variables.filter((variable) =>
-                        variable.kalimatPertanyaan.trim(),
-                      );
-
-                      if (questionVariables.length === 0) {
-                        return null;
-                      }
-
-                      return (
-                        <div
-                          key={`questionnaire-${ssd.id}`}
-                          className="rounded-xl border border-slate-200 bg-slate-50 p-4"
-                        >
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-pbd-navy">{ssd.kode}</span>
-                            <Badge
-                              variant="outline"
-                              className="border-slate-200 bg-white text-slate-600"
-                            >
-                              {questionVariables.length} Pertanyaan
-                            </Badge>
-                          </div>
-                          <p className="mt-2 text-sm text-slate-600">{ssd.uraian}</p>
-
-                          <div className="mt-4 space-y-3">
-                            {questionVariables.map((variable, index) => (
-                              <div
-                                key={`${ssd.id}-questionnaire-${variable.id}`}
-                                className="rounded-lg border border-slate-200 bg-white p-3"
-                              >
-                                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                                  Variabel {index + 1}
-                                </p>
-                                <p className="mt-1 font-medium text-pbd-navy">
-                                  {variable.namaVariabel}
-                                </p>
-                                <p className="mt-2 text-sm leading-6 text-slate-700">
-                                  {variable.kalimatPertanyaan}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                      Belum ada pertanyaan kuesioner dari metadata variable SSD.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="outline" className="h-10 rounded-lg">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                className="h-10 rounded-lg"
+              >
                 <X className="h-4 w-4" />
-                Tutup
+                Batal
               </Button>
             </DialogClose>
+            <Button
+              type="button"
+              onClick={handleImport}
+              disabled={saving}
+              className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
+            >
+              <Upload className="h-4 w-4" />
+              {saving ? "Mengunggah..." : "Unggah XLSX"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -908,7 +1002,13 @@ export default function DashboardSubkegiatanPage() {
                         className="rounded-xl border border-slate-200 bg-slate-50 p-4"
                       >
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-pbd-navy">{ssd.kode}</span>
+                          <Badge
+                            asChild
+                            variant="outline"
+                            className="border-slate-200 bg-white text-pbd-navy"
+                          >
+                            <Link href={`/dashboard/ssd/${ssd.id}`}>{ssd.kode}</Link>
+                          </Badge>
                           {ssd.satuan ? (
                             <Badge
                               variant="outline"
@@ -952,6 +1052,45 @@ export default function DashboardSubkegiatanPage() {
                 Tutup
               </Button>
             </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deletingId) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Subkegiatan?</DialogTitle>
+            <DialogDescription>
+              Subkegiatan {deleteTarget?.kode} - {deleteTarget?.nama} akan
+              dihapus dari tahun anggaran aktif. Tindakan ini tidak dapat
+              dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={Boolean(deletingId)}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={Boolean(deletingId)}
+              onClick={() => void confirmDelete()}
+            >
+              <Trash2 className="h-4 w-4" />
+              {deletingId ? "Menghapus..." : "Hapus"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { getCurrentTahunAnggaran } from "@/lib/tahun-anggaran";
+
 const API_BASE_URL =
   process.env.SERVER_API_BASE_URL ??
   process.env.NEXT_PUBLIC_API_BASE_URL ??
@@ -27,7 +29,7 @@ export async function GET() {
   if (!token) {
     return NextResponse.json({
       authenticated: false,
-      tahunAnggaran: "2026",
+      tahunAnggaran: getCurrentTahunAnggaran(),
     });
   }
 
@@ -45,7 +47,7 @@ export async function GET() {
   if (!upstreamResponse.ok || !result?.data?.authenticated) {
     const response = NextResponse.json({
       authenticated: false,
-      tahunAnggaran: "2026",
+      tahunAnggaran: getCurrentTahunAnggaran(),
     });
     response.cookies.set("admin_token", "", {
       path: "/",

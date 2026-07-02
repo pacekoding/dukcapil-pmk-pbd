@@ -30,6 +30,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  getCurrentTahunAnggaran,
+  getTahunAnggaranOptions,
+} from "@/lib/tahun-anggaran";
 
 type DashboardTopbarProps = {
   setMobileOpen: (value: boolean) => void;
@@ -40,7 +44,7 @@ type SessionUser = {
   role: string;
 };
 
-const tahunAnggaranOptions = ["2026", "2025"];
+const tahunAnggaranOptions = getTahunAnggaranOptions();
 
 const menuTitles: Record<
   string,
@@ -119,7 +123,7 @@ export default function DashboardTopbar({
 
   const pageInfo = getPageInfo(pathname);
 
-  const [tahunAnggaran, setTahunAnggaran] = useState("2026");
+  const [tahunAnggaran, setTahunAnggaran] = useState(getCurrentTahunAnggaran);
   const [pendingTahunAnggaran, setPendingTahunAnggaran] = useState<
     string | null
   >(null);
@@ -250,18 +254,18 @@ export default function DashboardTopbar({
       className="
         sticky top-0 z-30
         border-b border-slate-200
-        bg-white/95 backdrop-blur
+        bg-white/95 shadow-[0_1px_0_rgba(15,35,80,0.03)] backdrop-blur
       "
     >
       <div
         className="
-          flex h-14 items-center
+          flex min-h-16 items-center
           justify-between
-          gap-4 px-4
+          gap-3 px-4 py-2
           lg:px-8
         "
       >
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-3">
           <Button
             size="icon"
             variant="ghost"
@@ -300,12 +304,12 @@ export default function DashboardTopbar({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
-          <div className="relative h-9 w-[128px] shrink-0">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="relative h-10 w-[118px] shrink-0 sm:w-[132px]">
             <div
               aria-hidden="true"
               className="
-                pointer-events-none flex h-9 items-center
+                pointer-events-none flex h-10 items-center
                 gap-2 rounded-md border border-slate-200
                 bg-slate-50 px-3 pr-8 text-sm
                 font-semibold text-slate-800
@@ -323,7 +327,7 @@ export default function DashboardTopbar({
               disabled={switchingYear}
               aria-label="Pilih tahun anggaran"
               className="
-                absolute inset-0 h-9 w-full cursor-pointer
+                absolute inset-0 h-10 w-full cursor-pointer
                 appearance-none rounded-md border border-transparent
                 bg-transparent px-3 text-transparent outline-none
                 focus:border-pbd-blue focus:ring-2 focus:ring-pbd-blue/15
@@ -346,7 +350,7 @@ export default function DashboardTopbar({
             <DropdownMenuTrigger asChild>
               <button
                 className="
-                  flex h-9 items-center
+                  flex h-10 items-center
                   gap-2 rounded-md
                   px-1.5 pr-3
                   transition
@@ -428,7 +432,7 @@ export default function DashboardTopbar({
               onClick={cancelSwitchYear}
               disabled={switchingYear}
             >
-              Cancel
+              Batal
             </Button>
             <Button
               type="button"
@@ -438,7 +442,7 @@ export default function DashboardTopbar({
               {switchingYear ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : null}
-              Yes
+              Ya, Ganti
             </Button>
           </DialogFooter>
         </DialogContent>

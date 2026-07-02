@@ -31,7 +31,7 @@ export default function DashboardLayout({
     <div
       className="
         min-h-screen
-        bg-slate-50
+        bg-pbd-bg
       "
     >
       {/* =========================
@@ -56,7 +56,7 @@ export default function DashboardLayout({
             transition-all
             duration-300
           `,
-          collapsed ? "lg:pl-[96px]" : "lg:pl-[320px]",
+          collapsed ? "lg:pl-[88px]" : "lg:pl-[288px]",
         )}
       >
         {/* =========================
@@ -71,7 +71,7 @@ export default function DashboardLayout({
 
         <main
           className="
-            px-4 py-4 sm:px-5 sm:py-5
+            px-4 py-5 sm:px-5
             lg:px-6 lg:py-6
           "
         >

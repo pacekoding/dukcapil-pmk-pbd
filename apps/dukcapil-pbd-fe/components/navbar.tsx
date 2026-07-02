@@ -3,16 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { ExternalLink, Menu, Search, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { publicMenus } from "@/lib/navigation";
-
-/* =========================
-   COMPONENT
-========================= */
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -28,7 +23,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 text-slate-900 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 text-slate-900 shadow-[0_1px_0_rgba(15,35,80,0.04)] backdrop-blur-md">
       <div
         className="
           mx-auto flex h-16 max-w-7xl
@@ -37,7 +32,7 @@ export default function Navbar() {
         "
       >
         <Link href="/" className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-50 ring-1 ring-slate-200">
             <Image
               src="/logo-pbd.png"
               alt="Logo Papua Barat Daya"
@@ -67,7 +62,7 @@ export default function Navbar() {
                 href={menu.href}
                 className={`
                   rounded-md px-3 py-2 text-sm font-semibold transition
-                  ${active ? "bg-blue-50 text-pbd-blue" : "text-slate-600 hover:bg-slate-100 hover:text-pbd-navy"}
+                  ${active ? "bg-blue-50 text-pbd-blue ring-1 ring-blue-100" : "text-slate-600 hover:bg-slate-100 hover:text-pbd-navy"}
                 `}
               >
                 {menu.label}
@@ -75,26 +70,6 @@ export default function Navbar() {
             );
           })}
         </nav>
-
-        <div className="hidden items-center gap-2 lg:flex">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="h-10 rounded-md"
-          >
-            <Link href="/#search">
-              <Search className="h-4 w-4" />
-              Cari
-            </Link>
-          </Button>
-          <Button asChild size="sm" className="h-10 rounded-md">
-            <Link href="/login">
-              Dashboard
-              <ExternalLink className="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
 
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -133,7 +108,7 @@ export default function Navbar() {
                     text-sm font-medium transition
                     ${
                       active
-                        ? "bg-blue-50 text-pbd-blue"
+                        ? "bg-blue-50 text-pbd-blue ring-1 ring-blue-100"
                         : "text-slate-700 hover:bg-slate-100 hover:text-pbd-navy"
                     }
                   `}
@@ -142,20 +117,6 @@ export default function Navbar() {
                 </Link>
               );
             })}
-            <div className="mt-4 grid gap-2 border-t border-slate-200 pt-4">
-              <Button asChild variant="outline" className="justify-start">
-                <Link href="/#search" onClick={() => setMobileMenuOpen(false)}>
-                  <Search className="h-4 w-4" />
-                  Cari Informasi
-                </Link>
-              </Button>
-              <Button asChild className="justify-start">
-                <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <ExternalLink className="h-4 w-4" />
-                  Masuk Dashboard
-                </Link>
-              </Button>
-            </div>
           </nav>
         </div>
       )}

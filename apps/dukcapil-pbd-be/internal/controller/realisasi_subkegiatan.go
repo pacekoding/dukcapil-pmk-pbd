@@ -226,7 +226,22 @@ func validateRealisasiPayload(payload model.RealisasiSubkegiatanPayload) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "tanggal realisasi wajib diisi")
 	}
 	if strings.TrimSpace(payload.Nama) == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "nama realisasi wajib diisi")
+		return echo.NewHTTPError(http.StatusBadRequest, "nama kegiatan wajib diisi")
+	}
+	if payload.JumlahTamu < 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "jumlah tamu tidak boleh negatif")
+	}
+	if payload.TargetOutput != nil && *payload.TargetOutput < 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "target output tidak boleh negatif")
+	}
+	if payload.RealisasiOutput != nil && *payload.RealisasiOutput < 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "realisasi output tidak boleh negatif")
+	}
+	hasTargetOrRealisasi :=
+		(payload.TargetOutput != nil && *payload.TargetOutput > 0) ||
+			(payload.RealisasiOutput != nil && *payload.RealisasiOutput > 0)
+	if hasTargetOrRealisasi && strings.TrimSpace(payload.SatuanOutput) == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "satuan output wajib diisi jika target atau realisasi diisi")
 	}
 
 	return nil

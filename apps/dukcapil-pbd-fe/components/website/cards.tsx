@@ -25,11 +25,11 @@ export function QuickAccessCard({
   const content = (
     <div
       className={cn(
-        "group h-full rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-pbd-blue/40 hover:shadow-md",
+        "group h-full rounded-lg border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,35,80,0.06)] transition hover:-translate-y-0.5 hover:border-pbd-blue/40 hover:shadow-[0_18px_40px_rgba(15,35,80,0.1)]",
         className,
       )}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue">
+      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue ring-1 ring-blue-100">
         <Icon className="h-5 w-5" />
       </div>
       <h3 className="mt-5 font-bold text-pbd-navy">{title}</h3>
@@ -50,8 +50,8 @@ export function ServiceCard({
   icon: Icon,
 }: IconCardProps) {
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-pbd-navy text-white">
+    <article className="h-full rounded-lg border border-slate-200 bg-white p-6 shadow-[0_14px_34px_rgba(15,35,80,0.06)]">
+      <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-pbd-navy text-white shadow-sm">
         <Icon className="h-5 w-5" />
       </div>
       <h3 className="mt-5 text-lg font-bold text-pbd-navy">{title}</h3>
@@ -72,9 +72,9 @@ export function DataStatCard({
   icon: LucideIcon;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="h-full rounded-lg border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,35,80,0.06)]">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue ring-1 ring-blue-100">
           <Icon className="h-5 w-5" />
         </div>
         <p className="text-sm font-semibold text-slate-500">{label}</p>
@@ -99,7 +99,7 @@ export function NewsCard({
   href: string;
 }) {
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,35,80,0.06)]">
       <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
         <CalendarDays className="h-4 w-4" />
         {date}
@@ -148,7 +148,7 @@ export function DocumentCard({
   href?: string;
 }) {
   return (
-    <article className="flex items-start gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <article className="flex items-start gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,35,80,0.06)]">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-pbd-navy">
         <Download className="h-5 w-5" />
       </div>
@@ -175,8 +175,8 @@ export function ContactCard({
   icon: LucideIcon;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue">
+    <div className="h-full rounded-lg border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,35,80,0.06)]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue ring-1 ring-blue-100">
         <Icon className="h-5 w-5" />
       </div>
       <h3 className="mt-4 font-bold text-pbd-navy">{title}</h3>
@@ -184,4 +184,3 @@ export function ContactCard({
     </div>
   );
 }
-

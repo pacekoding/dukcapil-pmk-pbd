@@ -2,6 +2,7 @@ import { apiEndpoints } from "@/lib/api/endpoints";
 import { apiRequest } from "@/lib/api/http";
 import type {
   Subkegiatan,
+  SubkegiatanImportResult,
   SubkegiatanListResponse,
   SubkegiatanPayload,
 } from "@/types/subkegiatan";
@@ -14,6 +15,16 @@ export function createSubkegiatan(payload: SubkegiatanPayload) {
   return apiRequest<Subkegiatan>(apiEndpoints.subkegiatan, {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export function importSubkegiatan(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return apiRequest<SubkegiatanImportResult>(apiEndpoints.subkegiatanImport, {
+    method: "POST",
+    body: formData,
   });
 }
 

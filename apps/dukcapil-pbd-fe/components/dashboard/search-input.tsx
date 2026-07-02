@@ -25,7 +25,7 @@ export function SearchInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-10 rounded-md pl-9"
+        className="h-11 rounded-md pl-9"
         type="search"
       />
     </div>

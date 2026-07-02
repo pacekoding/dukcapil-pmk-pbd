@@ -1,27 +1,31 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import {
-  ArrowRight,
   Fingerprint,
   Home,
   MapPin,
-  PieChart,
   ShieldCheck,
-  Sparkles,
   Users,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Breadcrumb } from "@/components/website/breadcrumb";
-import { getWebsiteDataWilayah } from "@/lib/api/data-wilayah";
+import {
+  getWebsiteDataWilayahByYear,
+  getWebsiteDataWilayahSettings,
+} from "@/lib/api/data-wilayah";
 import {
   defaultRegionData,
   formatArea,
   formatNumber,
-  getDominantIdmStatus,
   getProvinceTotals,
   getTotalIdmVillages,
   tabLabels,
@@ -33,40 +37,6 @@ import {
 } from "@/lib/region-map-paths";
 import { cn } from "@/lib/utils";
 import type { RegionData } from "@/types/data-wilayah";
-
-const getHighestRegion = (
-  regions: RegionData[],
-  selector: (region: RegionData) => number,
-) =>
-  regions.reduce((highest, region) =>
-    selector(region) > selector(highest) ? region : highest,
-  );
-
-const getRegionInsight = (region: RegionData, regions: RegionData[]) => {
-  const highestPopulation = getHighestRegion(
-    regions,
-    (item) => item.oap.jumlahJiwa,
-  );
-  const highestKtp = getHighestRegion(
-    regions,
-    (item) => item.registration.pencetakanKtpEl,
-  );
-  const highestVeryLow = getHighestRegion(
-    regions,
-    (item) => item.idm.sangatTertinggal,
-  );
-
-  if (region.id === highestPopulation.id) {
-    return `${region.shortName} memiliki jumlah jiwa tertinggi di Papua Barat Daya.`;
-  }
-  if (region.id === highestKtp.id) {
-    return `${region.shortName} memiliki pencetakan KTP-EL tertinggi.`;
-  }
-  if (region.id === highestVeryLow.id) {
-    return `${region.shortName} memiliki desa sangat tertinggal tertinggi pada data IDM 2025.`;
-  }
-  return `${region.shortName} didominasi status IDM ${getDominantIdmStatus(region.idm).toLowerCase()}.`;
-};
 
 const getBarPercent = (value: number, values: number[]) => {
   const max = Math.max(...values, 1);
@@ -98,6 +68,9 @@ const getRegionFill = (
 
 export default function DataWilayahPage() {
   const [regions, setRegions] = useState<RegionData[]>(defaultRegionData);
+  const [tahunAnggaran, setTahunAnggaran] = useState("");
+  const [tahunAnggaranOptions, setTahunAnggaranOptions] = useState<string[]>([]);
+  const [dataError, setDataError] = useState<string | null>(null);
   const totals = useMemo(() => getProvinceTotals(regions), [regions]);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [hoveredRegionId, setHoveredRegionId] = useState<string | null>(null);
@@ -106,14 +79,53 @@ export default function DataWilayahPage() {
   useEffect(() => {
     let mounted = true;
 
-    const loadDataWilayah = async () => {
+    const loadSettings = async () => {
       try {
-        const data = await getWebsiteDataWilayah();
-        if (mounted && data.regions.length > 0) {
-          setRegions(data.regions);
+        const settings = await getWebsiteDataWilayahSettings();
+        if (mounted) {
+          setTahunAnggaranOptions(settings.publishedTahunAnggaran);
+          setTahunAnggaran(
+            settings.featuredTahunAnggaran ||
+              settings.publishedTahunAnggaran[0] ||
+              "",
+          );
+          setDataError(null);
         }
       } catch (error) {
         console.error(error);
+        if (mounted) {
+          setDataError("Pengaturan tahun data wilayah gagal dimuat.");
+        }
+      }
+    };
+
+    void loadSettings();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!tahunAnggaran) {
+      return;
+    }
+
+    let mounted = true;
+
+    const loadDataWilayah = async () => {
+      try {
+        const data = await getWebsiteDataWilayahByYear(tahunAnggaran);
+        if (mounted && data.regions.length > 0) {
+          setRegions(data.regions);
+          setTahunAnggaran(data.tahunAnggaran);
+          setDataError(null);
+        }
+      } catch (error) {
+        console.error(error);
+        if (mounted) {
+          setDataError("Data wilayah gagal dimuat.");
+        }
       }
     };
 
@@ -122,7 +134,7 @@ export default function DataWilayahPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [tahunAnggaran]);
 
   const selectedRegion = selectedRegionId
     ? (regions.find((region) => region.id === selectedRegionId) ?? null)
@@ -132,9 +144,9 @@ export default function DataWilayahPage() {
     : null;
 
   return (
-    <main className="min-h-screen bg-[#f6f8fb]">
+    <main className="min-h-screen bg-pbd-bg">
       <Breadcrumb items={[{ label: "Data Wilayah" }]} />
-      <section className="bg-pbd-navy px-4 py-16 text-white sm:px-6 lg:py-20">
+      <section className="bg-pbd-navy px-4 py-14 text-white sm:px-6 lg:py-16">
         <div className="mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 18 }}
@@ -149,13 +161,39 @@ export default function DataWilayahPage() {
               Eksplorasi Data Kabupaten/Kota
             </h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-white/75">
-              Peta interaktif untuk melihat data IDM desa, pendaftaran penduduk,
-              komposisi OAP, dan pencatatan sipil tahun 2025 pada 5 kabupaten
-              dan 1 kota di Provinsi Papua Barat Daya.
+              Ringkasan data kabupaten/kota tahun {tahunAnggaran}: penduduk,
+              OAP, administrasi kependudukan, pencatatan sipil, dan status IDM.
             </p>
           </motion.div>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-8 flex flex-col gap-3 rounded-lg border border-white/10 bg-white/10 p-4 backdrop-blur sm:w-fit sm:min-w-72">
+            <label
+              htmlFor="tahun-anggaran"
+              className="text-xs font-bold uppercase tracking-wide text-white/65"
+            >
+              Tahun Anggaran
+            </label>
+            <Select value={tahunAnggaran} onValueChange={setTahunAnggaran}>
+              <SelectTrigger
+                id="tahun-anggaran"
+                className="h-11 w-full border-white/20 bg-white text-pbd-navy"
+              >
+                <SelectValue placeholder="Pilih tahun anggaran" />
+              </SelectTrigger>
+              <SelectContent>
+                {tahunAnggaranOptions.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    Tahun Anggaran {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {dataError ? (
+              <p className="text-sm font-medium text-red-100">{dataError}</p>
+            ) : null}
+          </div>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <OverviewCard
               icon={Users}
               label="Total Jiwa"
@@ -165,11 +203,6 @@ export default function DataWilayahPage() {
               icon={ShieldCheck}
               label="Total OAP"
               value={totals.totalOap}
-            />
-            <OverviewCard
-              icon={PieChart}
-              label="Total Non-OAP"
-              value={totals.totalNonOap}
             />
             <OverviewCard
               icon={Fingerprint}
@@ -185,7 +218,7 @@ export default function DataWilayahPage() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)] lg:py-14">
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)] lg:py-12">
         <InteractiveRegionMap
           regions={regions}
           selectedRegion={selectedRegion}
@@ -199,7 +232,6 @@ export default function DataWilayahPage() {
         {selectedRegion ? (
           <RegionDetailPanel
             key={selectedRegion.id}
-            regions={regions}
             region={selectedRegion}
             activeTab={activeTab}
             onTabChange={setActiveTab}
@@ -207,26 +239,6 @@ export default function DataWilayahPage() {
         ) : (
           <EmptySelectionPanel />
         )}
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6">
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm sm:flex sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-pbd-navy">
-              Kembali ke portal utama
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Lanjutkan eksplorasi data wilayah dan profil dinas melalui halaman
-              utama portal.
-            </p>
-          </div>
-          <Button asChild className="mt-5 h-11 rounded-lg sm:mt-0">
-            <Link href="/">
-              Beranda
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
       </section>
     </main>
   );
@@ -272,18 +284,15 @@ function InteractiveRegionMap({
   onSelect: (regionId: string) => void;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/70 sm:p-6">
+    <div className="app-surface relative overflow-hidden rounded-lg p-4 sm:p-6">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-pbd-navy">
             Peta Data Papua Barat Daya
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Hover atau pilih area pada peta berbasis batas administrasi ADM2.
+            Pilih kabupaten/kota untuk melihat detail statistik.
           </p>
-        </div>
-        <div className="rounded-lg bg-pbd-navy px-3 py-2 text-xs font-semibold text-white">
-          GeoJSON SVG
         </div>
       </div>
 
@@ -433,7 +442,7 @@ function EmptySelectionPanel() {
       initial={{ opacity: 0, x: 24, scale: 0.98 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       transition={{ duration: 0.32, ease: "easeOut" }}
-      className="flex min-h-[420px] items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center shadow-xl shadow-slate-200/70"
+      className="flex min-h-[420px] items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center shadow-[0_16px_40px_rgba(15,35,80,0.06)]"
     >
       <div className="max-w-sm">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-blue-50">
@@ -452,12 +461,10 @@ function EmptySelectionPanel() {
 }
 
 function RegionDetailPanel({
-  regions,
   region,
   activeTab,
   onTabChange,
 }: {
-  regions: RegionData[];
   region: RegionData;
   activeTab: RegionTab;
   onTabChange: (tab: RegionTab) => void;
@@ -467,7 +474,7 @@ function RegionDetailPanel({
       initial={{ opacity: 0, x: 24, scale: 0.98 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       transition={{ duration: 0.38, ease: "easeOut" }}
-      className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl shadow-slate-200/70"
+      className="app-surface overflow-hidden rounded-lg"
     >
       <div className="bg-pbd-navy p-6 text-white">
         <div className="flex items-start justify-between gap-4">
@@ -521,21 +528,6 @@ function RegionDetailPanel({
             <RegionTabContent region={region} activeTab={activeTab} />
           </motion.div>
         </AnimatePresence>
-
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.14, duration: 0.3 }}
-          className="mt-6 rounded-lg border border-pbd-blue/15 bg-blue-50 p-4"
-        >
-          <div className="flex gap-3">
-            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-pbd-blue" />
-            <p className="text-sm leading-6 text-slate-700">
-              <span className="font-bold text-pbd-navy">Insight: </span>
-              {getRegionInsight(region, regions)}
-            </p>
-          </div>
-        </motion.div>
       </div>
     </motion.aside>
   );

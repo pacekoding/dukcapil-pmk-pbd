@@ -1,7 +1,7 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { AlertCircle, Inbox } from "lucide-react";
+import { AlertCircle, CheckCircle2, Inbox, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -21,12 +21,14 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center",
+        "rounded-lg border border-dashed border-slate-300 bg-slate-50/80 p-6 text-center",
         className,
       )}
     >
-      <Icon className="mx-auto h-8 w-8 text-slate-400" />
-      <p className="mt-3 font-medium text-slate-700">{title}</p>
+      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-400 shadow-sm ring-1 ring-slate-200">
+        <Icon className="h-5 w-5" />
+      </div>
+      <p className="mt-3 font-semibold text-slate-800">{title}</p>
       {description ? (
         <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
       ) : null}
@@ -46,10 +48,16 @@ export function LoadingState({
   return (
     <div className={cn("space-y-3", className)}>
       {message ? (
-        <p className="text-sm font-medium text-slate-500">{message}</p>
+        <p className="flex items-center gap-2 text-sm font-medium text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {message}
+        </p>
       ) : null}
       {Array.from({ length: rows }).map((_, index) => (
-        <div key={index} className="h-14 animate-pulse rounded-md bg-slate-100" />
+        <div
+          key={index}
+          className="h-14 animate-pulse rounded-md border border-slate-100 bg-slate-100/80"
+        />
       ))}
     </div>
   );
@@ -85,11 +93,12 @@ export function SuccessState({
   return (
     <div
       className={cn(
-        "rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700",
+        "flex items-start gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700",
         className,
       )}
     >
-      {message}
+      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+      <span>{message}</span>
     </div>
   );
 }

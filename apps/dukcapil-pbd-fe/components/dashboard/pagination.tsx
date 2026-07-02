@@ -22,8 +22,8 @@ export function Pagination({
   const end = Math.min(total, page * pageSize);
 
   return (
-    <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-      <p>
+    <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/45 px-5 py-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+      <p className="font-medium">
         Menampilkan {start}-{end} dari {total} data
       </p>
       <div className="flex items-center gap-2">

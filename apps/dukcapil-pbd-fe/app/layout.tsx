@@ -133,6 +133,7 @@ export default function RootLayout({
   return (
     <html
       lang="id"
+      translate="yes"
       suppressHydrationWarning
       className={cn(inter.variable, plusJakarta.variable)}
     >

@@ -3,6 +3,7 @@ export type DashboardIcon =
   | "userRound"
   | "idCard"
   | "building2"
+  | "database"
   | "listChecks"
   | "clipboardList"
   | "image"

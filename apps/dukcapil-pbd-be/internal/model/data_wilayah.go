@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/lib/pq"
+)
 
 type IdmData struct {
 	SangatTertinggal int `json:"sangatTertinggal"`
@@ -50,6 +54,17 @@ type DataWilayahResponse struct {
 	Regions       []RegionData `json:"regions"`
 }
 
+type DataWilayahWebsiteSettings struct {
+	FeaturedTahunAnggaran  string   `json:"featuredTahunAnggaran"`
+	PublishedTahunAnggaran []string `json:"publishedTahunAnggaran"`
+}
+
+type DataWilayahWebsiteSettingsResponse struct {
+	FeaturedTahunAnggaran  string   `json:"featuredTahunAnggaran"`
+	PublishedTahunAnggaran []string `json:"publishedTahunAnggaran"`
+	AvailableTahunAnggaran []string `json:"availableTahunAnggaran"`
+}
+
 type DataWilayahEntity struct {
 	TahunAnggaran               string    `gorm:"primaryKey;column:tahun_anggaran"`
 	ID                          string    `gorm:"primaryKey;column:id"`
@@ -81,8 +96,20 @@ type DataWilayahEntity struct {
 	UpdatedAt                   time.Time `gorm:"column:updated_at"`
 }
 
+type DataWilayahPublicSettingsEntity struct {
+	ID                     int            `gorm:"primaryKey;column:id"`
+	FeaturedTahunAnggaran  string         `gorm:"column:featured_tahun_anggaran"`
+	PublishedTahunAnggaran pq.StringArray `gorm:"type:text[];column:published_tahun_anggaran"`
+	CreatedAt              time.Time      `gorm:"column:created_at"`
+	UpdatedAt              time.Time      `gorm:"column:updated_at"`
+}
+
 func (DataWilayahEntity) TableName() string {
 	return "data_wilayah"
+}
+
+func (DataWilayahPublicSettingsEntity) TableName() string {
+	return "data_wilayah_public_settings"
 }
 
 func (d DataWilayahEntity) ToRegionData() RegionData {
@@ -119,5 +146,12 @@ func (d DataWilayahEntity) ToRegionData() RegionData {
 			AktaPerkawinan: d.CivilAktaPerkawinan,
 			AktaPerceraian: d.CivilAktaPerceraian,
 		},
+	}
+}
+
+func (d DataWilayahPublicSettingsEntity) ToWebsiteSettings() DataWilayahWebsiteSettings {
+	return DataWilayahWebsiteSettings{
+		FeaturedTahunAnggaran:  d.FeaturedTahunAnggaran,
+		PublishedTahunAnggaran: append([]string(nil), d.PublishedTahunAnggaran...),
 	}
 }
