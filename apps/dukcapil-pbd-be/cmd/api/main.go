@@ -43,11 +43,12 @@ func main() {
 	}
 
 	userRepo := repository.NewUserRepository(db)
-	dashboardRepo := repository.NewDashboardRepository(db)
 	dataWilayahRepo := repository.NewDataWilayahRepository(db)
 	ssdRepo := repository.NewSSDRepository(db)
 	subkegiatanRepo := repository.NewSubkegiatanRepository(db)
-	realisasiRepo := repository.NewRealisasiSubkegiatanRepository(db)
+	pelaksanaanDocumentRepo := repository.NewPelaksanaanDocumentRepository(db)
+	bumKampungRepo := repository.NewBumKampungRepository(db)
+	kabKotaRepo := repository.NewKabKotaRepository(db)
 	tokenManager := security.NewManager(env("JWT_SECRET", "dev-secret-change-me"), 24*time.Hour)
 	authMiddleware := authmiddleware.NewAuthMiddleware(tokenManager)
 
@@ -55,11 +56,12 @@ func main() {
 		AllowedOrigin:  allowedOrigin,
 		Health:         controller.NewHealthController(db),
 		Auth:           controller.NewAuthController(userRepo, tokenManager),
-		Dashboard:      controller.NewDashboardController(dashboardRepo),
 		DataWilayah:    controller.NewDataWilayahController(dataWilayahRepo),
 		SSD:            controller.NewSSDController(ssdRepo),
 		Subkegiatan:    controller.NewSubkegiatanController(subkegiatanRepo),
-		Realisasi:      controller.NewRealisasiSubkegiatanController(realisasiRepo),
+		Documents:      controller.NewPelaksanaanDocumentController(pelaksanaanDocumentRepo),
+		BumKampung:     controller.NewBumKampungController(bumKampungRepo),
+		KabKota:        controller.NewKabKotaController(kabKotaRepo),
 		Users:          controller.NewUserController(userRepo),
 		Website:        controller.NewWebsiteController(),
 		AuthMiddleware: authMiddleware,

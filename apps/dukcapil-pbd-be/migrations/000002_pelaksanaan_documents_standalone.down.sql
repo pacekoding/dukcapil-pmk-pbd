@@ -1,0 +1,1 @@
+-- No-op: baseline cleanup only removes legacy tables.

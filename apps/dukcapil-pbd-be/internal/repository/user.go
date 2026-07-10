@@ -8,6 +8,7 @@ import (
 
 	"dukcapil-pbd-be/internal/model"
 
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -19,36 +20,43 @@ type UserRepository struct {
 }
 
 type defaultAdminUser struct {
-	Username string
-	Name     string
-	Role     model.Role
-	Password string
+	Username     string
+	Name         string
+	Role         model.Role
+	Password     string
+	SystemAccess []string
 }
+
+var allSystemAccess = []string{"sibum", "sikampung", "sidoka", "arsip_pegawai"}
 
 var defaultAdminUsers = []defaultAdminUser{
 	{
-		Username: "superadmin",
-		Name:     "Super Admin",
-		Role:     model.RoleSuperAdmin,
-		Password: "superadmin123",
+		Username:     "superadmin",
+		Name:         "Super Admin",
+		Role:         model.RoleSuperAdmin,
+		Password:     "superadmin123",
+		SystemAccess: allSystemAccess,
 	},
 	{
-		Username: "admin_dukcapil",
-		Name:     "Admin Dukcapil",
-		Role:     model.RoleAdminDukcapil,
-		Password: "dukcapil123",
+		Username:     "admin_dukcapil",
+		Name:         "Admin Dukcapil",
+		Role:         model.RoleAdminDukcapil,
+		Password:     "dukcapil123",
+		SystemAccess: []string{"sidoka"},
 	},
 	{
-		Username: "admin_pmk",
-		Name:     "Admin PMK",
-		Role:     model.RoleAdminPMK,
-		Password: "pmk123",
+		Username:     "admin_pmk",
+		Name:         "Admin PMK",
+		Role:         model.RoleAdminPMK,
+		Password:     "pmk123",
+		SystemAccess: []string{"sibum", "sikampung"},
 	},
 	{
-		Username: "admin_sekretariat",
-		Name:     "Admin Sekretariat",
-		Role:     model.RoleAdminSekretariat,
-		Password: "sekretariat123",
+		Username:     "admin_sekretariat",
+		Name:         "Admin Sekretariat",
+		Role:         model.RoleAdminSekretariat,
+		Password:     "sekretariat123",
+		SystemAccess: []string{"arsip_pegawai"},
 	},
 }
 
@@ -91,6 +99,7 @@ func SeedDefaultAdminUsers(ctx context.Context, db *gorm.DB) error {
 			Username:     strings.TrimSpace(user.Username),
 			FullName:     strings.TrimSpace(user.Name),
 			Role:         user.Role,
+			SystemAccess: pq.StringArray(user.SystemAccess),
 			PasswordHash: string(passwordHash),
 			IsActive:     true,
 		}
@@ -185,6 +194,7 @@ func (r *UserRepository) Create(ctx context.Context, request model.CreateAdminUs
 		Username:     strings.TrimSpace(request.Username),
 		FullName:     strings.TrimSpace(request.Name),
 		Role:         request.Role,
+		SystemAccess: normalizeSystemAccess(request.SystemAccess),
 		PasswordHash: string(passwordHash),
 		IsActive:     request.IsActive,
 	}
@@ -206,11 +216,12 @@ func (r *UserRepository) Update(ctx context.Context, id int64, request model.Upd
 		result := tx.Model(&model.AdminUserEntity{}).
 			Where("id = ?", id).
 			Updates(map[string]any{
-				"username":   strings.TrimSpace(request.Username),
-				"full_name":  strings.TrimSpace(request.Name),
-				"role":       request.Role,
-				"is_active":  request.IsActive,
-				"updated_at": gorm.Expr("NOW()"),
+				"username":      strings.TrimSpace(request.Username),
+				"full_name":     strings.TrimSpace(request.Name),
+				"role":          request.Role,
+				"system_access": normalizeSystemAccess(request.SystemAccess),
+				"is_active":     request.IsActive,
+				"updated_at":    gorm.Expr("NOW()"),
 			})
 		if result.Error != nil {
 			return normalizeWriteError(result.Error)
@@ -368,6 +379,23 @@ func findAdminUserByID(db *gorm.DB, id int64) (model.AdminUserEntity, bool, erro
 
 func normalizeUsername(username string) string {
 	return strings.ToLower(strings.TrimSpace(username))
+}
+
+func normalizeSystemAccess(values []string) pq.StringArray {
+	seen := map[string]bool{}
+	result := make([]string, 0, len(values))
+
+	for _, value := range values {
+		normalized := strings.ToLower(strings.TrimSpace(value))
+		if normalized == "" || seen[normalized] {
+			continue
+		}
+
+		seen[normalized] = true
+		result = append(result, normalized)
+	}
+
+	return pq.StringArray(result)
 }
 
 func normalizeWriteError(err error) error {

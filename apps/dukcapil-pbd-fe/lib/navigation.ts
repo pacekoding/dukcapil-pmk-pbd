@@ -5,19 +5,32 @@ export type PublicMenuItem = {
 
 export type DashboardMenuIcon =
   | "home"
+  | "database"
   | "map"
+  | "idCard"
+  | "building2"
   | "fileText"
+  | "folderArchive"
   | "listChecks"
-  | "clipboardList"
   | "users"
-  | "keyRound";
+  | "keyRound"
+  | "settings";
 
-export type DashboardMenuItem = {
+export type DashboardMenuLink = {
   title: string;
   href: string;
   icon: DashboardMenuIcon;
   roles?: string[];
 };
+
+export type DashboardMenuGroup = {
+  title: string;
+  icon: DashboardMenuIcon;
+  roles?: string[];
+  children: DashboardMenuLink[];
+};
+
+export type DashboardMenuItem = DashboardMenuLink | DashboardMenuGroup;
 
 export const publicMenus: PublicMenuItem[] = [
   {
@@ -33,6 +46,10 @@ export const publicMenus: PublicMenuItem[] = [
     href: "/data-wilayah",
   },
   {
+    label: "Peta GIS",
+    href: "/peta-geojson",
+  },
+  {
     label: "Layanan",
     href: "/#layanan",
   },
@@ -44,34 +61,98 @@ export const publicMenus: PublicMenuItem[] = [
 
 export const dashboardMenus: DashboardMenuItem[] = [
   {
+    title: "Portal Aplikasi",
+    href: "/portal",
+    icon: "home",
+  },
+  {
+    title: "SIBUM Kampung",
+    href: "/sibum/dashboard",
+    icon: "building2",
+  },
+  {
+    title: "SIKAMPUNG",
+    href: "/sikampung/dashboard",
+    icon: "map",
+  },
+  {
+    title: "SIDOKA",
+    href: "/sidoka/data",
+    icon: "folderArchive",
+  },
+  {
+    title: "Arsipku",
+    href: "/arsip-pegawai",
+    icon: "idCard",
+  },
+];
+
+export const sibumMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/sibum/dashboard",
+    icon: "home",
+  },
+  {
+    title: "Data BUMKam",
+    href: "/sibum/data",
+    icon: "database",
+  },
+];
+
+export const sikampungMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/sikampung/dashboard",
+    icon: "home",
+  },
+  {
+    title: "Data",
+    href: "/sikampung/data",
+    icon: "database",
+  },
+];
+
+export const sidokaMenus: DashboardMenuItem[] = [
+  {
+    title: "Data Pelaksanaan",
+    href: "/sidoka/data",
+    icon: "fileText",
+  },
+];
+
+export const arsipPegawaiMenus: DashboardMenuItem[] = [
+  {
+    title: "Data Pegawai",
+    href: "/arsip-pegawai",
+    icon: "users",
+  },
+];
+
+export const settingsMenus: DashboardMenuItem[] = [
+  {
     title: "Dashboard",
     href: "/dashboard",
     icon: "home",
   },
   {
-    title: "Data Wilayah",
-    href: "/dashboard/data-wilayah",
+    title: "Pengguna Portal",
+    href: "/dashboard/users",
+    icon: "users",
+  },
+  {
+    title: "Data Kab/Kota",
+    href: "/dashboard/kab-kota",
     icon: "map",
   },
   {
     title: "Data SSD",
-    href: "/dashboard/ssd",
-    icon: "fileText",
+    href: "/dashboard/SDD",
+    icon: "database",
   },
   {
     title: "Subkegiatan",
-    href: "/dashboard/subkegiatan",
+    href: "/dashboard/Subkegiatan",
     icon: "listChecks",
-  },
-  {
-    title: "Realisasi Subkegiatan",
-    href: "/dashboard/realisasi-subkegiatan",
-    icon: "clipboardList",
-  },
-  {
-    title: "User Admin",
-    href: "/dashboard/users",
-    icon: "users",
-    roles: ["superadmin"],
   },
 ];

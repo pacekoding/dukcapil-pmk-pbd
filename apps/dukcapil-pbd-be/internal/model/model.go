@@ -7,31 +7,6 @@ type HealthResponse struct {
 	Database string `json:"database,omitempty"`
 }
 
-type DashboardStat struct {
-	Title       string `json:"title"`
-	Value       string `json:"value"`
-	Icon        string `json:"icon"`
-	Color       string `json:"color"`
-	Trend       string `json:"trend"`
-	Description string `json:"description"`
-}
-
-type DashboardActivity struct {
-	Title       string `json:"title"`
-	Location    string `json:"location"`
-	Status      string `json:"status"`
-	Time        string `json:"time"`
-	Icon        string `json:"icon"`
-	Color       string `json:"color"`
-	Description string `json:"description"`
-}
-
-type DashboardOverview struct {
-	TahunAnggaran string              `json:"tahunAnggaran"`
-	Stats         []DashboardStat     `json:"stats"`
-	Activities    []DashboardActivity `json:"activities"`
-}
-
 type WebsiteStat struct {
 	Label       string `json:"label"`
 	Value       string `json:"value"`

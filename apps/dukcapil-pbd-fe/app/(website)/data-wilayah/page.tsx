@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  Building2,
   Fingerprint,
   Home,
   MapPin,
@@ -27,6 +28,7 @@ import {
   formatArea,
   formatNumber,
   getProvinceTotals,
+  getTotalBumdes,
   getTotalIdmVillages,
   tabLabels,
   type RegionTab,
@@ -43,13 +45,22 @@ const getBarPercent = (value: number, values: number[]) => {
   return Math.max(4, (value / max) * 100);
 };
 
+const mapPalette = {
+  ocean: "#7ec8e8",
+  oceanGrid: "#3f9bc2",
+  oceanRoute: "#1f7ea8",
+  land: "#64b96f",
+  landStroke: "#24654b",
+  regionStroke: "#0f3f35",
+};
+
 const regionMapFills: Record<string, string> = {
-  "kabupaten-sorong": "#2dd4bf",
+  "kabupaten-sorong": "#28c7b7",
   "kota-sorong": "#f97316",
-  "raja-ampat": "#60a5fa",
-  "sorong-selatan": "#a3e635",
+  "raja-ampat": "#4f8fe8",
+  "sorong-selatan": "#f7b516",
   maybrat: "#f59e0b",
-  tambrauw: "#38bdf8",
+  tambrauw: "#35b7df",
 };
 
 const getRegionFill = (
@@ -58,12 +69,12 @@ const getRegionFill = (
   hovered: boolean,
 ) => {
   if (selected) {
-    return "#ffb800";
+    return regionMapFills[regionId] ?? "#ffb800";
   }
   if (hovered) {
     return "#fde047";
   }
-  return regionMapFills[regionId] ?? "#64748b";
+  return regionMapFills[regionId] ?? mapPalette.land;
 };
 
 export default function DataWilayahPage() {
@@ -74,7 +85,7 @@ export default function DataWilayahPage() {
   const totals = useMemo(() => getProvinceTotals(regions), [regions]);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [hoveredRegionId, setHoveredRegionId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<RegionTab>("idm");
+  const [activeTab, setActiveTab] = useState<RegionTab>("registration");
 
   useEffect(() => {
     let mounted = true;
@@ -162,7 +173,8 @@ export default function DataWilayahPage() {
             </h1>
             <p className="mt-5 max-w-3xl text-base leading-8 text-white/75">
               Ringkasan data kabupaten/kota tahun {tahunAnggaran}: penduduk,
-              OAP, administrasi kependudukan, pencatatan sipil, dan status IDM.
+              OAP, administrasi kependudukan, pencatatan sipil, status IDM,
+              dan BUMDes.
             </p>
           </motion.div>
 
@@ -193,7 +205,7 @@ export default function DataWilayahPage() {
             ) : null}
           </div>
 
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <OverviewCard
               icon={Users}
               label="Total Jiwa"
@@ -214,6 +226,11 @@ export default function DataWilayahPage() {
               label="Total Desa IDM"
               value={totals.totalDesaIdm}
             />
+            <OverviewCard
+              icon={Building2}
+              label="Total BUMDes"
+              value={totals.totalBumdes}
+            />
           </div>
         </div>
       </section>
@@ -226,7 +243,7 @@ export default function DataWilayahPage() {
           onHover={setHoveredRegionId}
           onSelect={(regionId) => {
             setSelectedRegionId(regionId);
-            setActiveTab("idm");
+            setActiveTab("registration");
           }}
         />
         {selectedRegion ? (
@@ -320,22 +337,29 @@ function InteractiveRegionMap({
               />
             </filter>
           </defs>
-          <rect x="16" y="20" width="608" height="386" rx="18" fill="#1f2933" />
+          <rect
+            x="16"
+            y="20"
+            width="608"
+            height="386"
+            rx="18"
+            fill={mapPalette.ocean}
+          />
           <path
             d="M36 154 H610 M36 256 H610 M160 36 V394 M320 36 V394 M480 36 V394"
             fill="none"
-            stroke="#334155"
+            stroke={mapPalette.oceanGrid}
             strokeWidth="1"
             strokeDasharray="7 12"
-            opacity="0.55"
+            opacity="0.35"
           />
           <path
             d="M48 356 C145 330 214 365 318 338 C416 312 488 329 596 284"
             fill="none"
-            stroke="#475569"
+            stroke={mapPalette.oceanRoute}
             strokeWidth="2"
             strokeDasharray="8 10"
-            opacity="0.65"
+            opacity="0.42"
           />
 
           <g aria-hidden="true">
@@ -343,12 +367,12 @@ function InteractiveRegionMap({
               <path
                 key={shape.id}
                 d={shape.d}
-                fill="#2f3a4c"
+                fill={mapPalette.land}
                 fillRule="evenodd"
                 clipRule="evenodd"
-                stroke="#111827"
+                stroke={mapPalette.landStroke}
                 strokeWidth="1.2"
-                opacity="0.52"
+                opacity="0.9"
               />
             ))}
           </g>
@@ -379,8 +403,12 @@ function InteractiveRegionMap({
               className:
                 "cursor-pointer outline-none transition-colors duration-300 focus-visible:stroke-pbd-gold focus-visible:stroke-[4px]",
               fill: getRegionFill(region.id, selected, hovered),
-              stroke: selected ? "#ffffff" : hovered ? "#fffbeb" : "#0f172a",
-              strokeWidth: selected ? 3 : hovered ? 2.4 : 1.5,
+              stroke: selected
+                ? "#ffffff"
+                : hovered
+                  ? "#fffbeb"
+                  : mapPalette.regionStroke,
+              strokeWidth: selected ? 3.4 : hovered ? 2.6 : 1.6,
               filter: selected ? "url(#regionShadow)" : undefined,
             };
 
@@ -498,7 +526,7 @@ function RegionDetailPanel({
       </div>
 
       <div className="p-5 sm:p-6">
-        <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 rounded-lg bg-slate-100 p-1 sm:grid-cols-3 xl:grid-cols-5">
           {(Object.keys(tabLabels) as RegionTab[]).map((tab) => (
             <button
               key={tab}
@@ -606,18 +634,48 @@ function RegionTabContent({
     );
   }
 
-  const values = Object.values(region.civil);
-  return (
-    <DataGroup
-      values={values}
-      items={[
-        ["Akta Kelahiran", region.civil.aktaKelahiran],
-        ["Akta Kematian", region.civil.aktaKematian],
-        ["Akta Perkawinan", region.civil.aktaPerkawinan],
-        ["Akta Perceraian", region.civil.aktaPerceraian],
-      ]}
-    />
-  );
+  if (activeTab === "bumdes") {
+    const values = [
+      region.bumdes.jumlah,
+      region.bumdes.aktif,
+      region.bumdes.tidakAktif,
+      region.bumdes.bersama,
+    ];
+    const total = getTotalBumdes(region.bumdes);
+
+    if (total === 0 && values.every((value) => value === 0)) {
+      return <EmptyDataNote message="Tidak tersedia data BUMDes." />;
+    }
+
+    return (
+      <DataGroup
+        values={values}
+        items={[
+          ["Jumlah BUMDes", region.bumdes.jumlah],
+          ["BUMDes Aktif", region.bumdes.aktif],
+          ["BUMDes Tidak Aktif", region.bumdes.tidakAktif],
+          ["BUMDes Bersama", region.bumdes.bersama],
+        ]}
+      />
+    );
+  }
+
+  if (activeTab === "civil") {
+    const values = Object.values(region.civil);
+    return (
+      <DataGroup
+        values={values}
+        items={[
+          ["Akta Kelahiran", region.civil.aktaKelahiran],
+          ["Akta Kematian", region.civil.aktaKematian],
+          ["Akta Perkawinan", region.civil.aktaPerkawinan],
+          ["Akta Perceraian", region.civil.aktaPerceraian],
+        ]}
+      />
+    );
+  }
+
+  return <EmptyDataNote message="Data belum tersedia." />;
 }
 
 function DataGroup({

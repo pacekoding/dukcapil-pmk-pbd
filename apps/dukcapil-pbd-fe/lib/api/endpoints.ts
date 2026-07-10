@@ -1,10 +1,6 @@
 import { API_PREFIX } from "@/lib/api/http";
 
 export const apiEndpoints = {
-  dashboard: `${API_PREFIX}/dashboard`,
-  dataWilayah: `${API_PREFIX}/data-wilayah`,
-  dataWilayahDetail: (id: string) => `${API_PREFIX}/data-wilayah/${id}`,
-  dataWilayahSettings: `${API_PREFIX}/data-wilayah/settings`,
   ssd: `${API_PREFIX}/ssd`,
   ssdImport: `${API_PREFIX}/ssd/import`,
   ssdDetail: (id: number) => `${API_PREFIX}/ssd/${id}`,
@@ -12,17 +8,20 @@ export const apiEndpoints = {
   subkegiatan: `${API_PREFIX}/subkegiatan`,
   subkegiatanImport: `${API_PREFIX}/subkegiatan/import`,
   subkegiatanDetail: (id: number) => `${API_PREFIX}/subkegiatan/${id}`,
-  realisasiSubkegiatan: `${API_PREFIX}/realisasi-subkegiatan`,
-  realisasiSubkegiatanDetail: (id: number) =>
-    `${API_PREFIX}/realisasi-subkegiatan/${id}`,
-  realisasiSubkegiatanFoto: (id: number) =>
-    `${API_PREFIX}/realisasi-subkegiatan/${id}/foto`,
-  realisasiSubkegiatanDokumen: (id: number) =>
-    `${API_PREFIX}/realisasi-subkegiatan/${id}/dokumen`,
+  bumKampung: `${API_PREFIX}/bum-kampung`,
+  bumKampungDetail: (id: number) => `${API_PREFIX}/bum-kampung/${id}`,
   users: `${API_PREFIX}/users`,
   userDetail: (id: number) => `${API_PREFIX}/users/${id}`,
   userResetPassword: (id: number) => `${API_PREFIX}/users/${id}/reset-password`,
-  accountChangePassword: `${API_PREFIX}/account/change-password`,
+  kabKota: `${API_PREFIX}/kab-kota`,
+  kabKotaDetail: (id: number) => `${API_PREFIX}/kab-kota/${id}`,
+  pelaksanaanDocuments: `${API_PREFIX}/pelaksanaan-documents`,
+  pelaksanaanDocumentDetail: (id: number) =>
+    `${API_PREFIX}/pelaksanaan-documents/${id}`,
+  pelaksanaanDocumentPreview: (id: number) =>
+    `${API_PREFIX}/pelaksanaan-documents/${id}/preview`,
+  pelaksanaanDocumentDownload: (id: number) =>
+    `${API_PREFIX}/pelaksanaan-documents/${id}/download`,
   websiteHome: `${API_PREFIX}/website/home`,
   websiteDataWilayah: `${API_PREFIX}/website/data-wilayah`,
   websiteDataWilayahSettings: `${API_PREFIX}/website/data-wilayah/settings`,

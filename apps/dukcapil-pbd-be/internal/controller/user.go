@@ -16,6 +16,13 @@ import (
 
 const minPasswordLength = 8
 
+var validSystemAccess = map[string]bool{
+	"sibum":         true,
+	"sikampung":     true,
+	"sidoka":        true,
+	"arsip_pegawai": true,
+}
+
 type AdminUserStore interface {
 	List(ctx context.Context) ([]model.AdminUser, error)
 	GetByID(ctx context.Context, id int64) (model.AdminUser, bool, error)
@@ -211,11 +218,17 @@ func validateCreateAdminUser(request model.CreateAdminUserRequest) error {
 	if err := validateAdminUserFields(request.Username, request.Name, request.Role); err != nil {
 		return err
 	}
+	if err := validateSystemAccess(request.SystemAccess); err != nil {
+		return err
+	}
 	return validatePassword(request.Password)
 }
 
 func validateUpdateAdminUser(request model.UpdateAdminUserRequest) error {
-	return validateAdminUserFields(request.Username, request.Name, request.Role)
+	if err := validateAdminUserFields(request.Username, request.Name, request.Role); err != nil {
+		return err
+	}
+	return validateSystemAccess(request.SystemAccess)
 }
 
 func validateAdminUserFields(username, name string, role model.Role) error {
@@ -240,6 +253,19 @@ func validatePassword(password string) error {
 
 func validRole(role model.Role) bool {
 	return role.Valid()
+}
+
+func validateSystemAccess(values []string) error {
+	for _, value := range values {
+		normalized := strings.ToLower(strings.TrimSpace(value))
+		if normalized == "" {
+			continue
+		}
+		if !validSystemAccess[normalized] {
+			return echo.NewHTTPError(http.StatusBadRequest, "hak akses sistem tidak valid")
+		}
+	}
+	return nil
 }
 
 func sameUsername(left, right string) bool {

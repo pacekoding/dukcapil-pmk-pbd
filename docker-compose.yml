@@ -44,7 +44,6 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
         NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/backend}
-        JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
     container_name: dukcapil-pbd-fe
     environment:
       NODE_ENV: production

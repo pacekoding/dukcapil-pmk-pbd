@@ -1,7 +1,4 @@
-DROP TABLE IF EXISTS realisasi_subkegiatan_dokumen;
-DROP TABLE IF EXISTS realisasi_subkegiatan_foto;
-DROP TABLE IF EXISTS realisasi_subkegiatan_ssd_data;
-DROP TABLE IF EXISTS realisasi_subkegiatan;
+DROP TABLE IF EXISTS pelaksanaan_documents;
 DROP TABLE IF EXISTS subkegiatan_ssd;
 DROP TABLE IF EXISTS ssd;
 DROP TABLE IF EXISTS subkegiatan;

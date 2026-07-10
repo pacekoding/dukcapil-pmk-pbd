@@ -71,6 +71,10 @@ func (r *DataWilayahRepository) Update(ctx context.Context, tahunAnggaran string
 				"idm_berkembang":                 payload.Idm.Berkembang,
 				"idm_maju":                       payload.Idm.Maju,
 				"idm_mandiri":                    payload.Idm.Mandiri,
+				"bumdes_jumlah":                  payload.Bumdes.Jumlah,
+				"bumdes_aktif":                   payload.Bumdes.Aktif,
+				"bumdes_tidak_aktif":             payload.Bumdes.TidakAktif,
+				"bumdes_bersama":                 payload.Bumdes.Bersama,
 				"registration_penerbitan_kk":     payload.Registration.PenerbitanKk,
 				"registration_perubahan_kk":      payload.Registration.PerubahanKk,
 				"registration_kia":               payload.Registration.Kia,
@@ -224,6 +228,7 @@ func (r *DataWilayahRepository) ensureYearData(db *gorm.DB, tahunAnggaran string
 		INSERT INTO data_wilayah (
 			tahun_anggaran, id, sort_order, name, short_name, region_type, map_label,
 			idm_sangat_tertinggal, idm_tertinggal, idm_berkembang, idm_maju, idm_mandiri,
+			bumdes_jumlah, bumdes_aktif, bumdes_tidak_aktif, bumdes_bersama,
 			registration_penerbitan_kk, registration_perubahan_kk, registration_kia, registration_nik_wni,
 			registration_perekaman_ktp_el, registration_pencetakan_ktp_el,
 			oap_luas_wilayah, oap_jumlah_oap, oap_jumlah_non_oap, oap_jumlah_jiwa,
@@ -232,6 +237,7 @@ func (r *DataWilayahRepository) ensureYearData(db *gorm.DB, tahunAnggaran string
 		SELECT
 			?, id, sort_order, name, short_name, region_type, map_label,
 			idm_sangat_tertinggal, idm_tertinggal, idm_berkembang, idm_maju, idm_mandiri,
+			bumdes_jumlah, bumdes_aktif, bumdes_tidak_aktif, bumdes_bersama,
 			registration_penerbitan_kk, registration_perubahan_kk, registration_kia, registration_nik_wni,
 			registration_perekaman_ktp_el, registration_pencetakan_ktp_el,
 			oap_luas_wilayah, oap_jumlah_oap, oap_jumlah_non_oap, oap_jumlah_jiwa,

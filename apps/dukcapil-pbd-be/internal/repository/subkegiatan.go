@@ -238,12 +238,6 @@ func (r *SubkegiatanRepository) Delete(ctx context.Context, tahunAnggaran string
 	tahunAnggaran = strings.TrimSpace(tahunAnggaran)
 	var deleted bool
 	err = db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.
-			Where("tahun_anggaran = ? AND subkegiatan_id = ?", tahunAnggaran, id).
-			Delete(&model.RealisasiSubkegiatanEntity{}).Error; err != nil {
-			return err
-		}
-
 		result := tx.
 			Where("tahun_anggaran = ? AND id = ?", tahunAnggaran, id).
 			Delete(&model.SubkegiatanEntity{})

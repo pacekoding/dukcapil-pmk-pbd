@@ -22,6 +22,7 @@ type Claims struct {
 	Username      string     `json:"username"`
 	Name          string     `json:"name"`
 	Role          model.Role `json:"role"`
+	SystemAccess  []string   `json:"systemAccess"`
 	TahunAnggaran string     `json:"tahunAnggaran"`
 	IssuedAt      int64      `json:"iat"`
 	ExpiresAt     int64      `json:"exp"`
@@ -48,6 +49,7 @@ func (m *Manager) Issue(user model.User, tahunAnggaran string) (string, error) {
 		Username:      user.Username,
 		Name:          user.Name,
 		Role:          user.Role,
+		SystemAccess:  user.SystemAccess,
 		TahunAnggaran: tahunAnggaran,
 		IssuedAt:      now.Unix(),
 		ExpiresAt:     now.Add(m.ttl).Unix(),

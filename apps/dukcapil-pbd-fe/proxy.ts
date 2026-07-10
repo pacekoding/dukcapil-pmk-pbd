@@ -13,28 +13,116 @@ export default function proxy(
       "admin_token"
     )?.value;
 
+  const role =
+    request.cookies.get(
+      "admin_role"
+    )?.value;
+
   const pathname =
     request.nextUrl.pathname;
 
+  const isPortal =
+    pathname === "/portal";
+
+  const isPortalTypo =
+    pathname === "/protal";
+
   const isDashboard =
+    pathname === "/dashboard";
+
+  const isDashboardSubpath =
     pathname.startsWith(
-      "/dashboard"
+      "/dashboard/"
+    );
+
+  const isSibum =
+    pathname.startsWith(
+      "/sibum"
+    );
+
+  const isSidoka =
+    pathname.startsWith(
+      "/sidoka"
+    );
+
+  const isSikampung =
+    pathname.startsWith(
+      "/sikampung"
+    );
+
+  const isArsipPegawai =
+    pathname.startsWith(
+      "/arsip-pegawai"
+    );
+
+  const isSettings =
+    pathname.startsWith(
+      "/settings"
     );
 
   const isLoginPage =
     pathname === "/login";
+
+  const isSuperAdmin =
+    role?.toLowerCase().replace(/[^a-z0-9]/g, "") === "superadmin";
+
+  const settingsRedirectPath =
+    dashboardPathFromSettingsPath(pathname);
+
+  if (
+    isPortalTypo
+  ) {
+    return NextResponse.redirect(
+      new URL(
+        "/portal",
+        request.url
+      )
+    );
+  }
 
   /* =========================
      PROTECT DASHBOARD
   ========================= */
 
   if (
-    isDashboard &&
+    (isPortal ||
+      isDashboard ||
+      isDashboardSubpath ||
+      isSibum ||
+      isSidoka ||
+      isSikampung ||
+      isArsipPegawai ||
+      isSettings) &&
     !token
   ) {
     return NextResponse.redirect(
       new URL(
         "/login",
+        request.url
+      )
+    );
+  }
+
+  if (
+    (isDashboard ||
+      isDashboardSubpath ||
+      isSettings) &&
+    !isSuperAdmin
+  ) {
+    return NextResponse.redirect(
+      new URL(
+        "/portal",
+        request.url
+      )
+    );
+  }
+
+  if (
+    settingsRedirectPath
+  ) {
+    return NextResponse.redirect(
+      new URL(
+        settingsRedirectPath,
         request.url
       )
     );
@@ -50,7 +138,7 @@ export default function proxy(
   ) {
     return NextResponse.redirect(
       new URL(
-        "/dashboard",
+        "/portal",
         request.url
       )
     );
@@ -65,7 +153,42 @@ export default function proxy(
 
 export const config = {
   matcher: [
+    "/portal",
+    "/protal",
+    "/dashboard",
     "/dashboard/:path*",
+    "/sibum/:path*",
+    "/sidoka/:path*",
+    "/sikampung/:path*",
+    "/arsip-pegawai",
+    "/arsip-pegawai/:path*",
+    "/settings",
+    "/settings/:path*",
     "/login",
   ],
 };
+
+function dashboardPathFromSettingsPath(pathname: string) {
+  if (pathname === "/settings") {
+    return "/dashboard";
+  }
+  if (pathname === "/settings/users" || pathname.startsWith("/settings/users/")) {
+    return pathname.replace("/settings/users", "/dashboard/users");
+  }
+  if (
+    pathname === "/settings/kab-kota" ||
+    pathname.startsWith("/settings/kab-kota/")
+  ) {
+    return pathname.replace("/settings/kab-kota", "/dashboard/kab-kota");
+  }
+  if (pathname === "/settings/SDD" || pathname.startsWith("/settings/SDD/")) {
+    return pathname.replace("/settings/SDD", "/dashboard/SDD");
+  }
+  if (
+    pathname === "/settings/Subkegiatan" ||
+    pathname.startsWith("/settings/Subkegiatan/")
+  ) {
+    return pathname.replace("/settings/Subkegiatan", "/dashboard/Subkegiatan");
+  }
+  return "";
+}

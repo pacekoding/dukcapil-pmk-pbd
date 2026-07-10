@@ -111,7 +111,7 @@ export default function LoginPage() {
 
       /* SUCCESS */
 
-      router.push("/dashboard");
+      router.push("/portal");
 
       router.refresh();
     } catch (error) {

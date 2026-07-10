@@ -29,6 +29,10 @@ CREATE TABLE IF NOT EXISTS data_wilayah (
 	idm_berkembang INTEGER NOT NULL DEFAULT 0,
 	idm_maju INTEGER NOT NULL DEFAULT 0,
 	idm_mandiri INTEGER NOT NULL DEFAULT 0,
+	bumdes_jumlah INTEGER NOT NULL DEFAULT 0,
+	bumdes_aktif INTEGER NOT NULL DEFAULT 0,
+	bumdes_tidak_aktif INTEGER NOT NULL DEFAULT 0,
+	bumdes_bersama INTEGER NOT NULL DEFAULT 0,
 	registration_penerbitan_kk INTEGER NOT NULL DEFAULT 0,
 	registration_perubahan_kk INTEGER NOT NULL DEFAULT 0,
 	registration_kia INTEGER NOT NULL DEFAULT 0,
@@ -50,6 +54,7 @@ CREATE TABLE IF NOT EXISTS data_wilayah (
 	CONSTRAINT data_wilayah_region_type_check CHECK (region_type IN ('Kabupaten', 'Kota')),
 	CONSTRAINT data_wilayah_non_negative_check CHECK (
 		idm_sangat_tertinggal >= 0 AND idm_tertinggal >= 0 AND idm_berkembang >= 0 AND idm_maju >= 0 AND idm_mandiri >= 0 AND
+		bumdes_jumlah >= 0 AND bumdes_aktif >= 0 AND bumdes_tidak_aktif >= 0 AND bumdes_bersama >= 0 AND
 		registration_penerbitan_kk >= 0 AND registration_perubahan_kk >= 0 AND registration_kia >= 0 AND registration_nik_wni >= 0 AND
 		registration_perekaman_ktp_el >= 0 AND registration_pencetakan_ktp_el >= 0 AND
 		oap_luas_wilayah >= 0 AND oap_jumlah_oap >= 0 AND oap_jumlah_non_oap >= 0 AND oap_jumlah_jiwa >= 0 AND
@@ -120,94 +125,42 @@ CREATE TABLE IF NOT EXISTS subkegiatan_ssd (
 CREATE INDEX IF NOT EXISTS idx_subkegiatan_ssd_tahun_subkegiatan ON subkegiatan_ssd(tahun_anggaran, subkegiatan_id);
 CREATE INDEX IF NOT EXISTS idx_subkegiatan_ssd_tahun_ssd ON subkegiatan_ssd(tahun_anggaran, ssd_id);
 
-CREATE TABLE IF NOT EXISTS realisasi_subkegiatan (
+CREATE TABLE IF NOT EXISTS pelaksanaan_documents (
 	id BIGSERIAL PRIMARY KEY,
 	tahun_anggaran VARCHAR(4) NOT NULL,
-	subkegiatan_id BIGINT NOT NULL,
-	tanggal DATE NOT NULL,
+	subkegiatan_id BIGINT,
 	nama TEXT NOT NULL,
-	lokasi TEXT NOT NULL DEFAULT '',
-	fasilitator TEXT NOT NULL DEFAULT '',
-	narasumber TEXT NOT NULL DEFAULT '',
-	jabatan_narasumber TEXT NOT NULL DEFAULT '',
-	jumlah_tamu BIGINT NOT NULL DEFAULT 0,
-	tujuan_kegiatan TEXT NOT NULL DEFAULT '',
-	poin_penting TEXT NOT NULL DEFAULT '',
-	hasil_kegiatan TEXT NOT NULL DEFAULT '',
-	keterangan TEXT NOT NULL DEFAULT '',
-	target_output DOUBLE PRECISION,
-	realisasi_output DOUBLE PRECISION,
-	satuan_output TEXT NOT NULL DEFAULT '',
-	kendala TEXT NOT NULL DEFAULT '',
-	tindak_lanjut TEXT NOT NULL DEFAULT '',
-	catatan_evaluasi TEXT NOT NULL DEFAULT '',
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	CONSTRAINT realisasi_subkegiatan_tahun_anggaran_check CHECK (tahun_anggaran ~ '^\d{4}$'),
-	CONSTRAINT realisasi_subkegiatan_nama_not_blank_check CHECK (BTRIM(nama) <> ''),
-	CONSTRAINT realisasi_subkegiatan_jumlah_tamu_non_negative_check CHECK (jumlah_tamu >= 0),
-	CONSTRAINT realisasi_subkegiatan_target_output_non_negative_check CHECK (target_output IS NULL OR target_output >= 0),
-	CONSTRAINT realisasi_subkegiatan_realisasi_output_non_negative_check CHECK (realisasi_output IS NULL OR realisasi_output >= 0),
-	CONSTRAINT realisasi_subkegiatan_subkegiatan_fk FOREIGN KEY (tahun_anggaran, subkegiatan_id) REFERENCES subkegiatan(tahun_anggaran, id) ON DELETE RESTRICT
-);
-
-CREATE INDEX IF NOT EXISTS idx_realisasi_subkegiatan_tahun_tanggal ON realisasi_subkegiatan(tahun_anggaran, tanggal DESC);
-CREATE INDEX IF NOT EXISTS idx_realisasi_subkegiatan_subkegiatan ON realisasi_subkegiatan(subkegiatan_id);
-
-CREATE TABLE IF NOT EXISTS realisasi_subkegiatan_ssd_data (
-	realisasi_id BIGINT NOT NULL REFERENCES realisasi_subkegiatan(id) ON DELETE CASCADE,
-	ssd_id BIGINT NOT NULL,
-	tahun_anggaran VARCHAR(4) NOT NULL,
-	nilai TEXT NOT NULL DEFAULT '',
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	PRIMARY KEY (realisasi_id, ssd_id),
-	CONSTRAINT realisasi_subkegiatan_ssd_data_tahun_anggaran_check CHECK (tahun_anggaran ~ '^\d{4}$'),
-	CONSTRAINT realisasi_subkegiatan_ssd_data_ssd_fk FOREIGN KEY (tahun_anggaran, ssd_id) REFERENCES ssd(tahun_anggaran, id) ON DELETE RESTRICT
-);
-
-CREATE INDEX IF NOT EXISTS idx_realisasi_subkegiatan_ssd_data_realisasi ON realisasi_subkegiatan_ssd_data(realisasi_id);
-CREATE INDEX IF NOT EXISTS idx_realisasi_subkegiatan_ssd_data_ssd ON realisasi_subkegiatan_ssd_data(tahun_anggaran, ssd_id);
-
-CREATE TABLE IF NOT EXISTS realisasi_subkegiatan_foto (
-	id BIGSERIAL PRIMARY KEY,
-	realisasi_id BIGINT NOT NULL REFERENCES realisasi_subkegiatan(id) ON DELETE CASCADE,
-	file_name TEXT NOT NULL,
 	original_name TEXT NOT NULL,
 	mime_type TEXT NOT NULL,
 	size BIGINT NOT NULL DEFAULT 0,
 	url TEXT NOT NULL,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+	is_dokumen_dssd BOOLEAN NOT NULL DEFAULT FALSE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	CONSTRAINT pelaksanaan_documents_tahun_anggaran_check CHECK (tahun_anggaran ~ '^\d{4}$'),
+	CONSTRAINT pelaksanaan_documents_nama_not_blank_check CHECK (BTRIM(nama) <> ''),
+	CONSTRAINT pelaksanaan_documents_original_name_not_blank_check CHECK (BTRIM(original_name) <> ''),
+	CONSTRAINT pelaksanaan_documents_size_non_negative_check CHECK (size >= 0),
+	CONSTRAINT pelaksanaan_documents_subkegiatan_fk FOREIGN KEY (tahun_anggaran, subkegiatan_id) REFERENCES subkegiatan(tahun_anggaran, id) ON DELETE SET NULL (subkegiatan_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_realisasi_subkegiatan_foto_realisasi ON realisasi_subkegiatan_foto(realisasi_id);
-
-CREATE TABLE IF NOT EXISTS realisasi_subkegiatan_dokumen (
-	id BIGSERIAL PRIMARY KEY,
-	realisasi_id BIGINT NOT NULL REFERENCES realisasi_subkegiatan(id) ON DELETE CASCADE,
-	file_name TEXT NOT NULL,
-	original_name TEXT NOT NULL,
-	mime_type TEXT NOT NULL,
-	size BIGINT NOT NULL DEFAULT 0,
-	url TEXT NOT NULL,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_realisasi_subkegiatan_dokumen_realisasi ON realisasi_subkegiatan_dokumen(realisasi_id);
+CREATE INDEX IF NOT EXISTS idx_pelaksanaan_documents_tahun_created ON pelaksanaan_documents(tahun_anggaran, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pelaksanaan_documents_subkegiatan ON pelaksanaan_documents(tahun_anggaran, subkegiatan_id);
+CREATE INDEX IF NOT EXISTS idx_pelaksanaan_documents_is_dssd ON pelaksanaan_documents(tahun_anggaran, is_dokumen_dssd);
 
 INSERT INTO data_wilayah (
 	tahun_anggaran, id, sort_order, name, short_name, region_type, map_label,
 	idm_sangat_tertinggal, idm_tertinggal, idm_berkembang, idm_maju, idm_mandiri,
+	bumdes_jumlah, bumdes_aktif, bumdes_tidak_aktif, bumdes_bersama,
 	registration_penerbitan_kk, registration_perubahan_kk, registration_kia, registration_nik_wni, registration_perekaman_ktp_el, registration_pencetakan_ktp_el,
 	oap_luas_wilayah, oap_jumlah_oap, oap_jumlah_non_oap, oap_jumlah_jiwa,
 	civil_akta_kelahiran, civil_akta_kematian, civil_akta_perkawinan, civil_akta_perceraian
 ) VALUES
-	('2025', 'kabupaten-sorong', 1, 'Kabupaten Sorong', 'Sorong', 'Kabupaten', 'Kab. Sorong', 60, 80, 66, 3, 0, 4311, 8945, 3861, 2756, 2511, 21637, 6544.23, 54379, 76322, 130701, 4213, 947, 390, 21),
-	('2025', 'kota-sorong', 2, 'Kota Sorong', 'Kota Sorong', 'Kota', 'Kota Sorong', 0, 0, 0, 0, 0, 9376, 14612, 1490, 4627, 4418, 27136, 656.64, 77487, 209765, 287252, 7208, 1941, 1118, 47),
-	('2025', 'raja-ampat', 3, 'Kabupaten Raja Ampat', 'Raja Ampat', 'Kabupaten', 'Raja Ampat', 16, 33, 75, 6, 0, 2688, 4543, 1997, 1713, 1466, 10624, 8034.44, 53035, 20713, 73748, 3998, 545, 741, 2),
-	('2025', 'sorong-selatan', 4, 'Kabupaten Sorong Selatan', 'Sorong Selatan', 'Kabupaten', 'Sorong Selatan', 28, 40, 73, 4, 0, 1342, 2568, 680, 1570, 880, 6031, 6594.31, 46829, 10684, 57513, 2571, 323, 359, 5),
-	('2025', 'maybrat', 5, 'Kabupaten Maybrat', 'Maybrat', 'Kabupaten', 'Maybrat', 107, 128, 59, 1, 0, 1230, 3222, 190, 696, 505, 5220, 5461.69, 43178, 3626, 46804, 1775, 300, 203, 4),
-	('2025', 'tambrauw', 6, 'Kabupaten Tambrauw', 'Tambrauw', 'Kabupaten', 'Tambrauw', 202, 64, 19, 0, 0, 631, 1253, 1025, 596, 330, 2861, 11529.18, 21302, 10086, 31388, 830, 120, 101, 1)
+	('2025', 'kabupaten-sorong', 1, 'Kabupaten Sorong', 'Sorong', 'Kabupaten', 'Kab. Sorong', 60, 80, 66, 3, 0, 0, 0, 0, 0, 4311, 8945, 3861, 2756, 2511, 21637, 6544.23, 54379, 76322, 130701, 4213, 947, 390, 21),
+	('2025', 'kota-sorong', 2, 'Kota Sorong', 'Kota Sorong', 'Kota', 'Kota Sorong', 0, 0, 0, 0, 0, 0, 0, 0, 0, 9376, 14612, 1490, 4627, 4418, 27136, 656.64, 77487, 209765, 287252, 7208, 1941, 1118, 47),
+	('2025', 'raja-ampat', 3, 'Kabupaten Raja Ampat', 'Raja Ampat', 'Kabupaten', 'Raja Ampat', 16, 33, 75, 6, 0, 0, 0, 0, 0, 2688, 4543, 1997, 1713, 1466, 10624, 8034.44, 53035, 20713, 73748, 3998, 545, 741, 2),
+	('2025', 'sorong-selatan', 4, 'Kabupaten Sorong Selatan', 'Sorong Selatan', 'Kabupaten', 'Sorong Selatan', 28, 40, 73, 4, 0, 0, 0, 0, 0, 1342, 2568, 680, 1570, 880, 6031, 6594.31, 46829, 10684, 57513, 2571, 323, 359, 5),
+	('2025', 'maybrat', 5, 'Kabupaten Maybrat', 'Maybrat', 'Kabupaten', 'Maybrat', 107, 128, 59, 1, 0, 0, 0, 0, 0, 1230, 3222, 190, 696, 505, 5220, 5461.69, 43178, 3626, 46804, 1775, 300, 203, 4),
+	('2025', 'tambrauw', 6, 'Kabupaten Tambrauw', 'Tambrauw', 'Kabupaten', 'Tambrauw', 202, 64, 19, 0, 0, 0, 0, 0, 0, 631, 1253, 1025, 596, 330, 2861, 11529.18, 21302, 10086, 31388, 830, 120, 101, 1)
 ON CONFLICT (tahun_anggaran, id) DO NOTHING;
 
 INSERT INTO data_wilayah_public_settings (

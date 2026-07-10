@@ -1,19 +1,6 @@
 import { apiEndpoints } from "@/lib/api/endpoints";
 import { apiRequest } from "@/lib/api/http";
-import type {
-  DataWilayahResponse,
-  DataWilayahWebsiteSettings,
-  DataWilayahWebsiteSettingsResponse,
-  RegionData,
-} from "@/types/data-wilayah";
-
-export function getDataWilayah() {
-  return apiRequest<DataWilayahResponse>(apiEndpoints.dataWilayah);
-}
-
-export function getDataWilayahSettings() {
-  return apiRequest<DataWilayahWebsiteSettingsResponse>(apiEndpoints.dataWilayahSettings);
-}
+import type { DataWilayahResponse, DataWilayahWebsiteSettings } from "@/types/data-wilayah";
 
 export function getWebsiteDataWilayah() {
   return apiRequest<DataWilayahResponse>(apiEndpoints.websiteDataWilayah);
@@ -28,18 +15,4 @@ export function getWebsiteDataWilayahByYear(tahunAnggaran: string) {
   return apiRequest<DataWilayahResponse>(
     `${apiEndpoints.websiteDataWilayah}?${params.toString()}`,
   );
-}
-
-export function updateDataWilayahRegion(id: string, payload: RegionData) {
-  return apiRequest<RegionData>(apiEndpoints.dataWilayahDetail(id), {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function updateDataWilayahSettings(payload: DataWilayahWebsiteSettings) {
-  return apiRequest<DataWilayahWebsiteSettingsResponse>(apiEndpoints.dataWilayahSettings, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  });
 }

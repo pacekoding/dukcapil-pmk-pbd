@@ -2,15 +2,7 @@
 
 "use client";
 
-import {
-  CalendarDays,
-  ChevronDown,
-  KeyRound,
-  Loader2,
-  LogOut,
-  Menu,
-} from "lucide-react";
-import Link from "next/link";
+import { CalendarDays, ChevronDown, Loader2, LogOut, Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -53,39 +45,70 @@ const menuTitles: Record<
     description: string;
   }
 > = {
+  "/portal": {
+    title: "Portal Aplikasi",
+    description: "Pilih sistem internal yang ingin digunakan",
+  },
+
   "/dashboard": {
     title: "Dashboard",
-    description: "Overview statistik dan administrasi sistem",
+    description: "Pusat pengaturan super admin",
   },
 
-  "/dashboard/data-wilayah": {
-    title: "Data Wilayah",
-    description: "Kelola statistik kabupaten/kota untuk halaman website",
+  "/settings": {
+    title: "Dashboard",
+    description: "Pusat pengaturan super admin",
   },
 
-  "/dashboard/ssd": {
-    title: "Data SSD",
+  "/sibum/dashboard": {
+    title: "SIBUM Kampung",
+    description: "Sistem Informasi BUM Kampung",
+  },
+
+  "/sibum/data": {
+    title: "Data BUMKam",
+    description:
+      "Kelola data BUM Kampung berdasarkan kabupaten/kota, distrik, kampung, kategori, dan status verifikasi.",
+  },
+
+  "/sikampung/dashboard": {
+    title: "SIKAMPUNG",
+    description: "Sistem Informasi Kampung/Desa",
+  },
+
+  "/sikampung/data": {
+    title: "Data Kampung/Desa",
+    description: "Kelola data kampung/desa kabupaten/kota",
+  },
+
+  "/dashboard/SDD": {
+    title: "SSD",
     description: "Kelola master SSD melalui import XLSX dan pemutakhiran data",
   },
 
-  "/dashboard/subkegiatan": {
+  "/dashboard/Subkegiatan": {
     title: "Subkegiatan",
     description: "Kelola master subkegiatan berdasarkan tahun anggaran",
   },
 
-  "/dashboard/realisasi-subkegiatan": {
-    title: "Realisasi Subkegiatan",
-    description: "Kelola realisasi, foto dokumentasi, dan dokumen pendukung",
+  "/sidoka/data": {
+    title: "Data Pelaksanaan",
+    description: "Kelola dokumen pelaksanaan kegiatan dan relasi DSSD",
+  },
+
+  "/arsip-pegawai": {
+    title: "Arsipku",
+    description: "Data pegawai dan dokumen kepegawaian",
   },
 
   "/dashboard/users": {
-    title: "User Admin",
-    description: "Kelola akun admin dan akses dashboard",
+    title: "User",
+    description: "Kelola pengguna internal dan role akses",
   },
 
-  "/dashboard/akun": {
-    title: "Akun",
-    description: "Pengaturan keamanan akun login",
+  "/dashboard/kab-kota": {
+    title: "Data Kab/Kota",
+    description: "Kelola master data kabupaten/kota",
   },
 };
 
@@ -94,25 +117,61 @@ function getPageInfo(pathname: string) {
     return menuTitles[pathname];
   }
 
-  if (pathname.startsWith("/dashboard/data-wilayah")) {
-    return menuTitles["/dashboard/data-wilayah"];
+  if (pathname.startsWith("/portal")) {
+    return menuTitles["/portal"];
   }
 
-  if (pathname.startsWith("/dashboard/subkegiatan")) {
-    return menuTitles["/dashboard/subkegiatan"];
+  if (pathname === "/dashboard") {
+    return menuTitles["/dashboard"];
   }
 
-  if (pathname.startsWith("/dashboard/ssd")) {
-    return menuTitles["/dashboard/ssd"];
+  if (pathname === "/settings") {
+    return menuTitles["/settings"];
   }
 
-  if (pathname.startsWith("/dashboard/realisasi-subkegiatan")) {
-    return menuTitles["/dashboard/realisasi-subkegiatan"];
+  if (pathname.startsWith("/sibum/dashboard")) {
+    return menuTitles["/sibum/dashboard"];
+  }
+
+  if (pathname.startsWith("/sibum/data")) {
+    return menuTitles["/sibum/data"];
+  }
+
+  if (pathname.startsWith("/sikampung/dashboard")) {
+    return menuTitles["/sikampung/dashboard"];
+  }
+
+  if (pathname.startsWith("/sikampung/data")) {
+    return menuTitles["/sikampung/data"];
+  }
+
+  if (pathname.startsWith("/dashboard/users")) {
+    return menuTitles["/dashboard/users"];
+  }
+
+  if (pathname.startsWith("/dashboard/kab-kota")) {
+    return menuTitles["/dashboard/kab-kota"];
+  }
+
+  if (pathname.startsWith("/sidoka/data")) {
+    return menuTitles["/sidoka/data"];
+  }
+
+  if (pathname.startsWith("/arsip-pegawai")) {
+    return menuTitles["/arsip-pegawai"];
+  }
+
+  if (pathname.startsWith("/dashboard/Subkegiatan")) {
+    return menuTitles["/dashboard/Subkegiatan"];
+  }
+
+  if (pathname.startsWith("/dashboard/SDD")) {
+    return menuTitles["/dashboard/SDD"];
   }
 
   return {
-    title: "Dashboard",
-    description: "Dashboard Admin Papua Barat Daya",
+    title: "Dashboard Internal",
+    description: "Dashboard administrasi Dinas Dukcapil & PMK",
   };
 }
 
@@ -227,16 +286,17 @@ export default function DashboardTopbar({
         }),
       });
 
-      const result = (await response.json().catch(() => null)) as
-        | { message?: string; tahunAnggaran?: string }
-        | null;
+      const result = (await response.json().catch(() => null)) as {
+        message?: string;
+        tahunAnggaran?: string;
+      } | null;
 
       if (!response.ok) {
         throw new Error(result?.message ?? "Tahun anggaran gagal diganti.");
       }
 
       setTahunAnggaran(result?.tahunAnggaran ?? pendingTahunAnggaran);
-      window.location.href = "/dashboard";
+      window.location.href = "/portal";
     } catch (error) {
       console.error(error);
       setSwitchYearError(
@@ -384,13 +444,6 @@ export default function DashboardTopbar({
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end" className="w-52 rounded-lg">
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/akun" className="cursor-pointer">
-                  <KeyRound className="mr-2 h-4 w-4" />
-                  Ganti Password
-                </Link>
-              </DropdownMenuItem>
-
               <DropdownMenuItem
                 onClick={handleLogout}
                 className="
@@ -407,7 +460,10 @@ export default function DashboardTopbar({
         </div>
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={(open) => !open && cancelSwitchYear()}>
+      <Dialog
+        open={confirmOpen}
+        onOpenChange={(open) => !open && cancelSwitchYear()}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Ganti Tahun Anggaran?</DialogTitle>

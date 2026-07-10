@@ -14,6 +14,13 @@ type IdmData struct {
 	Mandiri          int `json:"mandiri"`
 }
 
+type BumdesData struct {
+	Jumlah     int `json:"jumlah"`
+	Aktif      int `json:"aktif"`
+	TidakAktif int `json:"tidakAktif"`
+	Bersama    int `json:"bersama"`
+}
+
 type PopulationRegistrationData struct {
 	PenerbitanKk    int `json:"penerbitanKk"`
 	PerubahanKk     int `json:"perubahanKk"`
@@ -44,6 +51,7 @@ type RegionData struct {
 	Type         string                     `json:"type"`
 	MapLabel     string                     `json:"mapLabel"`
 	Idm          IdmData                    `json:"idm"`
+	Bumdes       BumdesData                 `json:"bumdes"`
 	Registration PopulationRegistrationData `json:"registration"`
 	Oap          OapData                    `json:"oap"`
 	Civil        CivilRegistrationData      `json:"civil"`
@@ -78,6 +86,10 @@ type DataWilayahEntity struct {
 	IdmBerkembang               int       `gorm:"column:idm_berkembang"`
 	IdmMaju                     int       `gorm:"column:idm_maju"`
 	IdmMandiri                  int       `gorm:"column:idm_mandiri"`
+	BumdesJumlah                int       `gorm:"column:bumdes_jumlah"`
+	BumdesAktif                 int       `gorm:"column:bumdes_aktif"`
+	BumdesTidakAktif            int       `gorm:"column:bumdes_tidak_aktif"`
+	BumdesBersama               int       `gorm:"column:bumdes_bersama"`
 	RegistrationPenerbitanKk    int       `gorm:"column:registration_penerbitan_kk"`
 	RegistrationPerubahanKk     int       `gorm:"column:registration_perubahan_kk"`
 	RegistrationKia             int       `gorm:"column:registration_kia"`
@@ -125,6 +137,12 @@ func (d DataWilayahEntity) ToRegionData() RegionData {
 			Berkembang:       d.IdmBerkembang,
 			Maju:             d.IdmMaju,
 			Mandiri:          d.IdmMandiri,
+		},
+		Bumdes: BumdesData{
+			Jumlah:     d.BumdesJumlah,
+			Aktif:      d.BumdesAktif,
+			TidakAktif: d.BumdesTidakAktif,
+			Bersama:    d.BumdesBersama,
 		},
 		Registration: PopulationRegistrationData{
 			PenerbitanKk:    d.RegistrationPenerbitanKk,

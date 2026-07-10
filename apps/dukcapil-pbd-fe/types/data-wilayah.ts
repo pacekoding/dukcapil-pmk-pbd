@@ -6,6 +6,13 @@ export type IdmData = {
   mandiri: number;
 };
 
+export type BumdesData = {
+  jumlah: number;
+  aktif: number;
+  tidakAktif: number;
+  bersama: number;
+};
+
 export type PopulationRegistrationData = {
   penerbitanKk: number;
   perubahanKk: number;
@@ -36,6 +43,7 @@ export type RegionData = {
   type: "Kabupaten" | "Kota";
   mapLabel: string;
   idm: IdmData;
+  bumdes: BumdesData;
   registration: PopulationRegistrationData;
   oap: OapData;
   civil: CivilRegistrationData;
@@ -49,8 +57,4 @@ export type DataWilayahResponse = {
 export type DataWilayahWebsiteSettings = {
   featuredTahunAnggaran: string;
   publishedTahunAnggaran: string[];
-};
-
-export type DataWilayahWebsiteSettingsResponse = DataWilayahWebsiteSettings & {
-  availableTahunAnggaran: string[];
 };
