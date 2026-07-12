@@ -112,7 +112,7 @@ export default function DashboardSubkegiatanPage() {
   const [editingItem, setEditingItem] = useState<Subkegiatan | null>(null);
   const [detailItem, setDetailItem] = useState<Subkegiatan | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Subkegiatan | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -226,7 +226,7 @@ export default function DashboardSubkegiatanPage() {
     [form.kode],
   );
 
-  const openCreateDialog = () => {
+  const openCreateForm = () => {
     if (!isSuperAdmin) {
       setError("Hanya superadmin yang dapat menambah subkegiatan.");
       return;
@@ -235,10 +235,10 @@ export default function DashboardSubkegiatanPage() {
     setForm(emptyForm);
     setSSDQuery("");
     setError(null);
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
-  const openEditDialog = (item: Subkegiatan) => {
+  const openEditForm = (item: Subkegiatan) => {
     if (!isSuperAdmin) {
       setError("Hanya superadmin yang dapat mengubah subkegiatan.");
       return;
@@ -252,7 +252,7 @@ export default function DashboardSubkegiatanPage() {
     });
     setSSDQuery("");
     setError(null);
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
   const openDetailDialog = (item: Subkegiatan) => {
@@ -260,11 +260,11 @@ export default function DashboardSubkegiatanPage() {
     setDetailOpen(true);
   };
 
-  const closeDialog = () => {
+  const closeForm = () => {
     if (saving) {
       return;
     }
-    setDialogOpen(false);
+    setFormOpen(false);
     setEditingItem(null);
     setForm(emptyForm);
     setSSDQuery("");
@@ -334,7 +334,7 @@ export default function DashboardSubkegiatanPage() {
         );
         setMessage(`${created.kode} berhasil ditambahkan.`);
       }
-      setDialogOpen(false);
+      setFormOpen(false);
       setForm(emptyForm);
       setEditingItem(null);
     } catch (saveError) {
@@ -403,7 +403,7 @@ export default function DashboardSubkegiatanPage() {
       if (editingItem?.id === item.id) {
         setForm(emptyForm);
         setEditingItem(null);
-        setDialogOpen(false);
+        setFormOpen(false);
       }
       setMessage(`${item.kode} berhasil dihapus.`);
       setDeleteTarget(null);
@@ -443,7 +443,7 @@ export default function DashboardSubkegiatanPage() {
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button
                   type="button"
-                  onClick={openCreateDialog}
+                  onClick={openCreateForm}
                   className="h-12 rounded-xl bg-white px-5 text-pbd-navy ring-1 ring-slate-200 hover:bg-slate-50"
                 >
                   <Plus className="h-4 w-4" />
@@ -473,6 +473,199 @@ export default function DashboardSubkegiatanPage() {
           ) : null
         }
       />
+
+      {formOpen ? (
+        <SectionCard
+          title={editingItem ? "Edit Subkegiatan" : "Tambah Subkegiatan"}
+          description={`Data disimpan untuk Tahun Anggaran ${tahunAnggaran}.`}
+        >
+          <div className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="kode">Kode *</Label>
+                <Input
+                  id="kode"
+                  value={form.kode}
+                  maxLength={maxSubkegiatanKodeLength}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      kode: event.target.value,
+                      bidang: detectBidangByKode(event.target.value),
+                    }))
+                  }
+                  placeholder="Contoh: 2.12.01.1.01.0001"
+                  className="h-11 rounded-lg"
+                />
+                <p className="text-xs leading-5 text-slate-500">
+                  Isi hanya kode angka bertitik, maksimal 64 karakter.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Bidang</Label>
+                <div
+                  className={cn(
+                    "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2",
+                    detectedBidang === "dukcapil" &&
+                      "border-blue-200 bg-blue-50 text-blue-700",
+                    detectedBidang === "pmk" &&
+                      "border-emerald-200 bg-emerald-50 text-emerald-700",
+                    detectedBidang === "umum" &&
+                      "border-slate-200 bg-slate-50 text-slate-700",
+                  )}
+                >
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "bg-white font-semibold",
+                      detectedBidang === "dukcapil" &&
+                        "border-blue-200 text-blue-700",
+                      detectedBidang === "pmk" &&
+                        "border-emerald-200 text-emerald-700",
+                      detectedBidang === "umum" &&
+                        "border-slate-200 text-slate-700",
+                    )}
+                  >
+                    {bidangLabel(detectedBidang)}
+                  </Badge>
+                  <span className="text-xs font-medium text-current/70">
+                    Otomatis dari kode
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="nama">Nama *</Label>
+                <Input
+                  id="nama"
+                  value={form.nama}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      nama: event.target.value,
+                    }))
+                  }
+                  placeholder="Nama subkegiatan"
+                  className="h-11 rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-3 md:col-span-2">
+                <div>
+                  <Label>SSD Terkait</Label>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Pilih satu atau lebih SSD aktif untuk diintegrasikan ke subkegiatan ini.
+                  </p>
+                </div>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    value={ssdQuery}
+                    onChange={(event) => setSSDQuery(event.target.value)}
+                    placeholder="Cari kode atau uraian DSSD..."
+                    className="h-11 rounded-lg pl-9"
+                  />
+                </div>
+                <div className="max-h-72 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-3">
+                  {selectableSSDItems.length > 0 ? (
+                    selectableSSDItems.map((ssd) => {
+                      const checked = form.ssdIds.includes(ssd.id);
+                      return (
+                        <label
+                          key={ssd.id}
+                          className={cn(
+                            "flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 transition",
+                            checked
+                              ? "border-pbd-blue bg-blue-50/70"
+                              : "border-slate-200 hover:border-slate-300",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(event) =>
+                              setForm((current) => ({
+                                ...current,
+                                ssdIds: event.target.checked
+                                  ? [...current.ssdIds, ssd.id]
+                                  : current.ssdIds.filter((id) => id !== ssd.id),
+                              }))
+                            }
+                            className="mt-1 h-4 w-4 rounded border-slate-300 text-pbd-blue"
+                          />
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-pbd-navy">
+                                {ssd.kode}
+                              </span>
+                              {!ssd.isActive ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-amber-200 bg-amber-50 text-amber-700"
+                                >
+                                  Nonaktif
+                                </Badge>
+                              ) : null}
+                              {ssd.satuan ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-slate-200 bg-white text-slate-600"
+                                >
+                                  {ssd.satuan}
+                                </Badge>
+                              ) : null}
+                            </div>
+                            <p className="mt-1 text-sm text-slate-600">
+                              {ssd.uraian}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      {ssdQuery.trim()
+                        ? "DSSD tidak ditemukan."
+                        : "Belum ada SSD aktif. Import SSD terlebih dahulu."}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {error ? (
+              <ErrorState message={error} />
+            ) : null}
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                className="h-10 rounded-lg"
+                onClick={closeForm}
+              >
+                <X className="h-4 w-4" />
+                Batal
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={saving}
+                className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              >
+                <Save className="h-4 w-4" />
+                {saving
+                  ? "Menyimpan..."
+                  : editingItem
+                    ? "Simpan Perubahan"
+                    : "Simpan Data"}
+              </Button>
+            </div>
+          </div>
+        </SectionCard>
+      ) : null}
 
       <SectionCard contentClassName="p-0">
         <div className="border-b border-slate-200 p-5">
@@ -518,7 +711,7 @@ export default function DashboardSubkegiatanPage() {
           {message ? (
             <SuccessState message={message} className="mt-4" />
           ) : null}
-          {error && !dialogOpen && !importOpen ? (
+          {error && !formOpen && !importOpen ? (
             <ErrorState message={error} className="mt-4" />
           ) : null}
         </div>
@@ -615,7 +808,7 @@ export default function DashboardSubkegiatanPage() {
                             </DropdownMenuItem>
                             {isSuperAdmin ? (
                               <>
-                                <DropdownMenuItem onSelect={() => openEditDialog(item)}>
+                                <DropdownMenuItem onSelect={() => openEditForm(item)}>
                                   <Edit3 className="h-4 w-4" />
                                   Ubah
                                 </DropdownMenuItem>
@@ -652,208 +845,6 @@ export default function DashboardSubkegiatanPage() {
           onPageChange={setPage}
         />
       </SectionCard>
-
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          if (open) {
-            setDialogOpen(true);
-          } else {
-            closeDialog();
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingItem ? "Edit Subkegiatan" : "Tambah Subkegiatan"}
-            </DialogTitle>
-            <DialogDescription>
-              Data disimpan untuk Tahun Anggaran {tahunAnggaran}.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="kode">Kode</Label>
-              <Input
-                id="kode"
-                value={form.kode}
-                maxLength={maxSubkegiatanKodeLength}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    kode: event.target.value,
-                    bidang: detectBidangByKode(event.target.value),
-                  }))
-                }
-                placeholder="Contoh: 2.12.01.1.01.0001"
-                className="h-11 rounded-lg"
-              />
-              <p className="text-xs leading-5 text-slate-500">
-                Isi hanya kode angka bertitik, maksimal 64 karakter. Nama
-                subkegiatan diisi pada kolom Nama.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="nama">Nama</Label>
-              <Input
-                id="nama"
-                value={form.nama}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, nama: event.target.value }))
-                }
-                placeholder="Nama subkegiatan"
-                className="h-11 rounded-lg"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Bidang</Label>
-              <div
-                className={cn(
-                  "flex min-h-11 items-center justify-between gap-3 rounded-lg border px-3 py-2",
-                  detectedBidang === "dukcapil" &&
-                    "border-blue-200 bg-blue-50 text-blue-700",
-                  detectedBidang === "pmk" &&
-                    "border-emerald-200 bg-emerald-50 text-emerald-700",
-                  detectedBidang === "umum" &&
-                    "border-slate-200 bg-slate-50 text-slate-700",
-                )}
-              >
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "bg-white font-semibold",
-                    detectedBidang === "dukcapil" &&
-                      "border-blue-200 text-blue-700",
-                    detectedBidang === "pmk" &&
-                      "border-emerald-200 text-emerald-700",
-                    detectedBidang === "umum" &&
-                      "border-slate-200 text-slate-700",
-                  )}
-                >
-                  {bidangLabel(detectedBidang)}
-                </Badge>
-                <span className="text-xs font-medium text-current/70">
-                  Otomatis dari kode
-                </span>
-              </div>
-              <p className="text-xs leading-5 text-slate-500">
-                Prefix 2.12. terdeteksi Dukcapil, prefix 2.13 terdeteksi PMK,
-                kode lainnya terdeteksi Umum.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <Label>SSD Terkait</Label>
-                <p className="mt-1 text-xs text-slate-500">
-                  Pilih satu atau lebih SSD aktif untuk diintegrasikan ke subkegiatan ini.
-                </p>
-              </div>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  value={ssdQuery}
-                  onChange={(event) => setSSDQuery(event.target.value)}
-                  placeholder="Cari kode atau uraian DSSD..."
-                  className="h-11 rounded-lg pl-9"
-                />
-              </div>
-              <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-3">
-                {selectableSSDItems.length > 0 ? (
-                  selectableSSDItems.map((ssd) => {
-                      const checked = form.ssdIds.includes(ssd.id);
-                      return (
-                        <label
-                          key={ssd.id}
-                          className={cn(
-                            "flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 transition",
-                            checked
-                              ? "border-pbd-blue bg-blue-50/70"
-                              : "border-slate-200 hover:border-slate-300",
-                          )}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(event) =>
-                              setForm((current) => ({
-                                ...current,
-                                ssdIds: event.target.checked
-                                  ? [...current.ssdIds, ssd.id]
-                                  : current.ssdIds.filter((id) => id !== ssd.id),
-                              }))
-                            }
-                            className="mt-1 h-4 w-4 rounded border-slate-300 text-pbd-blue"
-                          />
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="font-semibold text-pbd-navy">
-                                {ssd.kode}
-                              </span>
-                              {!ssd.isActive ? (
-                                <Badge
-                                  variant="outline"
-                                  className="border-amber-200 bg-amber-50 text-amber-700"
-                                >
-                                  Nonaktif
-                                </Badge>
-                              ) : null}
-                              {ssd.satuan ? (
-                                <Badge variant="outline" className="border-slate-200 bg-white text-slate-600">
-                                  {ssd.satuan}
-                                </Badge>
-                              ) : null}
-                            </div>
-                            <p className="mt-1 text-sm text-slate-600">{ssd.uraian}</p>
-                          </div>
-                        </label>
-                      );
-                    })
-                ) : (
-                  <p className="text-sm text-slate-500">
-                    {ssdQuery.trim()
-                      ? "DSSD tidak ditemukan."
-                      : "Belum ada SSD aktif. Import SSD terlebih dahulu."}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {error ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
-                {error}
-              </div>
-            ) : null}
-          </div>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                className="h-10 rounded-lg"
-              >
-                <X className="h-4 w-4" />
-                Batal
-              </Button>
-            </DialogClose>
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              disabled={saving}
-              className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            >
-              <Save className="h-4 w-4" />
-              {saving ? "Menyimpan..." : "Simpan"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog
         open={importOpen}

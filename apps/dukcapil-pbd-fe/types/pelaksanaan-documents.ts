@@ -35,6 +35,7 @@ export type PelaksanaanDocumentListResponse = {
 
 export type PelaksanaanDocumentListParams = {
   search?: string;
+  subkegiatanPrefix?: string;
   page?: number;
   limit?: number;
 };

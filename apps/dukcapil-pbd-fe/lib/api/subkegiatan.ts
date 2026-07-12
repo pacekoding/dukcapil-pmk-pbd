@@ -7,8 +7,19 @@ import type {
   SubkegiatanPayload,
 } from "@/types/subkegiatan";
 
-export function getSubkegiatan() {
-  return apiRequest<SubkegiatanListResponse>(apiEndpoints.subkegiatan);
+export function getSubkegiatan(params: { kodePrefix?: string } = {}) {
+  const searchParams = new URLSearchParams();
+
+  if (params.kodePrefix?.trim()) {
+    searchParams.set("kode_prefix", params.kodePrefix.trim());
+  }
+
+  const query = searchParams.toString();
+  const url = query
+    ? `${apiEndpoints.subkegiatan}?${query}`
+    : apiEndpoints.subkegiatan;
+
+  return apiRequest<SubkegiatanListResponse>(url);
 }
 
 export function createSubkegiatan(payload: SubkegiatanPayload) {

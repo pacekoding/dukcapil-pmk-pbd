@@ -6,23 +6,23 @@ import {
   Download,
   Edit,
   MapPinned,
+  MoreHorizontal,
   Plus,
   Search,
   Trash2,
 } from "lucide-react";
 
+import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -98,8 +98,9 @@ const initialKampungRecords: KampungRecord[] = [
 export default function SikampungDataPage() {
   const [records, setRecords] = useState(initialKampungRecords);
   const [query, setQuery] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<KampungRecord | null>(null);
   const [form, setForm] = useState<KampungFormState>(initialFormState);
 
   const filteredRecords = useMemo(() => {
@@ -128,13 +129,13 @@ export default function SikampungDataPage() {
     ? records.find((record) => record.id === editingId)
     : null;
 
-  const openCreateDialog = () => {
+  const openCreateForm = () => {
     setEditingId(null);
     setForm(initialFormState);
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
-  const openEditDialog = (record: KampungRecord) => {
+  const openEditForm = (record: KampungRecord) => {
     setEditingId(record.id);
     setForm({
       namaKabKota: record.namaKabKota,
@@ -144,7 +145,13 @@ export default function SikampungDataPage() {
       status: record.status,
       catatan: record.catatan,
     });
-    setDialogOpen(true);
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(initialFormState);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -166,15 +173,20 @@ export default function SikampungDataPage() {
       ]);
     }
 
-    setDialogOpen(false);
+    setFormOpen(false);
     setEditingId(null);
     setForm(initialFormState);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = () => {
+    if (!deleteTarget) {
+      return;
+    }
+
     setRecords((currentRecords) =>
-      currentRecords.filter((record) => record.id !== id),
+      currentRecords.filter((record) => record.id !== deleteTarget.id),
     );
+    setDeleteTarget(null);
   };
 
   const handleDownloadXlsx = () => {
@@ -197,7 +209,7 @@ export default function SikampungDataPage() {
           <Button
             type="button"
             className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            onClick={openCreateDialog}
+            onClick={openCreateForm}
           >
             <Plus className="h-4 w-4" />
             Tambah Kampung/Desa
@@ -205,122 +217,15 @@ export default function SikampungDataPage() {
         }
       />
 
-      <SectionCard
-        title="Data Kampung/Desa"
-        description="Data sementara disimpan pada state halaman dan siap diganti ke API saat backend tersedia."
-        action={
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-10 rounded-lg"
-              disabled={filteredRecords.length === 0}
-              onClick={handleDownloadXlsx}
-            >
-              <Download className="h-4 w-4" />
-              Download XLSX
-            </Button>
-            <div className="relative w-full sm:w-80">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="pl-9"
-                placeholder="Cari kampung/desa, distrik, kode..."
-              />
-            </div>
-          </div>
-        }
-        contentClassName="p-0"
-      >
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nama Kab/Kota</TableHead>
-              <TableHead>Nama Distrik</TableHead>
-              <TableHead>Nama Kampung/Desa</TableHead>
-              <TableHead>Kode Wilayah</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Catatan</TableHead>
-              <TableHead>Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredRecords.length > 0 ? (
-              filteredRecords.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell className="min-w-[220px] font-bold text-pbd-navy">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue">
-                        <MapPinned className="h-4 w-4" />
-                      </div>
-                      {record.namaKabKota}
-                    </div>
-                  </TableCell>
-                  <TableCell>{record.namaDistrik}</TableCell>
-                  <TableCell className="font-semibold text-slate-800">
-                    {record.namaKampungDesa}
-                  </TableCell>
-                  <TableCell>{record.kodeWilayah}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={record.status} />
-                  </TableCell>
-                  <TableCell className="min-w-[220px] whitespace-normal">
-                    {record.catatan || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditDialog(record)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(record.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Hapus
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="py-10 text-center text-sm font-medium text-slate-500"
-                >
-                  Data kampung/desa tidak ditemukan.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </SectionCard>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+      {formOpen ? (
+        <SectionCard
+          title={
+            editingRecord ? "Edit Data Kampung/Desa" : "Tambah Data Kampung/Desa"
+          }
+          description="Lengkapi identitas kampung/desa sesuai wilayah administrasi."
+        >
           <form onSubmit={handleSubmit} className="space-y-5">
-            <DialogHeader>
-              <DialogTitle>
-                {editingRecord
-                  ? "Edit Data Kampung/Desa"
-                  : "Tambah Data Kampung/Desa"}
-              </DialogTitle>
-              <DialogDescription>
-                Lengkapi identitas kampung/desa sesuai wilayah administrasi.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <FormInput
                 label="Nama Kab/Kota"
                 value={form.namaKabKota}
@@ -377,13 +282,8 @@ export default function SikampungDataPage() {
                 required={false}
               />
             </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-              >
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={closeForm}>
                 Batal
               </Button>
               <Button
@@ -392,10 +292,128 @@ export default function SikampungDataPage() {
               >
                 {editingRecord ? "Simpan Perubahan" : "Tambah Data"}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
-        </DialogContent>
-      </Dialog>
+        </SectionCard>
+      ) : null}
+
+      <SectionCard
+        title="Data Kampung/Desa"
+        description="Data sementara disimpan pada state halaman dan siap diganti ke API saat backend tersedia."
+        action={
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-lg"
+              disabled={filteredRecords.length === 0}
+              onClick={handleDownloadXlsx}
+            >
+              <Download className="h-4 w-4" />
+              Download XLSX
+            </Button>
+            <div className="relative w-full sm:w-80">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="pl-9"
+                placeholder="Cari kampung/desa, distrik, kode..."
+              />
+            </div>
+          </div>
+        }
+        contentClassName="p-0"
+      >
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nama Kab/Kota</TableHead>
+              <TableHead>Nama Distrik</TableHead>
+              <TableHead>Nama Kampung/Desa</TableHead>
+              <TableHead>Kode Wilayah</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Catatan</TableHead>
+              <TableHead className="w-[96px] text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredRecords.length > 0 ? (
+              filteredRecords.map((record) => (
+                <TableRow key={record.id}>
+                  <TableCell className="min-w-[220px] font-bold text-pbd-navy">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue">
+                        <MapPinned className="h-4 w-4" />
+                      </div>
+                      {record.namaKabKota}
+                    </div>
+                  </TableCell>
+                  <TableCell>{record.namaDistrik}</TableCell>
+                  <TableCell className="font-semibold text-slate-800">
+                    {record.namaKampungDesa}
+                  </TableCell>
+                  <TableCell>{record.kodeWilayah}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={record.status} />
+                  </TableCell>
+                  <TableCell className="min-w-[220px] whitespace-normal">
+                    {record.catatan || "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Buka aksi untuk ${record.namaKampungDesa}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEditForm(record)}>
+                          <Edit className="h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteTarget(record)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Hapus
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="py-10 text-center text-sm font-medium text-slate-500"
+                >
+                  Tidak ada data kampung/desa yang sesuai dengan pencarian.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </SectionCard>
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Hapus Data Kampung/Desa?"
+        description={`Data ${deleteTarget?.namaKampungDesa ?? "kampung/desa"} akan dihapus dan tidak dapat dikembalikan.`}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDelete}
+      />
     </main>
   );
 }

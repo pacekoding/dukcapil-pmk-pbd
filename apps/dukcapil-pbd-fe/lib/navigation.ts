@@ -12,6 +12,9 @@ export type DashboardMenuIcon =
   | "fileText"
   | "folderArchive"
   | "listChecks"
+  | "messageSquare"
+  | "calendarClock"
+  | "toggle"
   | "users"
   | "keyRound"
   | "settings";
@@ -46,10 +49,6 @@ export const publicMenus: PublicMenuItem[] = [
     href: "/data-wilayah",
   },
   {
-    label: "Peta GIS",
-    href: "/peta-geojson",
-  },
-  {
     label: "Layanan",
     href: "/#layanan",
   },
@@ -76,12 +75,27 @@ export const dashboardMenus: DashboardMenuItem[] = [
     icon: "map",
   },
   {
+    title: "SiTEKAD",
+    href: "/sitekad/dashboard",
+    icon: "listChecks",
+  },
+  {
+    title: "ASPIRASIKU",
+    href: "/aspirasiku/dashboard",
+    icon: "messageSquare",
+  },
+  {
     title: "SIDOKA",
-    href: "/sidoka/data",
+    href: "/sidoka/dashboard",
     icon: "folderArchive",
   },
   {
-    title: "Arsipku",
+    title: "SIDAK",
+    href: "/sidak/dashboard",
+    icon: "fileText",
+  },
+  {
+    title: "ARSIPKU",
     href: "/arsip-pegawai",
     icon: "idCard",
   },
@@ -113,10 +127,54 @@ export const sikampungMenus: DashboardMenuItem[] = [
   },
 ];
 
+export const sitekadMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/sitekad/dashboard",
+    icon: "home",
+  },
+  {
+    title: "Data Potensi Kampung",
+    href: "/sitekad/data",
+    icon: "database",
+  },
+];
+
+export const aspirasikuMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/aspirasiku/dashboard",
+    icon: "home",
+  },
+  {
+    title: "Data Aspirasi",
+    href: "/aspirasiku/data",
+    icon: "messageSquare",
+  },
+];
+
 export const sidokaMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/sidoka/dashboard",
+    icon: "home",
+  },
   {
     title: "Data Pelaksanaan",
     href: "/sidoka/data",
+    icon: "fileText",
+  },
+];
+
+export const sidakMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/sidak/dashboard",
+    icon: "home",
+  },
+  {
+    title: "Data Pelaksanaan",
+    href: "/sidak/data",
     icon: "fileText",
   },
 ];
@@ -141,9 +199,19 @@ export const settingsMenus: DashboardMenuItem[] = [
     icon: "users",
   },
   {
+    title: "Status Portal",
+    href: "/dashboard/portal-apps",
+    icon: "toggle",
+  },
+  {
     title: "Data Kab/Kota",
     href: "/dashboard/kab-kota",
     icon: "map",
+  },
+  {
+    title: "Release Data Wilayah",
+    href: "/dashboard/data-wilayah-release",
+    icon: "calendarClock",
   },
   {
     title: "Data SSD",

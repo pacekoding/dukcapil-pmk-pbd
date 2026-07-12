@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"dukcapil-pbd-be/internal/model"
 
@@ -46,70 +47,6 @@ func (r *DataWilayahRepository) List(ctx context.Context, tahunAnggaran string) 
 	}, nil
 }
 
-func (r *DataWilayahRepository) Update(ctx context.Context, tahunAnggaran string, id string, payload model.RegionData) (model.RegionData, bool, error) {
-	db, err := r.session(ctx)
-	if err != nil {
-		return model.RegionData{}, false, err
-	}
-
-	tahunAnggaran = strings.TrimSpace(tahunAnggaran)
-	var record model.DataWilayahEntity
-	err = db.Transaction(func(tx *gorm.DB) error {
-		if err := r.ensureYearData(tx, tahunAnggaran); err != nil {
-			return err
-		}
-
-		result := tx.Model(&model.DataWilayahEntity{}).
-			Where("tahun_anggaran = ? AND id = ?", tahunAnggaran, id).
-			Updates(map[string]any{
-				"name":                           strings.TrimSpace(payload.Name),
-				"short_name":                     strings.TrimSpace(payload.ShortName),
-				"region_type":                    strings.TrimSpace(payload.Type),
-				"map_label":                      strings.TrimSpace(payload.MapLabel),
-				"idm_sangat_tertinggal":          payload.Idm.SangatTertinggal,
-				"idm_tertinggal":                 payload.Idm.Tertinggal,
-				"idm_berkembang":                 payload.Idm.Berkembang,
-				"idm_maju":                       payload.Idm.Maju,
-				"idm_mandiri":                    payload.Idm.Mandiri,
-				"bumdes_jumlah":                  payload.Bumdes.Jumlah,
-				"bumdes_aktif":                   payload.Bumdes.Aktif,
-				"bumdes_tidak_aktif":             payload.Bumdes.TidakAktif,
-				"bumdes_bersama":                 payload.Bumdes.Bersama,
-				"registration_penerbitan_kk":     payload.Registration.PenerbitanKk,
-				"registration_perubahan_kk":      payload.Registration.PerubahanKk,
-				"registration_kia":               payload.Registration.Kia,
-				"registration_nik_wni":           payload.Registration.NikWni,
-				"registration_perekaman_ktp_el":  payload.Registration.PerekamanKtpEl,
-				"registration_pencetakan_ktp_el": payload.Registration.PencetakanKtpEl,
-				"oap_luas_wilayah":               payload.Oap.LuasWilayah,
-				"oap_jumlah_oap":                 payload.Oap.JumlahOap,
-				"oap_jumlah_non_oap":             payload.Oap.JumlahNonOap,
-				"oap_jumlah_jiwa":                payload.Oap.JumlahJiwa,
-				"civil_akta_kelahiran":           payload.Civil.AktaKelahiran,
-				"civil_akta_kematian":            payload.Civil.AktaKematian,
-				"civil_akta_perkawinan":          payload.Civil.AktaPerkawinan,
-				"civil_akta_perceraian":          payload.Civil.AktaPerceraian,
-				"updated_at":                     gorm.Expr("NOW()"),
-			})
-		if result.Error != nil {
-			return result.Error
-		}
-		if result.RowsAffected == 0 {
-			return gorm.ErrRecordNotFound
-		}
-
-		return tx.First(&record, "tahun_anggaran = ? AND id = ?", tahunAnggaran, id).Error
-	})
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return model.RegionData{}, false, nil
-	}
-	if err != nil {
-		return model.RegionData{}, false, fmt.Errorf("update data wilayah: %w", err)
-	}
-
-	return record.ToRegionData(), true, nil
-}
-
 func (r *DataWilayahRepository) GetWebsiteSettings(ctx context.Context) (model.DataWilayahWebsiteSettingsResponse, error) {
 	db, err := r.session(ctx)
 	if err != nil {
@@ -121,7 +58,11 @@ func (r *DataWilayahRepository) GetWebsiteSettings(ctx context.Context) (model.D
 		return model.DataWilayahWebsiteSettingsResponse{}, err
 	}
 	if len(availableYears) == 0 {
-		return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("data wilayah year is empty")
+		return model.DataWilayahWebsiteSettingsResponse{
+			FeaturedTahunAnggaran:  "",
+			PublishedTahunAnggaran: []string{},
+			AvailableTahunAnggaran: []string{},
+		}, nil
 	}
 
 	entity, changed, err := r.loadOrCreateWebsiteSettings(db, availableYears)
@@ -144,19 +85,11 @@ func (r *DataWilayahRepository) GetWebsiteSettings(ctx context.Context) (model.D
 
 func (r *DataWilayahRepository) UpdateWebsiteSettings(
 	ctx context.Context,
-	featuredTahunAnggaran string,
-	publishedTahunAnggaran []string,
+	payload model.DataWilayahWebsiteSettingsPayload,
 ) (model.DataWilayahWebsiteSettingsResponse, error) {
 	db, err := r.session(ctx)
 	if err != nil {
 		return model.DataWilayahWebsiteSettingsResponse{}, err
-	}
-
-	featuredTahunAnggaran = strings.TrimSpace(featuredTahunAnggaran)
-	for _, year := range uniqueYears(append([]string{featuredTahunAnggaran}, publishedTahunAnggaran...)) {
-		if err := r.ensureYearData(db, year); err != nil {
-			return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("prepare data wilayah year %s: %w", year, err)
-		}
 	}
 
 	availableYears, err := r.listAvailableYears(db)
@@ -164,35 +97,34 @@ func (r *DataWilayahRepository) UpdateWebsiteSettings(
 		return model.DataWilayahWebsiteSettingsResponse{}, err
 	}
 	if len(availableYears) == 0 {
-		return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("data wilayah year is empty")
+		return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("data wilayah belum tersedia")
 	}
 
-	normalizedPublished := normalizeYears(publishedTahunAnggaran, availableYears)
-	if featuredTahunAnggaran == "" {
-		return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("featured year is required")
-	}
-	if !containsYear(availableYears, featuredTahunAnggaran) {
-		return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("featured year is invalid")
-	}
-	if len(normalizedPublished) == 0 {
-		return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("published years are required")
-	}
-	if !containsYear(normalizedPublished, featuredTahunAnggaran) {
-		return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("featured year must be published")
+	publishedYears := normalizeYears(payload.PublishedTahunAnggaran, availableYears)
+	if len(publishedYears) == 0 {
+		return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("minimal satu tahun release wajib dipilih")
 	}
 
-	entity := model.DataWilayahPublicSettingsEntity{
-		ID:                     1,
-		FeaturedTahunAnggaran:  featuredTahunAnggaran,
-		PublishedTahunAnggaran: normalizedPublished,
+	featuredYear := strings.TrimSpace(payload.FeaturedTahunAnggaran)
+	if !containsYear(publishedYears, featuredYear) {
+		return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("tahun unggulan wajib termasuk dalam tahun release")
 	}
+
+	entity, _, err := r.loadOrCreateWebsiteSettings(db, availableYears)
+	if err != nil {
+		return model.DataWilayahWebsiteSettingsResponse{}, err
+	}
+
+	entity.FeaturedTahunAnggaran = featuredYear
+	entity.PublishedTahunAnggaran = publishedYears
+
 	if err := db.Save(&entity).Error; err != nil {
 		return model.DataWilayahWebsiteSettingsResponse{}, fmt.Errorf("update data wilayah settings: %w", err)
 	}
 
 	return model.DataWilayahWebsiteSettingsResponse{
-		FeaturedTahunAnggaran:  featuredTahunAnggaran,
-		PublishedTahunAnggaran: normalizedPublished,
+		FeaturedTahunAnggaran:  entity.FeaturedTahunAnggaran,
+		PublishedTahunAnggaran: append([]string(nil), entity.PublishedTahunAnggaran...),
 		AvailableTahunAnggaran: availableYears,
 	}, nil
 }
@@ -253,15 +185,78 @@ func (r *DataWilayahRepository) ensureYearData(db *gorm.DB, tahunAnggaran string
 }
 
 func (r *DataWilayahRepository) listAvailableYears(db *gorm.DB) ([]string, error) {
+	currentYear := currentDataWilayahReleaseYear()
+	if err := r.ensureCurrentReleaseYearData(db, currentYear); err != nil {
+		return nil, err
+	}
+
 	var years []string
 	if err := db.Model(&model.DataWilayahEntity{}).
 		Distinct("tahun_anggaran").
+		Where("tahun_anggaran <= ?", currentYear).
 		Order("tahun_anggaran DESC").
 		Pluck("tahun_anggaran", &years).Error; err != nil {
 		return nil, fmt.Errorf("list data wilayah years: %w", err)
 	}
 
 	return years, nil
+}
+
+func (r *DataWilayahRepository) ensureCurrentReleaseYearData(db *gorm.DB, currentYear string) error {
+	var count int64
+	if err := db.Model(&model.DataWilayahEntity{}).
+		Where("tahun_anggaran = ?", currentYear).
+		Count(&count).Error; err != nil {
+		return fmt.Errorf("count current data wilayah year: %w", err)
+	}
+	if count > 0 {
+		return nil
+	}
+
+	var sourceYear string
+	if err := db.Model(&model.DataWilayahEntity{}).
+		Select("tahun_anggaran").
+		Where("tahun_anggaran < ?", currentYear).
+		Order("tahun_anggaran DESC").
+		Limit(1).
+		Scan(&sourceYear).Error; err != nil {
+		return fmt.Errorf("find current release source data wilayah: %w", err)
+	}
+	if sourceYear == "" {
+		return nil
+	}
+
+	if err := db.Exec(`
+		INSERT INTO data_wilayah (
+			tahun_anggaran, id, sort_order, name, short_name, region_type, map_label,
+			idm_sangat_tertinggal, idm_tertinggal, idm_berkembang, idm_maju, idm_mandiri,
+			bumdes_jumlah, bumdes_aktif, bumdes_tidak_aktif, bumdes_bersama,
+			registration_penerbitan_kk, registration_perubahan_kk, registration_kia, registration_nik_wni,
+			registration_perekaman_ktp_el, registration_pencetakan_ktp_el,
+			oap_luas_wilayah, oap_jumlah_oap, oap_jumlah_non_oap, oap_jumlah_jiwa,
+			civil_akta_kelahiran, civil_akta_kematian, civil_akta_perkawinan, civil_akta_perceraian
+		)
+		SELECT
+			?, id, sort_order, name, short_name, region_type, map_label,
+			idm_sangat_tertinggal, idm_tertinggal, idm_berkembang, idm_maju, idm_mandiri,
+			bumdes_jumlah, bumdes_aktif, bumdes_tidak_aktif, bumdes_bersama,
+			registration_penerbitan_kk, registration_perubahan_kk, registration_kia, registration_nik_wni,
+			registration_perekaman_ktp_el, registration_pencetakan_ktp_el,
+			oap_luas_wilayah, oap_jumlah_oap, oap_jumlah_non_oap, oap_jumlah_jiwa,
+			civil_akta_kelahiran, civil_akta_kematian, civil_akta_perkawinan, civil_akta_perceraian
+		FROM data_wilayah
+		WHERE tahun_anggaran = ?
+		ON CONFLICT (tahun_anggaran, id) DO NOTHING
+	`, currentYear, sourceYear).Error; err != nil {
+		return fmt.Errorf("seed current data wilayah year: %w", err)
+	}
+
+	return nil
+}
+
+func currentDataWilayahReleaseYear() string {
+	wit := time.FixedZone("WIT", 9*60*60)
+	return fmt.Sprintf("%d", time.Now().In(wit).Year())
 }
 
 func (r *DataWilayahRepository) loadOrCreateWebsiteSettings(
@@ -320,24 +315,6 @@ func normalizeYears(years []string, allowedYears []string) []string {
 			seen[normalized] = struct{}{}
 			break
 		}
-	}
-
-	return result
-}
-
-func uniqueYears(years []string) []string {
-	result := make([]string, 0, len(years))
-	seen := make(map[string]struct{}, len(years))
-	for _, year := range years {
-		normalized := strings.TrimSpace(year)
-		if normalized == "" {
-			continue
-		}
-		if _, exists := seen[normalized]; exists {
-			continue
-		}
-		result = append(result, normalized)
-		seen[normalized] = struct{}{}
 	}
 
 	return result

@@ -45,9 +45,24 @@ export default function proxy(
       "/sidoka"
     );
 
+  const isSidak =
+    pathname.startsWith(
+      "/sidak"
+    );
+
   const isSikampung =
     pathname.startsWith(
       "/sikampung"
+    );
+
+  const isSitekad =
+    pathname.startsWith(
+      "/sitekad"
+    );
+
+  const isAspirasiku =
+    pathname.startsWith(
+      "/aspirasiku"
     );
 
   const isArsipPegawai =
@@ -90,7 +105,10 @@ export default function proxy(
       isDashboardSubpath ||
       isSibum ||
       isSidoka ||
+      isSidak ||
       isSikampung ||
+      isSitekad ||
+      isAspirasiku ||
       isArsipPegawai ||
       isSettings) &&
     !token
@@ -159,7 +177,10 @@ export const config = {
     "/dashboard/:path*",
     "/sibum/:path*",
     "/sidoka/:path*",
+    "/sidak/:path*",
     "/sikampung/:path*",
+    "/sitekad/:path*",
+    "/aspirasiku/:path*",
     "/arsip-pegawai",
     "/arsip-pegawai/:path*",
     "/settings",

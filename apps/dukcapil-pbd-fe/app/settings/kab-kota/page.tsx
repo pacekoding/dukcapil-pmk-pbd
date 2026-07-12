@@ -1,20 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Edit, MapPinned, Plus, Search, Trash2 } from "lucide-react";
+import { Edit, MapPinned, MoreHorizontal, Plus, Search, Trash2 } from "lucide-react";
 
+import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -42,29 +41,42 @@ export default function SettingsKabKotaPage() {
   const [items, setItems] = useState<KabKota[]>([]);
   const [query, setQuery] = useState("");
   const [form, setForm] = useState<KabKotaPayload>(emptyForm);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<KabKota | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadItems = async () => {
-    try {
-      setLoading(true);
-      const data = await getKabKota();
-      setItems(data);
-      setError(null);
-    } catch (loadError) {
-      console.error(loadError);
-      setError("Data kabupaten/kota gagal dimuat.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let mounted = true;
+
+    const loadItems = async () => {
+      try {
+        const data = await getKabKota();
+        if (mounted) {
+          setItems(data);
+          setError(null);
+        }
+      } catch (loadError) {
+        console.error(loadError);
+        if (mounted) {
+          setError("Data kabupaten/kota gagal dimuat.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     void loadItems();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const filteredItems = useMemo(() => {
@@ -85,14 +97,14 @@ export default function SettingsKabKotaPage() {
     ? items.find((item) => item.id === editingId)
     : null;
 
-  const openCreateDialog = () => {
+  const openCreateForm = () => {
     setEditingId(null);
     setForm(emptyForm);
     setError(null);
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
-  const openEditDialog = (item: KabKota) => {
+  const openEditForm = (item: KabKota) => {
     setEditingId(item.id);
     setForm({
       kodeWilayah: item.kodeWilayah,
@@ -100,7 +112,17 @@ export default function SettingsKabKotaPage() {
       provinsi: item.provinsi,
     });
     setError(null);
-    setDialogOpen(true);
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    if (saving) {
+      return;
+    }
+
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(emptyForm);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -133,7 +155,7 @@ export default function SettingsKabKotaPage() {
         setMessage(`${created.nama} berhasil ditambahkan.`);
       }
 
-      setDialogOpen(false);
+      setFormOpen(false);
       setEditingId(null);
       setForm(emptyForm);
     } catch (submitError) {
@@ -148,13 +170,19 @@ export default function SettingsKabKotaPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    setDeleting(true);
     setError(null);
     setMessage(null);
     try {
-      await deleteKabKota(id);
-      setItems((current) => current.filter((item) => item.id !== id));
+      await deleteKabKota(deleteTarget.id);
+      setItems((current) => current.filter((item) => item.id !== deleteTarget.id));
       setMessage("Data kabupaten/kota berhasil dihapus.");
+      setDeleteTarget(null);
     } catch (deleteError) {
       console.error(deleteError);
       setError(
@@ -162,6 +190,8 @@ export default function SettingsKabKotaPage() {
           ? deleteError.message
           : "Data kabupaten/kota gagal dihapus.",
       );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -178,6 +208,63 @@ export default function SettingsKabKotaPage() {
           </Badge>
         }
       />
+
+      {formOpen ? (
+        <SectionCard
+          title={editingItem ? "Edit Kab/Kota" : "Tambah Kab/Kota"}
+          description="Lengkapi kode wilayah, nama kabupaten/kota, dan provinsi."
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-3">
+              <FormInput
+                label="Kode Wilayah"
+                value={form.kodeWilayah}
+                placeholder="Contoh: 96.01"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, kodeWilayah: value }))
+                }
+              />
+              <FormInput
+                label="Nama Kab/Kota"
+                value={form.nama}
+                placeholder="Contoh: Kab. Sorong"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, nama: value }))
+                }
+              />
+              <FormInput
+                label="Provinsi"
+                value={form.provinsi}
+                placeholder="Contoh: Papua Barat Daya"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, provinsi: value }))
+                }
+              />
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                onClick={closeForm}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving}
+                className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              >
+                {saving
+                  ? "Menyimpan..."
+                  : editingItem
+                    ? "Simpan Perubahan"
+                    : "Tambah Data"}
+              </Button>
+            </div>
+          </form>
+        </SectionCard>
+      ) : null}
 
       <SectionCard
         title="Daftar Kab/Kota"
@@ -196,7 +283,7 @@ export default function SettingsKabKotaPage() {
             <Button
               type="button"
               className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
-              onClick={openCreateDialog}
+              onClick={openCreateForm}
             >
               <Plus className="h-4 w-4" />
               Tambah Kab/Kota
@@ -244,24 +331,31 @@ export default function SettingsKabKotaPage() {
                   <TableCell>{item.provinsi}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditDialog(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Hapus
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={`Buka aksi untuk ${item.nama}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEditForm(item)}>
+                            <Edit className="h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setDeleteTarget(item)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Hapus
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -272,7 +366,7 @@ export default function SettingsKabKotaPage() {
                   colSpan={4}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
-                  Data kabupaten/kota tidak ditemukan.
+                  Tidak ada data kabupaten/kota yang sesuai dengan pencarian.
                 </TableCell>
               </TableRow>
             )}
@@ -280,69 +374,18 @@ export default function SettingsKabKotaPage() {
         </Table>
       </SectionCard>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <DialogHeader>
-              <DialogTitle>
-                {editingItem ? "Edit Kab/Kota" : "Tambah Kab/Kota"}
-              </DialogTitle>
-              <DialogDescription>
-                Lengkapi kode wilayah, nama kabupaten/kota, dan provinsi.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4">
-              <FormInput
-                label="Kode Wilayah"
-                value={form.kodeWilayah}
-                placeholder="Contoh: 96.01"
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, kodeWilayah: value }))
-                }
-              />
-              <FormInput
-                label="Nama Kab/Kota"
-                value={form.nama}
-                placeholder="Contoh: Kab. Sorong"
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, nama: value }))
-                }
-              />
-              <FormInput
-                label="Provinsi"
-                value={form.provinsi}
-                placeholder="Contoh: Papua Barat Daya"
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, provinsi: value }))
-                }
-              />
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                onClick={() => setDialogOpen(false)}
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                disabled={saving}
-                className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
-              >
-                {saving
-                  ? "Menyimpan..."
-                  : editingItem
-                    ? "Simpan Perubahan"
-                    : "Tambah Data"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Hapus Data Kab/Kota?"
+        description={`Data ${deleteTarget?.nama ?? "kabupaten/kota"} akan dihapus dan tidak dapat dikembalikan.`}
+        loading={deleting}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDelete}
+      />
     </main>
   );
 }

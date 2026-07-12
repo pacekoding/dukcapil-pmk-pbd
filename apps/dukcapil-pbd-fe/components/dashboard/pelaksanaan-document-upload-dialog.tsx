@@ -10,7 +10,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -48,6 +47,19 @@ type PelaksanaanDocumentUploadDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUploaded: (document: PelaksanaanDocument) => void;
+  subkegiatanPrefix?: string;
+  subkegiatanRequired?: boolean;
+};
+
+type PelaksanaanDocumentUploadFormProps = {
+  active?: boolean;
+  idPrefix?: string;
+  onUploaded: (document: PelaksanaanDocument) => void;
+  onCompleted?: () => void;
+  onCancel?: () => void;
+  cancelLabel?: string;
+  subkegiatanPrefix?: string;
+  subkegiatanRequired?: boolean;
 };
 
 const fileExtension = (fileName: string) => {
@@ -58,11 +70,16 @@ const fileExtension = (fileName: string) => {
 const defaultDocumentName = (fileName: string) =>
   fileName.replace(/\.[^/.]+$/, "");
 
-export function PelaksanaanDocumentUploadDialog({
-  open,
-  onOpenChange,
+export function PelaksanaanDocumentUploadForm({
+  active = true,
+  idPrefix = "dokumen-pelaksanaan",
   onUploaded,
-}: PelaksanaanDocumentUploadDialogProps) {
+  onCompleted,
+  onCancel,
+  cancelLabel = "Bersihkan",
+  subkegiatanPrefix,
+  subkegiatanRequired = false,
+}: PelaksanaanDocumentUploadFormProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [subkegiatan, setSubkegiatan] = useState<Subkegiatan[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -75,7 +92,7 @@ export function PelaksanaanDocumentUploadDialog({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) {
+    if (!active) {
       return;
     }
 
@@ -83,7 +100,9 @@ export function PelaksanaanDocumentUploadDialog({
     const loadSubkegiatan = async () => {
       setLoadingSubkegiatan(true);
       try {
-        const response = await getSubkegiatan();
+        const response = await getSubkegiatan({
+          kodePrefix: subkegiatanPrefix,
+        });
         if (mounted) {
           setSubkegiatan(Array.isArray(response.items) ? response.items : []);
         }
@@ -105,7 +124,7 @@ export function PelaksanaanDocumentUploadDialog({
     return () => {
       mounted = false;
     };
-  }, [open]);
+  }, [active, subkegiatanPrefix]);
 
   const resetForm = () => {
     setSelectedFile(null);
@@ -129,14 +148,13 @@ export function PelaksanaanDocumentUploadDialog({
     [subkegiatan],
   );
 
-  const handleOpenChange = (nextOpen: boolean) => {
+  const handleCancel = () => {
     if (uploading) {
       return;
     }
-    if (!nextOpen) {
-      resetForm();
-    }
-    onOpenChange(nextOpen);
+
+    resetForm();
+    onCancel?.();
   };
 
   const handleFileChange = (file: File | null) => {
@@ -162,6 +180,10 @@ export function PelaksanaanDocumentUploadDialog({
       setFileError("File dokumen wajib diupload.");
       return;
     }
+    if (subkegiatanRequired && !selectedSubkegiatanId) {
+      setSubmitError("Subkegiatan wajib dipilih.");
+      return;
+    }
     if (fileError) {
       return;
     }
@@ -176,7 +198,7 @@ export function PelaksanaanDocumentUploadDialog({
         isDokumenDssd,
       });
       resetForm();
-      onOpenChange(false);
+      onCompleted?.();
       onUploaded(uploaded);
     } catch (error) {
       console.error(error);
@@ -189,133 +211,162 @@ export function PelaksanaanDocumentUploadDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-xl">
-        <form onSubmit={(event) => void handleSubmit(event)}>
-          <DialogHeader>
-            <DialogTitle>Upload Dokumen Pelaksanaan</DialogTitle>
-            <DialogDescription>
-              Tambahkan dokumen pelaksanaan dan hubungkan dengan subkegiatan
-              jika diperlukan.
-            </DialogDescription>
-          </DialogHeader>
+    <form onSubmit={(event) => void handleSubmit(event)}>
+      <div className="space-y-5">
+        {submitError ? <ErrorState message={submitError} /> : null}
 
-          <div className="mt-5 space-y-5">
-            {submitError ? <ErrorState message={submitError} /> : null}
-
-            <div className="grid gap-2">
-              <Label htmlFor="dokumen-pelaksanaan">File dokumen</Label>
-              <Input
-                ref={fileInputRef}
-                id="dokumen-pelaksanaan"
-                type="file"
-                accept={DOCUMENT_ACCEPT}
-                disabled={uploading}
-                onChange={(event) =>
-                  handleFileChange(event.target.files?.[0] ?? null)
-                }
-              />
-              {selectedFile ? (
-                <div
-                  className={cn(
-                    "flex items-center justify-between gap-3 rounded-lg border px-3 py-3 text-sm",
-                    fileError
-                      ? "border-red-200 bg-red-50 text-red-700"
-                      : "border-slate-200 bg-slate-50 text-slate-600",
-                  )}
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <FileUp className="h-4 w-4 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold">
-                        {selectedFile.name}
-                      </p>
-                      <p className="text-xs">{formatFileSize(selectedFile.size)}</p>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    disabled={uploading}
-                    onClick={() => handleFileChange(null)}
-                    aria-label="Hapus file"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : null}
-              {fileError ? (
-                <p className="text-sm font-medium text-red-600">{fileError}</p>
-              ) : null}
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="nama-dokumen">Nama</Label>
-              <Input
-                id="nama-dokumen"
-                value={nama}
-                disabled={uploading}
-                onChange={(event) => setNama(event.target.value)}
-                placeholder="Nama dokumen"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Subkegiatan</Label>
-              <Select
-                value={selectedSubkegiatanId || "none"}
-                disabled={uploading || loadingSubkegiatan}
-                onValueChange={(value) =>
-                  setSelectedSubkegiatanId(value === "none" ? "" : value)
-                }
-              >
-                <SelectTrigger className="h-11 rounded-lg">
-                  <SelectValue placeholder="Pilih subkegiatan" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Tanpa subkegiatan</SelectItem>
-                  {sortedSubkegiatan.map((item) => (
-                    <SelectItem key={item.id} value={String(item.id)}>
-                      {item.kode} - {item.nama}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
-              <div>
-                <Label htmlFor="dokumen-dssd">Dokumen DSSD</Label>
-                <p className="mt-1 text-xs text-slate-500">
-                  Tandai jika dokumen ini merupakan dokumen DSSD.
-                </p>
-              </div>
-              <Switch
-                id="dokumen-dssd"
-                checked={isDokumenDssd}
-                disabled={uploading}
-                onCheckedChange={setIsDokumenDssd}
-              />
-            </div>
-          </div>
-
-          <DialogFooter className="mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={uploading}
-              onClick={() => handleOpenChange(false)}
+        <div className="grid gap-2">
+          <Label htmlFor={`${idPrefix}-file`}>File dokumen</Label>
+          <Input
+            ref={fileInputRef}
+            id={`${idPrefix}-file`}
+            type="file"
+            accept={DOCUMENT_ACCEPT}
+            disabled={uploading}
+            onChange={(event) =>
+              handleFileChange(event.target.files?.[0] ?? null)
+            }
+          />
+          {selectedFile ? (
+            <div
+              className={cn(
+                "flex items-center justify-between gap-3 rounded-lg border px-3 py-3 text-sm",
+                fileError
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : "border-slate-200 bg-slate-50 text-slate-600",
+              )}
             >
-              Batal
-            </Button>
-            <Button type="submit" disabled={uploading}>
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              <Upload className="h-4 w-4" />
-              Upload
-            </Button>
-          </DialogFooter>
-        </form>
+              <div className="flex min-w-0 items-center gap-3">
+                <FileUp className="h-4 w-4 shrink-0" />
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{selectedFile.name}</p>
+                  <p className="text-xs">{formatFileSize(selectedFile.size)}</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={uploading}
+                onClick={() => handleFileChange(null)}
+                aria-label="Hapus file"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : null}
+          {fileError ? (
+            <p className="text-sm font-medium text-red-600">{fileError}</p>
+          ) : null}
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor={`${idPrefix}-nama`}>Nama</Label>
+          <Input
+            id={`${idPrefix}-nama`}
+            value={nama}
+            disabled={uploading}
+            onChange={(event) => setNama(event.target.value)}
+            placeholder="Nama dokumen"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label>Subkegiatan</Label>
+          <Select
+            value={
+              selectedSubkegiatanId ||
+              (subkegiatanRequired ? undefined : "none")
+            }
+            disabled={uploading || loadingSubkegiatan}
+            onValueChange={(value) =>
+              setSelectedSubkegiatanId(value === "none" ? "" : value)
+            }
+          >
+            <SelectTrigger className="h-11 rounded-lg">
+              <SelectValue placeholder="Pilih subkegiatan" />
+            </SelectTrigger>
+            <SelectContent>
+              {subkegiatanRequired ? null : (
+                <SelectItem value="none">Tanpa subkegiatan</SelectItem>
+              )}
+              {sortedSubkegiatan.map((item) => (
+                <SelectItem key={item.id} value={String(item.id)}>
+                  {item.kode} - {item.nama}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+          <div>
+            <Label htmlFor={`${idPrefix}-dssd`}>Dokumen DSSD</Label>
+            <p className="mt-1 text-xs text-slate-500">
+              Tandai jika dokumen ini merupakan dokumen DSSD.
+            </p>
+          </div>
+          <Switch
+            id={`${idPrefix}-dssd`}
+            checked={isDokumenDssd}
+            disabled={uploading}
+            onCheckedChange={setIsDokumenDssd}
+          />
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={uploading}
+            onClick={handleCancel}
+          >
+            {cancelLabel}
+          </Button>
+          <Button type="submit" disabled={uploading}>
+            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            <Upload className="h-4 w-4" />
+            Upload
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
+export function PelaksanaanDocumentUploadDialog({
+  open,
+  onOpenChange,
+  onUploaded,
+  subkegiatanPrefix,
+  subkegiatanRequired = false,
+}: PelaksanaanDocumentUploadDialogProps) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    onOpenChange(nextOpen);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-h-[calc(100svh-2rem)] max-w-xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Upload Dokumen Pelaksanaan</DialogTitle>
+          <DialogDescription>
+            Tambahkan dokumen pelaksanaan dan hubungkan dengan subkegiatan jika
+            diperlukan.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="mt-5">
+          <PelaksanaanDocumentUploadForm
+            active={open}
+            idPrefix="dokumen-pelaksanaan-mobile"
+            onUploaded={onUploaded}
+            onCompleted={() => onOpenChange(false)}
+            onCancel={() => onOpenChange(false)}
+            cancelLabel="Batal"
+            subkegiatanPrefix={subkegiatanPrefix}
+            subkegiatanRequired={subkegiatanRequired}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

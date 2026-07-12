@@ -20,18 +20,20 @@ func NewSubkegiatanRepository(db *gorm.DB) *SubkegiatanRepository {
 	return &SubkegiatanRepository{db: db}
 }
 
-func (r *SubkegiatanRepository) List(ctx context.Context, tahunAnggaran string) (model.SubkegiatanListResponse, error) {
+func (r *SubkegiatanRepository) List(ctx context.Context, tahunAnggaran string, kodePrefix string) (model.SubkegiatanListResponse, error) {
 	db, err := r.session(ctx)
 	if err != nil {
 		return model.SubkegiatanListResponse{}, err
 	}
 
 	tahunAnggaran = strings.TrimSpace(tahunAnggaran)
+	kodePrefix = strings.TrimSpace(kodePrefix)
 	var records []model.SubkegiatanEntity
-	if err := db.
-		Where("tahun_anggaran = ?", tahunAnggaran).
-		Order("kode ASC, id ASC").
-		Find(&records).Error; err != nil {
+	query := db.Where("tahun_anggaran = ?", tahunAnggaran)
+	if kodePrefix != "" {
+		query = query.Where("kode LIKE ?", kodePrefix+"%")
+	}
+	if err := query.Order("kode ASC, id ASC").Find(&records).Error; err != nil {
 		return model.SubkegiatanListResponse{}, fmt.Errorf("list subkegiatan: %w", err)
 	}
 

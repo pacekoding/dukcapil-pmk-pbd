@@ -6,23 +6,23 @@ import {
   Database,
   Download,
   Edit,
+  MoreHorizontal,
   Plus,
   Search,
   Trash2,
 } from "lucide-react";
 
+import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -64,35 +64,48 @@ export default function SibumDataPage() {
   const [kabKotaOptions, setKabKotaOptions] = useState<KabKota[]>([]);
   const [tahunAnggaran, setTahunAnggaran] = useState("2026");
   const [query, setQuery] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<BumKampung | null>(null);
   const [form, setForm] = useState<BumKampungPayload>(initialFormState);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadRecords = async () => {
-    try {
-      setLoading(true);
-      const [data, kabKotaData] = await Promise.all([
-        getBumKampung(),
-        getKabKota(),
-      ]);
-      setRecords(data.items);
-      setKabKotaOptions(kabKotaData);
-      setTahunAnggaran(data.tahunAnggaran);
-      setError(null);
-    } catch (loadError) {
-      console.error(loadError);
-      setError("Data BUMKam gagal dimuat.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let mounted = true;
+
+    const loadRecords = async () => {
+      try {
+        const [data, kabKotaData] = await Promise.all([
+          getBumKampung(),
+          getKabKota(),
+        ]);
+        if (mounted) {
+          setRecords(data.items);
+          setKabKotaOptions(kabKotaData);
+          setTahunAnggaran(data.tahunAnggaran);
+          setError(null);
+        }
+      } catch (loadError) {
+        console.error(loadError);
+        if (mounted) {
+          setError("Data BUMKam gagal dimuat.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     void loadRecords();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const filteredRecords = useMemo(() => {
@@ -121,16 +134,17 @@ export default function SibumDataPage() {
     ? records.find((record) => record.id === editingId)
     : null;
 
-  const openCreateDialog = () => {
+  const openCreateForm = () => {
     setEditingId(null);
     setForm({
       ...initialFormState,
       kabupatenKota: kabKotaOptions[0]?.nama ?? "",
     });
-    setDialogOpen(true);
+    setError(null);
+    setFormOpen(true);
   };
 
-  const openEditDialog = (record: BumKampung) => {
+  const openEditForm = (record: BumKampung) => {
     setEditingId(record.id);
     setForm({
       kabupatenKota: record.kabupatenKota,
@@ -140,7 +154,18 @@ export default function SibumDataPage() {
       kategori: record.kategori,
       status: record.status,
     });
-    setDialogOpen(true);
+    setError(null);
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    if (saving) {
+      return;
+    }
+
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(initialFormState);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -183,7 +208,7 @@ export default function SibumDataPage() {
         setMessage(`${created.namaBumKampung} berhasil ditambahkan.`);
       }
 
-      setDialogOpen(false);
+      setFormOpen(false);
       setEditingId(null);
       setForm(initialFormState);
     } catch (submitError) {
@@ -198,15 +223,21 @@ export default function SibumDataPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    setDeleting(true);
     setError(null);
     setMessage(null);
     try {
-      await deleteBumKampung(id);
+      await deleteBumKampung(deleteTarget.id);
       setRecords((currentRecords) =>
-        currentRecords.filter((record) => record.id !== id),
+        currentRecords.filter((record) => record.id !== deleteTarget.id),
       );
       setMessage("Data BUMKam berhasil dihapus.");
+      setDeleteTarget(null);
     } catch (deleteError) {
       console.error(deleteError);
       setError(
@@ -214,6 +245,8 @@ export default function SibumDataPage() {
           ? deleteError.message
           : "Data BUMKam gagal dihapus.",
       );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -237,13 +270,106 @@ export default function SibumDataPage() {
           <Button
             type="button"
             className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            onClick={openCreateDialog}
+            onClick={openCreateForm}
           >
             <Plus className="h-4 w-4" />
             Tambah BUMKam
           </Button>
         }
       />
+
+      {formOpen ? (
+        <SectionCard
+          title={editingRecord ? "Edit Data BUMKam" : "Tambah Data BUMKam"}
+          description="Lengkapi identitas BUM Kampung sesuai wilayah administrasi."
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormSelect
+                label="Kabupaten/Kota"
+                value={form.kabupatenKota}
+                options={kabKotaOptions.map((item) => item.nama)}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, kabupatenKota: value }))
+                }
+                placeholder="Pilih kabupaten/kota"
+              />
+              <FormInput
+                label="Distrik"
+                value={form.distrik}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, distrik: value }))
+                }
+                placeholder="Contoh: Aimas"
+              />
+              <FormInput
+                label="Kampung"
+                value={form.kampung}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, kampung: value }))
+                }
+                placeholder="Contoh: Malawili"
+              />
+              <FormInput
+                label="Nama BUM Kampung"
+                value={form.namaBumKampung}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, namaBumKampung: value }))
+                }
+                placeholder="Contoh: BUM Kampung Maju Bersama"
+              />
+              <FormSelect
+                label="Kategori"
+                value={form.kategori}
+                options={[...bumKampungKategoriOptions]}
+                onChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    kategori: value as BumKampungPayload["kategori"],
+                  }))
+                }
+              />
+              <FormSelect
+                label="Status"
+                value={form.status}
+                options={[...bumKampungStatusOptions]}
+                onChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    status: value as BumKampungPayload["status"],
+                  }))
+                }
+              />
+            </div>
+            {kabKotaOptions.length === 0 ? (
+              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+                Data kab/kota belum tersedia. Tambahkan data pada Dashboard - Data Kab/Kota.
+              </p>
+            ) : null}
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                onClick={closeForm}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving || kabKotaOptions.length === 0}
+                className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              >
+                {saving
+                  ? "Menyimpan..."
+                  : editingRecord
+                    ? "Simpan Perubahan"
+                    : "Tambah Data"}
+              </Button>
+            </div>
+          </form>
+        </SectionCard>
+      ) : null}
 
       <SectionCard
         title="Daftar BUMKam"
@@ -292,7 +418,7 @@ export default function SibumDataPage() {
               <TableHead>Nama BUM Kampung</TableHead>
               <TableHead>Kategori</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Aksi</TableHead>
+              <TableHead className="w-[96px] text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -327,27 +453,32 @@ export default function SibumDataPage() {
                   <TableCell>
                     <StatusBadge status={record.status} />
                   </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditDialog(record)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(record.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Hapus
-                      </Button>
-                    </div>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Buka aksi untuk ${record.namaBumKampung}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEditForm(record)}>
+                          <Edit className="h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteTarget(record)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Hapus
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -357,7 +488,7 @@ export default function SibumDataPage() {
                   colSpan={7}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
-                  Data BUMKam tidak ditemukan.
+                  Tidak ada data yang sesuai dengan pencarian.
                 </TableCell>
               </TableRow>
             )}
@@ -365,105 +496,18 @@ export default function SibumDataPage() {
         </Table>
       </SectionCard>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <DialogHeader>
-              <DialogTitle>
-                {editingRecord ? "Edit Data BUMKam" : "Tambah Data BUMKam"}
-              </DialogTitle>
-              <DialogDescription>
-                Lengkapi identitas BUM Kampung sesuai wilayah administrasi.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4">
-              <FormSelect
-                label="Kabupaten/Kota"
-                value={form.kabupatenKota}
-                options={kabKotaOptions.map((item) => item.nama)}
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, kabupatenKota: value }))
-                }
-                placeholder="Pilih kabupaten/kota"
-              />
-              {kabKotaOptions.length === 0 ? (
-                <p className="-mt-2 text-xs font-medium text-amber-700">
-                  Data kab/kota belum tersedia. Tambahkan di menu Pengaturan - Data Kab/Kota.
-                </p>
-              ) : null}
-              <FormInput
-                label="Distrik"
-                value={form.distrik}
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, distrik: value }))
-                }
-                placeholder="Contoh: Aimas"
-              />
-              <FormInput
-                label="Kampung"
-                value={form.kampung}
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, kampung: value }))
-                }
-                placeholder="Contoh: Malawili"
-              />
-              <FormInput
-                label="Nama BUM Kampung"
-                value={form.namaBumKampung}
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, namaBumKampung: value }))
-                }
-                placeholder="Contoh: BUM Kampung Maju Bersama"
-              />
-              <FormSelect
-                label="Kategori"
-                value={form.kategori}
-                options={[...bumKampungKategoriOptions]}
-                onChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    kategori: value as BumKampungPayload["kategori"],
-                  }))
-                }
-              />
-              <FormSelect
-                label="Status"
-                value={form.status}
-                options={[...bumKampungStatusOptions]}
-                onChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    status: value as BumKampungPayload["status"],
-                  }))
-                }
-              />
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                onClick={() => setDialogOpen(false)}
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                disabled={saving || kabKotaOptions.length === 0}
-                className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
-              >
-                {saving
-                  ? "Menyimpan..."
-                  : editingRecord
-                    ? "Simpan Perubahan"
-                    : "Tambah Data"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Hapus Data BUMKam?"
+        description={`Data ${deleteTarget?.namaBumKampung ?? "BUMKam"} akan dihapus dan tidak dapat dikembalikan.`}
+        loading={deleting}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDelete}
+      />
     </main>
   );
 }

@@ -9,12 +9,16 @@ import {
   Bell,
   Building2,
   ChevronDown,
+  ClipboardList,
   FolderCheck,
   IdCard,
   LayoutDashboard,
+  Lock,
   LogOut,
   MapPinned,
+  MessageSquareText,
   ShieldCheck,
+  Wrench,
   type LucideProps,
 } from "lucide-react";
 
@@ -29,7 +33,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getWebsitePortalAppStatuses } from "@/lib/api/portal-apps";
 import { cn } from "@/lib/utils";
+import type { PortalAppStatus } from "@/types/portal-app";
 
 type SessionUser = {
   name: string;
@@ -43,6 +49,7 @@ type AppMenu = {
   description: string;
   href: string;
   accessKey: string;
+  status: PortalAppStatus;
   icon: ComponentType<LucideProps>;
   tone: {
     icon: string;
@@ -67,6 +74,7 @@ const appMenus: AppMenu[] = [
       button: "border-emerald-600 text-emerald-700",
       hover: "group-hover:bg-emerald-50 group-hover:border-emerald-300",
     },
+    status: "Aktif",
   },
   {
     title: "SIKAMPUNG",
@@ -82,13 +90,46 @@ const appMenus: AppMenu[] = [
       button: "border-cyan-600 text-cyan-700",
       hover: "group-hover:bg-cyan-50 group-hover:border-cyan-300",
     },
+    status: "Pemeliharaan",
+  },
+  {
+    title: "SiTEKAD",
+    subtitle: "Sistem Informasi Tekad",
+    description:
+      "Sistem informasi untuk input dan pengelolaan data potensi kampung.",
+    href: "/sitekad/dashboard",
+    accessKey: "sitekad",
+    icon: ClipboardList,
+    tone: {
+      icon: "bg-teal-50 text-teal-700 ring-teal-100",
+      subtitle: "text-teal-700",
+      button: "border-teal-600 text-teal-700",
+      hover: "group-hover:bg-teal-50 group-hover:border-teal-300",
+    },
+    status: "Aktif",
+  },
+  {
+    title: "ASPIRASIKU",
+    subtitle: "Sistem Aspirasi Anonim",
+    description:
+      "Sistem untuk menampung dan mengelola pesan aspirasi anonim dari website.",
+    href: "/aspirasiku/dashboard",
+    accessKey: "aspirasiku",
+    icon: MessageSquareText,
+    tone: {
+      icon: "bg-violet-50 text-violet-700 ring-violet-100",
+      subtitle: "text-violet-700",
+      button: "border-violet-600 text-violet-700",
+      hover: "group-hover:bg-violet-50 group-hover:border-violet-300",
+    },
+    status: "Aktif",
   },
   {
     title: "SIDOKA",
     subtitle: "Sistem Informasi Dokumen Kegiatan",
     description:
-      "Sistem informasi untuk upload, arsip, dan monitoring dokumen kegiatan.",
-    href: "/sidoka/data",
+      "Sistem informasi untuk upload, arsip, dan monitoring dokumen kegiatan PMK.",
+    href: "/sidoka/dashboard",
     accessKey: "sidoka",
     icon: FolderCheck,
     tone: {
@@ -97,10 +138,27 @@ const appMenus: AppMenu[] = [
       button: "border-indigo-600 text-indigo-700",
       hover: "group-hover:bg-indigo-50 group-hover:border-indigo-300",
     },
+    status: "Pemeliharaan",
   },
   {
-    title: "Arsipku",
-    subtitle: "Sistem Arsipku",
+    title: "SIDAK",
+    subtitle: "Sistem Informasi Data Kegiatan Dukcapil",
+    description:
+      "Sistem informasi untuk upload, arsip, dan monitoring dokumen kegiatan Dukcapil.",
+    href: "/sidak/dashboard",
+    accessKey: "sidak",
+    icon: ClipboardList,
+    tone: {
+      icon: "bg-blue-50 text-blue-700 ring-blue-100",
+      subtitle: "text-blue-700",
+      button: "border-blue-600 text-blue-700",
+      hover: "group-hover:bg-blue-50 group-hover:border-blue-300",
+    },
+    status: "Pemeliharaan",
+  },
+  {
+    title: "ARSIPKU",
+    subtitle: "Sistem ARSIPKU",
     description:
       "Kelola biodata pegawai dan file ijazah, SK, SPMT, sertifikat, dan dokumen lainnya.",
     href: "/arsip-pegawai",
@@ -112,8 +170,17 @@ const appMenus: AppMenu[] = [
       button: "border-amber-700 text-amber-800",
       hover: "group-hover:bg-amber-50 group-hover:border-amber-300",
     },
+    status: "Pemeliharaan",
   },
 ];
+
+const defaultPortalStatuses = appMenus.reduce<Record<string, PortalAppStatus>>(
+  (result, menu) => ({
+    ...result,
+    [menu.accessKey]: menu.status,
+  }),
+  {},
+);
 
 export default function InternalAppsPortalPage() {
   const router = useRouter();
@@ -122,6 +189,9 @@ export default function InternalAppsPortalPage() {
     role: "Karyawan",
     systemAccess: [],
   });
+  const [portalStatuses, setPortalStatuses] = useState<
+    Record<string, PortalAppStatus>
+  >(defaultPortalStatuses);
   const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
@@ -153,6 +223,37 @@ export default function InternalAppsPortalPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPortalStatuses = async () => {
+      try {
+        const statuses = await getWebsitePortalAppStatuses();
+        if (!mounted) {
+          return;
+        }
+
+        setPortalStatuses(
+          statuses.reduce<Record<string, PortalAppStatus>>(
+            (result, item) => ({
+              ...result,
+              [item.accessKey]: item.status,
+            }),
+            { ...defaultPortalStatuses },
+          ),
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    void loadPortalStatuses();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
       setLoggingOut(true);
@@ -170,8 +271,7 @@ export default function InternalAppsPortalPage() {
 
   const visibleAppMenus = appMenus.filter(
     (menu) =>
-      isSuperAdminRole(user.role) ||
-      user.systemAccess.includes(menu.accessKey),
+      isSuperAdminRole(user.role) || user.systemAccess.includes(menu.accessKey),
   );
 
   return (
@@ -215,7 +315,13 @@ export default function InternalAppsPortalPage() {
 
         <div className="mt-7 grid w-full max-w-6xl gap-7 md:grid-cols-2 xl:grid-cols-4">
           {visibleAppMenus.map((menu) => (
-            <AppCard key={menu.href} menu={menu} />
+            <AppCard
+              key={menu.href}
+              menu={{
+                ...menu,
+                status: portalStatuses[menu.accessKey] ?? menu.status,
+              }}
+            />
           ))}
           {visibleAppMenus.length === 0 ? (
             <div className="col-span-full rounded-lg border border-slate-200 bg-white px-6 py-10 text-center text-sm font-semibold text-slate-500">
@@ -356,34 +462,31 @@ function UserMenu({
 
 function AppCard({ menu }: { menu: AppMenu }) {
   const Icon = menu.icon;
-
-  return (
-    <Link
-      href={menu.href}
-      className={cn(
-        "group flex min-h-[340px] flex-col items-center rounded-lg border border-slate-200 bg-white/90 p-6 text-center shadow-[0_16px_42px_rgba(15,35,80,0.10)] backdrop-blur transition lg:p-7",
-        "hover:-translate-y-0.5 hover:border-pbd-blue/35 hover:shadow-[0_22px_52px_rgba(15,35,80,0.14)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pbd-blue/30",
-      )}
-    >
+  const active = menu.status === "Aktif";
+  const CardContent = (
+    <>
       <div
         className={cn(
           "flex h-22 w-22 items-center justify-center rounded-full ring-1",
-          menu.tone.icon,
+          active
+            ? menu.tone.icon
+            : "bg-slate-100 text-slate-500 ring-slate-200",
         )}
       >
         <Icon className="h-12 w-12" />
       </div>
 
-      <Badge className="mt-6 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
-        <span className="mr-1.5 h-2.5 w-2.5 rounded-full bg-emerald-600" />
-        Aktif
-      </Badge>
+      <StatusBadge status={menu.status} />
 
       <h3 className="mt-5 text-xl font-extrabold tracking-tight text-pbd-navy lg:text-2xl">
         {menu.title}
       </h3>
-      <p className={cn("mt-3 text-base font-bold", menu.tone.subtitle)}>
+      <p
+        className={cn(
+          "mt-3 text-base font-bold",
+          active ? menu.tone.subtitle : "text-slate-500",
+        )}
+      >
         {menu.subtitle}
       </p>
 
@@ -396,14 +499,74 @@ function AppCard({ menu }: { menu: AppMenu }) {
       <div
         className={cn(
           "mt-6 flex h-12 w-full items-center justify-center gap-3 rounded-lg border bg-white px-5 text-base font-bold transition",
-          menu.tone.button,
-          menu.tone.hover,
+          active
+            ? cn(menu.tone.button, menu.tone.hover)
+            : "border-slate-200 text-slate-500",
         )}
       >
-        Buka {menu.title}
-        <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
+        {active ? (
+          <>
+            Buka {menu.title}
+            <ArrowRight className="h-5 w-5 transition group-hover:translate-x-1" />
+          </>
+        ) : menu.status === "Pemeliharaan" ? (
+          <>
+            <Wrench className="h-5 w-5" />
+            Pemeliharaan
+          </>
+        ) : (
+          <>
+            <Lock className="h-5 w-5" />
+            Nonaktif
+          </>
+        )}
       </div>
+    </>
+  );
+
+  const className = cn(
+    "group flex min-h-[340px] flex-col items-center rounded-lg border border-slate-200 bg-white/90 p-6 text-center shadow-[0_16px_42px_rgba(15,35,80,0.10)] backdrop-blur transition lg:p-7",
+    active
+      ? "hover:-translate-y-0.5 hover:border-pbd-blue/35 hover:shadow-[0_22px_52px_rgba(15,35,80,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pbd-blue/30"
+      : "cursor-not-allowed opacity-80",
+  );
+
+  if (!active) {
+    return <article className={className}>{CardContent}</article>;
+  }
+
+  return (
+    <Link href={menu.href} className={className}>
+      {CardContent}
     </Link>
+  );
+}
+
+function StatusBadge({ status }: { status: PortalAppStatus }) {
+  const className =
+    status === "Aktif"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : status === "Pemeliharaan"
+        ? "border-yellow-200 bg-yellow-50 text-yellow-700"
+        : "border-slate-200 bg-slate-100 text-slate-600";
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn("mt-6 rounded-full px-3 py-1 text-sm font-bold", className)}
+    >
+      <span
+        className={cn(
+          "mr-1.5 h-2.5 w-2.5 rounded-full",
+          status === "Aktif"
+            ? "bg-emerald-600"
+            : status === "Pemeliharaan"
+              ? "bg-yellow-500"
+              : "bg-slate-400",
+        )}
+      />
+      {status}
+    </Badge>
   );
 }
 

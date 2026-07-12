@@ -163,7 +163,7 @@ export default function DashboardSSDPage() {
     [items],
   );
 
-  const openCreateDialog = () => {
+  const openCreateForm = () => {
     if (!isSuperAdmin) {
       setError("Hanya superadmin yang dapat menambah SSD.");
       return;
@@ -173,7 +173,7 @@ export default function DashboardSSDPage() {
     setCreateOpen(true);
   };
 
-  const closeCreateDialog = () => {
+  const closeCreateForm = () => {
     if (saving) {
       return;
     }
@@ -304,7 +304,7 @@ export default function DashboardSSDPage() {
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button
                   type="button"
-                  onClick={openCreateDialog}
+                  onClick={openCreateForm}
                   className="h-12 rounded-xl bg-white px-5 text-pbd-navy ring-1 ring-slate-200 hover:bg-slate-50"
                 >
                   <Plus className="h-4 w-4" />
@@ -339,6 +339,118 @@ export default function DashboardSSDPage() {
         <StatCard label="Total SSD" value={String(items.length)} />
         <StatCard label="SSD Aktif" value={String(activeCount)} />
       </div>
+
+      {createOpen ? (
+        <SectionCard
+          title="Tambah SSD"
+          description={`Data disimpan untuk Tahun Anggaran ${tahunAnggaran}.`}
+        >
+          <div className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700" htmlFor="ssd-kode">
+                  Kode DSSD *
+                </label>
+                <Input
+                  id="ssd-kode"
+                  value={form.kode}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      kode: event.target.value,
+                    }))
+                  }
+                  placeholder="Contoh: DSSD-001"
+                  className="h-11 rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700" htmlFor="ssd-satuan">
+                  Satuan
+                </label>
+                <Input
+                  id="ssd-satuan"
+                  value={form.satuan}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      satuan: event.target.value,
+                    }))
+                  }
+                  placeholder="Contoh: Orang"
+                  className="h-11 rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium text-slate-700" htmlFor="ssd-uraian">
+                  Uraian DSSD *
+                </label>
+                <Textarea
+                  id="ssd-uraian"
+                  value={form.uraian}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      uraian: event.target.value,
+                    }))
+                  }
+                  placeholder="Uraian SSD"
+                  className="min-h-24 rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label
+                  className="text-sm font-medium text-slate-700"
+                  htmlFor="ssd-definisi-operasional"
+                >
+                  Definisi Operasional
+                </label>
+                <Textarea
+                  id="ssd-definisi-operasional"
+                  value={form.definisiOperasional}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      definisiOperasional: event.target.value,
+                    }))
+                  }
+                  placeholder="Definisi operasional SSD"
+                  className="min-h-24 rounded-lg"
+                />
+              </div>
+            </div>
+
+            {error ? (
+              <ErrorState message={error} />
+            ) : null}
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={saving}
+                className="h-10 rounded-lg"
+                onClick={closeCreateForm}
+              >
+                <X className="h-4 w-4" />
+                Batal
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCreate}
+                disabled={saving}
+                className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              >
+                <Save className="h-4 w-4" />
+                {saving ? "Menyimpan..." : "Simpan Data"}
+              </Button>
+            </div>
+          </div>
+        </SectionCard>
+      ) : null}
 
       <SectionCard contentClassName="p-0">
         <div className="border-b border-slate-200 p-5">
@@ -492,123 +604,6 @@ export default function DashboardSSDPage() {
           onPageChange={setPage}
         />
       </SectionCard>
-
-      <Dialog
-        open={createOpen}
-        onOpenChange={(open) => {
-          if (open) {
-            setCreateOpen(true);
-          } else {
-            closeCreateDialog();
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Tambah SSD</DialogTitle>
-            <DialogDescription>
-              Data disimpan untuk Tahun Anggaran {tahunAnggaran}.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="ssd-kode">
-                Kode DSSD *
-              </label>
-              <Input
-                id="ssd-kode"
-                value={form.kode}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, kode: event.target.value }))
-                }
-                placeholder="Contoh: DSSD-001"
-                className="h-11 rounded-lg"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="ssd-satuan">
-                Satuan
-              </label>
-              <Input
-                id="ssd-satuan"
-                value={form.satuan}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, satuan: event.target.value }))
-                }
-                placeholder="Contoh: Orang"
-                className="h-11 rounded-lg"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="ssd-uraian">
-                Uraian DSSD *
-              </label>
-              <Textarea
-                id="ssd-uraian"
-                value={form.uraian}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, uraian: event.target.value }))
-                }
-                placeholder="Uraian SSD"
-                className="min-h-24 rounded-lg"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label
-                className="text-sm font-medium text-slate-700"
-                htmlFor="ssd-definisi-operasional"
-              >
-                Definisi Operasional
-              </label>
-              <Textarea
-                id="ssd-definisi-operasional"
-                value={form.definisiOperasional}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    definisiOperasional: event.target.value,
-                  }))
-                }
-                placeholder="Definisi operasional SSD"
-                className="min-h-24 rounded-lg"
-              />
-            </div>
-
-            {error ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
-                {error}
-              </div>
-            ) : null}
-          </div>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={saving}
-                className="h-10 rounded-lg"
-              >
-                <X className="h-4 w-4" />
-                Batal
-              </Button>
-            </DialogClose>
-            <Button
-              type="button"
-              onClick={handleCreate}
-              disabled={saving}
-              className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            >
-              <Save className="h-4 w-4" />
-              {saving ? "Menyimpan..." : "Simpan"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog
         open={importOpen}

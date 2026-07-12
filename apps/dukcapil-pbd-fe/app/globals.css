@@ -363,6 +363,30 @@
   --sidebar-accent-foreground: #164e63;
 }
 
+.dashboard-theme-sitekad {
+  --color-pbd-navy: #134e4a;
+  --color-pbd-blue: #0f766e;
+  --color-pbd-bg: #f2fbf9;
+  --color-pbd-line: #cbe6e2;
+  --primary: #134e4a;
+  --ring: #0f766e;
+  --sidebar-primary: #134e4a;
+  --sidebar-accent: #ecfdf5;
+  --sidebar-accent-foreground: #134e4a;
+}
+
+.dashboard-theme-aspirasiku {
+  --color-pbd-navy: #1e1b4b;
+  --color-pbd-blue: #4f46e5;
+  --color-pbd-bg: #f7f7ff;
+  --color-pbd-line: #dcdcff;
+  --primary: #1e1b4b;
+  --ring: #4f46e5;
+  --sidebar-primary: #1e1b4b;
+  --sidebar-accent: #eef2ff;
+  --sidebar-accent-foreground: #1e1b4b;
+}
+
 .dashboard-theme-sidoka {
   --color-pbd-navy: #3730a3;
   --color-pbd-blue: #4f46e5;
@@ -373,6 +397,18 @@
   --sidebar-primary: #3730a3;
   --sidebar-accent: #eef2ff;
   --sidebar-accent-foreground: #3730a3;
+}
+
+.dashboard-theme-sidak {
+  --color-pbd-navy: #1e3a8a;
+  --color-pbd-blue: #2563eb;
+  --color-pbd-bg: #f5f9ff;
+  --color-pbd-line: #cfe0ff;
+  --primary: #1e3a8a;
+  --ring: #2563eb;
+  --sidebar-primary: #1e3a8a;
+  --sidebar-accent: #eff6ff;
+  --sidebar-accent-foreground: #1e3a8a;
 }
 
 .dashboard-theme-arsip {
@@ -431,6 +467,38 @@
   border-color: #a5f3fc;
 }
 
+.dashboard-theme-sitekad .bg-blue-50 {
+  background-color: #ecfdf5;
+}
+
+.dashboard-theme-sitekad .text-blue-700 {
+  color: #0f766e;
+}
+
+.dashboard-theme-sitekad .ring-blue-100 {
+  --tw-ring-color: #99f6e4;
+}
+
+.dashboard-theme-sitekad .border-blue-100 {
+  border-color: #99f6e4;
+}
+
+.dashboard-theme-aspirasiku .bg-blue-50 {
+  background-color: #eef2ff;
+}
+
+.dashboard-theme-aspirasiku .text-blue-700 {
+  color: #4338ca;
+}
+
+.dashboard-theme-aspirasiku .ring-blue-100 {
+  --tw-ring-color: #c7d2fe;
+}
+
+.dashboard-theme-aspirasiku .border-blue-100 {
+  border-color: #c7d2fe;
+}
+
 .dashboard-theme-sidoka .bg-blue-50 {
   background-color: #eef2ff;
 }
@@ -445,6 +513,22 @@
 
 .dashboard-theme-sidoka .border-blue-100 {
   border-color: #c7d2fe;
+}
+
+.dashboard-theme-sidak .bg-blue-50 {
+  background-color: #eff6ff;
+}
+
+.dashboard-theme-sidak .text-blue-700 {
+  color: #1d4ed8;
+}
+
+.dashboard-theme-sidak .ring-blue-100 {
+  --tw-ring-color: #bfdbfe;
+}
+
+.dashboard-theme-sidak .border-blue-100 {
+  border-color: #bfdbfe;
 }
 
 .dashboard-theme-arsip .bg-blue-50 {
@@ -481,7 +565,10 @@
 
 .dashboard-theme-sibum .text-pbd-navy,
 .dashboard-theme-sikampung .text-pbd-navy,
+.dashboard-theme-sitekad .text-pbd-navy,
+.dashboard-theme-aspirasiku .text-pbd-navy,
 .dashboard-theme-sidoka .text-pbd-navy,
+.dashboard-theme-sidak .text-pbd-navy,
 .dashboard-theme-arsip .text-pbd-navy,
 .dashboard-theme-settings .text-pbd-navy {
   color: #10243f;
@@ -489,7 +576,10 @@
 
 .dashboard-theme-sibum .hover\:text-pbd-navy:hover,
 .dashboard-theme-sikampung .hover\:text-pbd-navy:hover,
+.dashboard-theme-sitekad .hover\:text-pbd-navy:hover,
+.dashboard-theme-aspirasiku .hover\:text-pbd-navy:hover,
 .dashboard-theme-sidoka .hover\:text-pbd-navy:hover,
+.dashboard-theme-sidak .hover\:text-pbd-navy:hover,
 .dashboard-theme-arsip .hover\:text-pbd-navy:hover,
 .dashboard-theme-settings .hover\:text-pbd-navy:hover {
   color: #10243f;

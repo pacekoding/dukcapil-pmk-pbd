@@ -28,8 +28,8 @@ type PelaksanaanDocumentStore interface {
 	Create(ctx context.Context, tahunAnggaran string, payload model.PelaksanaanDocumentPayload) (model.PelaksanaanDocumentItem, error)
 	ListDocuments(ctx context.Context, params model.PelaksanaanDocumentListParams) (model.PelaksanaanDocumentListResponse, error)
 	DocumentByID(ctx context.Context, tahunAnggaran string, id int64) (model.PelaksanaanDocumentItem, bool, error)
-	UpdateDocument(ctx context.Context, tahunAnggaran string, id int64, payload model.PelaksanaanDocumentUpdatePayload) (model.PelaksanaanDocumentItem, bool, error)
-	DeleteDocument(ctx context.Context, tahunAnggaran string, id int64) (model.PelaksanaanDocumentItem, bool, error)
+	Update(ctx context.Context, tahunAnggaran string, id int64, payload model.UpdatePelaksanaanDocumentPayload) (model.PelaksanaanDocumentItem, bool, error)
+	Delete(ctx context.Context, tahunAnggaran string, id int64) (model.PelaksanaanDocumentItem, bool, error)
 }
 
 type PelaksanaanDocumentController struct {
@@ -93,12 +93,39 @@ func (p *PelaksanaanDocumentController) UploadDocument(c echo.Context) error {
 	return jsonData(c, http.StatusCreated, document)
 }
 
-func (p *PelaksanaanDocumentController) PreviewDocument(c echo.Context) error {
-	return p.serveDocument(c, false)
-}
-
 func (p *PelaksanaanDocumentController) DownloadDocument(c echo.Context) error {
-	return p.serveDocument(c, true)
+	tahunAnggaran, err := pelaksanaanDocumentTahunAnggaran(c)
+	if err != nil {
+		return err
+	}
+	id, err := pelaksanaanDocumentID(c)
+	if err != nil {
+		return err
+	}
+
+	document, found, err := p.documents.DocumentByID(c.Request().Context(), tahunAnggaran, id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "dokumen pelaksanaan gagal dimuat")
+	}
+	if !found {
+		return echo.NewHTTPError(http.StatusNotFound, "dokumen pelaksanaan tidak ditemukan")
+	}
+
+	filePath, err := pelaksanaanDocumentStoragePath(document.StorageURL)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "file dokumen tidak ditemukan")
+	}
+	if _, err := os.Stat(filePath); err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "file dokumen tidak ditemukan")
+	}
+
+	c.Response().Header().Set(echo.HeaderContentDisposition, documentContentDisposition("attachment", document.Nama))
+	if document.MimeType != "" {
+		c.Response().Header().Set(echo.HeaderContentType, document.MimeType)
+	}
+
+	http.ServeFile(c.Response(), c.Request(), filePath)
+	return nil
 }
 
 func (p *PelaksanaanDocumentController) UpdateDocument(c echo.Context) error {
@@ -111,27 +138,16 @@ func (p *PelaksanaanDocumentController) UpdateDocument(c echo.Context) error {
 		return err
 	}
 
-	var request struct {
-		SubkegiatanID *int64 `json:"subkegiatan_id"`
-		Nama          string `json:"nama"`
-		IsDokumenDSSD bool   `json:"is_dokumen_dssd"`
-	}
+	var request model.UpdatePelaksanaanDocumentPayload
 	if err := c.Bind(&request); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "payload edit dokumen tidak valid")
+		return echo.NewHTTPError(http.StatusBadRequest, "payload dokumen tidak valid")
 	}
-	if request.SubkegiatanID != nil && *request.SubkegiatanID <= 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "subkegiatan tidak valid")
-	}
-	nama := strings.TrimSpace(request.Nama)
-	if nama == "" {
+	request.Nama = strings.TrimSpace(request.Nama)
+	if request.Nama == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "nama dokumen wajib diisi")
 	}
 
-	document, found, err := p.documents.UpdateDocument(c.Request().Context(), tahunAnggaran, id, model.PelaksanaanDocumentUpdatePayload{
-		SubkegiatanID: request.SubkegiatanID,
-		Nama:          nama,
-		IsDokumenDSSD: request.IsDokumenDSSD,
-	})
+	document, found, err := p.documents.Update(c.Request().Context(), tahunAnggaran, id, request)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "dokumen pelaksanaan gagal diperbarui")
 	}
@@ -152,58 +168,16 @@ func (p *PelaksanaanDocumentController) DeleteDocument(c echo.Context) error {
 		return err
 	}
 
-	document, found, err := p.documents.DeleteDocument(c.Request().Context(), tahunAnggaran, id)
+	document, found, err := p.documents.Delete(c.Request().Context(), tahunAnggaran, id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "dokumen pelaksanaan gagal dihapus")
 	}
 	if !found {
 		return echo.NewHTTPError(http.StatusNotFound, "dokumen pelaksanaan tidak ditemukan")
 	}
+
 	deletePelaksanaanDocumentStoredFile(c, document.StorageURL)
-
 	return c.NoContent(http.StatusNoContent)
-}
-
-func (p *PelaksanaanDocumentController) serveDocument(c echo.Context, attachment bool) error {
-	tahunAnggaran, err := pelaksanaanDocumentTahunAnggaran(c)
-	if err != nil {
-		return err
-	}
-	id, err := pelaksanaanDocumentID(c)
-	if err != nil {
-		return err
-	}
-
-	document, found, err := p.documents.DocumentByID(c.Request().Context(), tahunAnggaran, id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "dokumen pelaksanaan gagal dimuat")
-	}
-	if !found {
-		return echo.NewHTTPError(http.StatusNotFound, "dokumen pelaksanaan tidak ditemukan")
-	}
-	if !attachment && document.FileType != string(model.PelaksanaanDocumentTypePDF) && document.FileType != string(model.PelaksanaanDocumentTypeImage) {
-		return echo.NewHTTPError(http.StatusBadRequest, "preview hanya tersedia untuk PDF dan gambar")
-	}
-
-	filePath, err := pelaksanaanDocumentStoragePath(document.StorageURL)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "file dokumen tidak ditemukan")
-	}
-	if _, err := os.Stat(filePath); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "file dokumen tidak ditemukan")
-	}
-
-	disposition := "inline"
-	if attachment {
-		disposition = "attachment"
-	}
-	c.Response().Header().Set(echo.HeaderContentDisposition, documentContentDisposition(disposition, document.Nama))
-	if document.MimeType != "" {
-		c.Response().Header().Set(echo.HeaderContentType, document.MimeType)
-	}
-
-	http.ServeFile(c.Response(), c.Request(), filePath)
-	return nil
 }
 
 func pelaksanaanDocumentListParams(c echo.Context) (model.PelaksanaanDocumentListParams, error) {
@@ -221,11 +195,22 @@ func pelaksanaanDocumentListParams(c echo.Context) (model.PelaksanaanDocumentLis
 	}
 
 	return model.PelaksanaanDocumentListParams{
-		TahunAnggaran: tahunAnggaran,
-		Search:        c.QueryParam("search"),
-		Page:          parsePositiveDocumentQueryInt(c.QueryParam("page"), 1),
-		Limit:         parsePositiveDocumentQueryInt(c.QueryParam("limit"), 10),
+		TahunAnggaran:     tahunAnggaran,
+		Search:            c.QueryParam("search"),
+		SubkegiatanPrefix: documentQueryValue(c, "subkegiatan_prefix", "subkegiatanPrefix"),
+		Page:              parsePositiveDocumentQueryInt(c.QueryParam("page"), 1),
+		Limit:             parsePositiveDocumentQueryInt(c.QueryParam("limit"), 10),
 	}, nil
+}
+
+func documentQueryValue(c echo.Context, keys ...string) string {
+	for _, key := range keys {
+		value := strings.TrimSpace(c.QueryParam(key))
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func pelaksanaanDocumentTahunAnggaran(c echo.Context) (string, error) {
@@ -352,7 +337,7 @@ func pelaksanaanDocumentStoragePath(storageURL string) (string, error) {
 	}
 	cleanPath := filepath.Clean(normalized)
 	cleanSlashPath := filepath.ToSlash(cleanPath)
-	if !strings.HasPrefix(cleanSlashPath, "uploads/pelaksanaan-documents/") {
+	if !allowedPelaksanaanDocumentStoragePrefix(cleanSlashPath) {
 		return "", fmt.Errorf("storage path is outside uploads")
 	}
 
@@ -369,6 +354,19 @@ func pelaksanaanDocumentStoragePath(storageURL string) (string, error) {
 	}
 
 	return targetPath, nil
+}
+
+func allowedPelaksanaanDocumentStoragePrefix(cleanSlashPath string) bool {
+	allowedPrefixes := []string{
+		"uploads/pelaksanaan-documents/",
+		"uploads/realisasi-subkegiatan/",
+	}
+	for _, prefix := range allowedPrefixes {
+		if strings.HasPrefix(cleanSlashPath, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func deletePelaksanaanDocumentStoredFile(c echo.Context, storageURL string) {

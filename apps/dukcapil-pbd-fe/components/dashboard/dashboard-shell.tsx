@@ -8,7 +8,16 @@ import { cn } from "@/lib/utils";
 
 type DashboardShellProps = {
   children: React.ReactNode;
-  theme?: "default" | "sibum" | "sikampung" | "sidoka" | "arsip" | "settings";
+  theme?:
+    | "default"
+    | "sibum"
+    | "sikampung"
+    | "sitekad"
+    | "aspirasiku"
+    | "sidoka"
+    | "sidak"
+    | "arsip"
+    | "settings";
 };
 
 export function DashboardShell({

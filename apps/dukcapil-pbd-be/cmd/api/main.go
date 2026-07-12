@@ -48,7 +48,10 @@ func main() {
 	subkegiatanRepo := repository.NewSubkegiatanRepository(db)
 	pelaksanaanDocumentRepo := repository.NewPelaksanaanDocumentRepository(db)
 	bumKampungRepo := repository.NewBumKampungRepository(db)
+	sitekadRepo := repository.NewSitekadRepository(db)
+	aspirasikuRepo := repository.NewAspirasikuRepository(db)
 	kabKotaRepo := repository.NewKabKotaRepository(db)
+	portalAppRepo := repository.NewPortalAppRepository(db)
 	tokenManager := security.NewManager(env("JWT_SECRET", "dev-secret-change-me"), 24*time.Hour)
 	authMiddleware := authmiddleware.NewAuthMiddleware(tokenManager)
 
@@ -61,9 +64,12 @@ func main() {
 		Subkegiatan:    controller.NewSubkegiatanController(subkegiatanRepo),
 		Documents:      controller.NewPelaksanaanDocumentController(pelaksanaanDocumentRepo),
 		BumKampung:     controller.NewBumKampungController(bumKampungRepo),
+		Sitekad:        controller.NewSitekadController(sitekadRepo),
+		Aspirasiku:     controller.NewAspirasikuController(aspirasikuRepo),
 		KabKota:        controller.NewKabKotaController(kabKotaRepo),
 		Users:          controller.NewUserController(userRepo),
 		Website:        controller.NewWebsiteController(),
+		PortalApps:     controller.NewPortalAppController(portalAppRepo),
 		AuthMiddleware: authMiddleware,
 	})
 

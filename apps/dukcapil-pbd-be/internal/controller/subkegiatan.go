@@ -25,7 +25,7 @@ var (
 const maxSubkegiatanKodeLength = 64
 
 type SubkegiatanStore interface {
-	List(ctx context.Context, tahunAnggaran string) (model.SubkegiatanListResponse, error)
+	List(ctx context.Context, tahunAnggaran string, kodePrefix string) (model.SubkegiatanListResponse, error)
 	Create(ctx context.Context, tahunAnggaran string, payload model.SubkegiatanPayload) (model.Subkegiatan, error)
 	Import(ctx context.Context, tahunAnggaran string, payloads []model.SubkegiatanImportPayload) (model.SubkegiatanImportResult, error)
 	Update(ctx context.Context, tahunAnggaran string, id int64, payload model.SubkegiatanPayload) (model.Subkegiatan, bool, error)
@@ -46,12 +46,26 @@ func (s *SubkegiatanController) List(c echo.Context) error {
 		return err
 	}
 
-	response, err := s.subkegiatan.List(c.Request().Context(), tahunAnggaran)
+	response, err := s.subkegiatan.List(
+		c.Request().Context(),
+		tahunAnggaran,
+		queryValue(c, "kode_prefix", "kodePrefix"),
+	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "subkegiatan gagal dimuat")
 	}
 
 	return jsonData(c, http.StatusOK, response)
+}
+
+func queryValue(c echo.Context, keys ...string) string {
+	for _, key := range keys {
+		value := strings.TrimSpace(c.QueryParam(key))
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 func (s *SubkegiatanController) Create(c echo.Context) error {

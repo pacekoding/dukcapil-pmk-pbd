@@ -8,25 +8,25 @@ import {
   Edit,
   FileCheck2,
   IdCard,
+  MoreHorizontal,
   Plus,
   Search,
   Trash2,
   UsersRound,
 } from "lucide-react";
 
+import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -70,27 +70,30 @@ export default function ArsipPegawaiPage() {
     useState<PegawaiArchive[]>(pegawaiArchives);
   const [storageReady, setStorageReady] = useState(false);
   const [query, setQuery] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PegawaiArchive | null>(null);
   const [form, setForm] = useState<PegawaiForm>(() => createEmptyPegawaiForm());
 
   useEffect(() => {
-    const storedRecords = window.localStorage.getItem(
-      PEGAWAI_ARCHIVE_STORAGE_KEY,
-    );
+    queueMicrotask(() => {
+      const storedRecords = window.localStorage.getItem(
+        PEGAWAI_ARCHIVE_STORAGE_KEY,
+      );
 
-    if (!storedRecords) {
+      if (!storedRecords) {
+        setStorageReady(true);
+        return;
+      }
+
+      try {
+        setPegawaiRecords(JSON.parse(storedRecords) as PegawaiArchive[]);
+      } catch {
+        window.localStorage.removeItem(PEGAWAI_ARCHIVE_STORAGE_KEY);
+      }
+
       setStorageReady(true);
-      return;
-    }
-
-    try {
-      setPegawaiRecords(JSON.parse(storedRecords) as PegawaiArchive[]);
-    } catch {
-      window.localStorage.removeItem(PEGAWAI_ARCHIVE_STORAGE_KEY);
-    }
-
-    setStorageReady(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -143,13 +146,13 @@ export default function ArsipPegawaiPage() {
     ? pegawaiRecords.find((pegawai) => pegawai.id === editingId)
     : null;
 
-  const openCreateDialog = () => {
+  const openCreateForm = () => {
     setEditingId(null);
     setForm(createEmptyPegawaiForm());
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
-  const openEditDialog = (pegawai: PegawaiArchive) => {
+  const openEditForm = (pegawai: PegawaiArchive) => {
     setEditingId(pegawai.id);
     setForm({
       nip: pegawai.nip,
@@ -164,7 +167,13 @@ export default function ArsipPegawaiPage() {
       address: pegawai.address,
       status: pegawai.status,
     });
-    setDialogOpen(true);
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(createEmptyPegawaiForm());
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -188,23 +197,28 @@ export default function ArsipPegawaiPage() {
       ]);
     }
 
-    setDialogOpen(false);
+    setFormOpen(false);
     setEditingId(null);
     setForm(createEmptyPegawaiForm());
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = () => {
+    if (!deleteTarget) {
+      return;
+    }
+
     setPegawaiRecords((currentRecords) =>
-      currentRecords.filter((pegawai) => pegawai.id !== id),
+      currentRecords.filter((pegawai) => pegawai.id !== deleteTarget.id),
     );
+    setDeleteTarget(null);
   };
 
   return (
     <main className="space-y-6">
       <PageHero
         icon={Archive}
-        eyebrow="Sistem Arsipku"
-        title="Arsipku"
+        eyebrow="Sistem ARSIPKU"
+        title="ARSIPKU"
         description="Kelola daftar pegawai dan arsip dokumen kepegawaian seperti ijazah, SK, SPMT, sertifikat, dan dokumen pendukung lainnya."
         meta={
           <Badge className="h-8 rounded-full bg-blue-50 px-4 text-sm font-bold text-pbd-blue">
@@ -215,7 +229,7 @@ export default function ArsipPegawaiPage() {
           <Button
             type="button"
             className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            onClick={openCreateDialog}
+            onClick={openCreateForm}
           >
             <Plus className="h-4 w-4" />
             Tambah Pegawai
@@ -247,6 +261,128 @@ export default function ArsipPegawaiPage() {
         />
       </section>
 
+      {formOpen ? (
+        <SectionCard
+          title={editingPegawai ? "Edit Pegawai" : "Tambah Pegawai"}
+          description="Lengkapi data pegawai untuk sistem arsip kepegawaian."
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormInput
+                label="NIP"
+                value={form.nip}
+                placeholder="Contoh: 198501012010011001"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, nip: value }))
+                }
+              />
+              <FormInput
+                label="NIK"
+                value={form.nik}
+                placeholder="Contoh: 9201010101850001"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, nik: value }))
+                }
+              />
+              <FormInput
+                label="Nama"
+                value={form.name}
+                placeholder="Nama lengkap pegawai"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, name: value }))
+                }
+              />
+              <FormInput
+                label="Jabatan"
+                value={form.position}
+                placeholder="Contoh: Analis Kebijakan"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, position: value }))
+                }
+              />
+              <FormInput
+                label="Unit"
+                value={form.unit}
+                placeholder="Contoh: Sekretariat"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, unit: value }))
+                }
+              />
+              <FormInput
+                label="Pangkat/Golongan"
+                value={form.rank}
+                placeholder="Contoh: Penata Tk. I / III.d"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, rank: value }))
+                }
+              />
+              <FormInput
+                label="Email"
+                value={form.email}
+                placeholder="email@papuabaratdaya.go.id"
+                type="email"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, email: value }))
+                }
+              />
+              <FormInput
+                label="Telepon"
+                value={form.phone}
+                placeholder="Contoh: 0812-0000-0000"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, phone: value }))
+                }
+              />
+              <FormInput
+                label="No Rekening"
+                value={form.bankAccount}
+                placeholder="Contoh: 1234567890"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, bankAccount: value }))
+                }
+              />
+              <label className="grid gap-2">
+                <span className="text-sm font-bold text-pbd-navy">Status</span>
+                <select
+                  value={form.status}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      status: event.target.value as PegawaiArchive["status"],
+                    }))
+                  }
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                  <option value="Aktif">Aktif</option>
+                  <option value="Cuti">Cuti</option>
+                  <option value="Mutasi">Mutasi</option>
+                </select>
+              </label>
+              <FormInput
+                label="Alamat"
+                value={form.address}
+                placeholder="Alamat domisili pegawai"
+                className="md:col-span-2"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, address: value }))
+                }
+              />
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={closeForm}>
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              >
+                {editingPegawai ? "Simpan Perubahan" : "Tambah Data"}
+              </Button>
+            </div>
+          </form>
+        </SectionCard>
+      ) : null}
+
       <SectionCard
         title="Data Pegawai"
         description="Klik nama pegawai untuk membuka foto, biodata singkat, dan daftar file arsip."
@@ -265,7 +401,7 @@ export default function ArsipPegawaiPage() {
               type="button"
               variant="outline"
               className="h-10 rounded-lg"
-              onClick={openCreateDialog}
+              onClick={openCreateForm}
             >
               <Plus className="h-4 w-4" />
               Tambah Pegawai
@@ -329,32 +465,37 @@ export default function ArsipPegawaiPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button asChild type="button" variant="outline" size="sm">
-                        <Link href={`/arsip-pegawai/${pegawai.id}`}>
-                          <ArrowRight className="h-4 w-4" />
-                          Buka
-                        </Link>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(pegawai)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(pegawai.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Hapus
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Buka aksi untuk ${pegawai.name}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/arsip-pegawai/${pegawai.id}`}>
+                            <ArrowRight className="h-4 w-4" />
+                            Buka Detail
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditForm(pegawai)}>
+                          <Edit className="h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteTarget(pegawai)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Hapus
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -364,7 +505,7 @@ export default function ArsipPegawaiPage() {
                   colSpan={7}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
-                  Pegawai tidak ditemukan.
+                  Tidak ada pegawai yang sesuai dengan pencarian.
                 </TableCell>
               </TableRow>
             )}
@@ -372,124 +513,17 @@ export default function ArsipPegawaiPage() {
         </Table>
       </SectionCard>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <DialogHeader>
-              <DialogTitle>
-                {editingPegawai ? "Edit Pegawai" : "Tambah Pegawai"}
-              </DialogTitle>
-              <DialogDescription>
-                Lengkapi data pegawai untuk sistem arsip kepegawaian.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormInput
-                label="NIP"
-                value={form.nip}
-                placeholder="Contoh: 198501012010011001"
-                onChange={(value) => setForm((current) => ({ ...current, nip: value }))}
-              />
-              <FormInput
-                label="NIK"
-                value={form.nik}
-                placeholder="Contoh: 9201010101850001"
-                onChange={(value) => setForm((current) => ({ ...current, nik: value }))}
-              />
-              <FormInput
-                label="Nama"
-                value={form.name}
-                placeholder="Nama lengkap pegawai"
-                onChange={(value) => setForm((current) => ({ ...current, name: value }))}
-              />
-              <FormInput
-                label="Jabatan"
-                value={form.position}
-                placeholder="Contoh: Analis Kebijakan"
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, position: value }))
-                }
-              />
-              <FormInput
-                label="Unit"
-                value={form.unit}
-                placeholder="Contoh: Sekretariat"
-                onChange={(value) => setForm((current) => ({ ...current, unit: value }))}
-              />
-              <FormInput
-                label="Pangkat/Golongan"
-                value={form.rank}
-                placeholder="Contoh: Penata Tk. I / III.d"
-                onChange={(value) => setForm((current) => ({ ...current, rank: value }))}
-              />
-              <FormInput
-                label="Email"
-                value={form.email}
-                placeholder="email@papuabaratdaya.go.id"
-                type="email"
-                onChange={(value) => setForm((current) => ({ ...current, email: value }))}
-              />
-              <FormInput
-                label="Telepon"
-                value={form.phone}
-                placeholder="Contoh: 0812-0000-0000"
-                onChange={(value) => setForm((current) => ({ ...current, phone: value }))}
-              />
-              <FormInput
-                label="No Rekening"
-                value={form.bankAccount}
-                placeholder="Contoh: 1234567890"
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, bankAccount: value }))
-                }
-              />
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-pbd-navy">Status</span>
-                <select
-                  value={form.status}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      status: event.target.value as PegawaiArchive["status"],
-                    }))
-                  }
-                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                >
-                  <option value="Aktif">Aktif</option>
-                  <option value="Cuti">Cuti</option>
-                  <option value="Mutasi">Mutasi</option>
-                </select>
-              </label>
-              <FormInput
-                label="Alamat"
-                value={form.address}
-                placeholder="Alamat domisili pegawai"
-                className="md:col-span-2"
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, address: value }))
-                }
-              />
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
-              >
-                {editingPegawai ? "Simpan Perubahan" : "Tambah Data"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Hapus Data Pegawai?"
+        description={`Data ${deleteTarget?.name ?? "pegawai"} akan dihapus dari Arsipku dan tidak dapat dikembalikan.`}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDelete}
+      />
     </main>
   );
 }

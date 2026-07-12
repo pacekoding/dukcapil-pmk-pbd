@@ -16,6 +16,9 @@ export function getPelaksanaanDocuments(
   if (params.search?.trim()) {
     searchParams.set("search", params.search.trim());
   }
+  if (params.subkegiatanPrefix?.trim()) {
+    searchParams.set("subkegiatan_prefix", params.subkegiatanPrefix.trim());
+  }
   if (params.page) {
     searchParams.set("page", String(params.page));
   }

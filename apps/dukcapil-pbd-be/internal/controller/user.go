@@ -19,7 +19,10 @@ const minPasswordLength = 8
 var validSystemAccess = map[string]bool{
 	"sibum":         true,
 	"sikampung":     true,
+	"sitekad":       true,
+	"aspirasiku":    true,
 	"sidoka":        true,
+	"sidak":         true,
 	"arsip_pegawai": true,
 }
 
@@ -31,7 +34,6 @@ type AdminUserStore interface {
 	Update(ctx context.Context, id int64, request model.UpdateAdminUserRequest) (model.AdminUser, bool, error)
 	Delete(ctx context.Context, id int64) (model.AdminUser, bool, error)
 	ResetPassword(ctx context.Context, id int64, newPassword string) (model.AdminUser, bool, error)
-	ChangePassword(ctx context.Context, username, currentPassword, newPassword string) (bool, error)
 }
 
 type UserController struct {
@@ -181,37 +183,6 @@ func (u *UserController) ResetPassword(c echo.Context) error {
 	}
 
 	return jsonData(c, http.StatusOK, user)
-}
-
-func (u *UserController) ChangePassword(c echo.Context) error {
-	claims, ok := authmiddleware.ClaimsFromContext(c)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "session login tidak valid")
-	}
-
-	var request model.ChangePasswordRequest
-	if err := c.Bind(&request); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "payload ganti password tidak valid")
-	}
-	if strings.TrimSpace(request.CurrentPassword) == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "password saat ini wajib diisi")
-	}
-	if err := validatePassword(request.NewPassword); err != nil {
-		return err
-	}
-	if request.CurrentPassword == request.NewPassword {
-		return echo.NewHTTPError(http.StatusBadRequest, "password baru harus berbeda dari password saat ini")
-	}
-
-	changed, err := u.users.ChangePassword(c.Request().Context(), claims.Username, request.CurrentPassword, request.NewPassword)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "password gagal diganti")
-	}
-	if !changed {
-		return echo.NewHTTPError(http.StatusUnauthorized, "password saat ini salah")
-	}
-
-	return jsonData(c, http.StatusOK, map[string]bool{"success": true})
 }
 
 func validateCreateAdminUser(request model.CreateAdminUserRequest) error {

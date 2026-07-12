@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 
 import {
   Building2,
+  CalendarClock,
   ChevronDown,
   Database,
   Home,
@@ -17,11 +18,13 @@ import {
   KeyRound,
   ListChecks,
   MapPinned,
+  MessageSquareText,
   FileText,
   FolderArchive,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
+  ToggleLeft,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -32,9 +35,12 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 import {
   arsipPegawaiMenus,
+  aspirasikuMenus,
   dashboardMenus,
   settingsMenus,
+  sidakMenus,
   sidokaMenus,
+  sitekadMenus,
   sikampungMenus,
   sibumMenus,
   type DashboardMenuGroup,
@@ -68,6 +74,9 @@ const dashboardMenuIconMap: Record<DashboardMenuIcon, LucideIcon> = {
   fileText: FileText,
   folderArchive: FolderArchive,
   listChecks: ListChecks,
+  messageSquare: MessageSquareText,
+  calendarClock: CalendarClock,
+  toggle: ToggleLeft,
   users: UsersRound,
   keyRound: KeyRound,
   settings: Settings,
@@ -88,8 +97,17 @@ function systemAccessForHref(href: string) {
   if (href.startsWith("/sikampung")) {
     return "sikampung";
   }
+  if (href.startsWith("/sitekad")) {
+    return "sitekad";
+  }
+  if (href.startsWith("/aspirasiku")) {
+    return "aspirasiku";
+  }
   if (href.startsWith("/sidoka")) {
     return "sidoka";
+  }
+  if (href.startsWith("/sidak")) {
+    return "sidak";
   }
   if (href.startsWith("/arsip-pegawai")) {
     return "arsip_pegawai";
@@ -126,7 +144,9 @@ function isActiveMenu(pathname: string, href: string) {
     return pathname === normalizedHref;
   }
 
-  return pathname === normalizedHref || pathname.startsWith(`${normalizedHref}/`);
+  return (
+    pathname === normalizedHref || pathname.startsWith(`${normalizedHref}/`)
+  );
 }
 
 function getSidebarMenus(pathname: string) {
@@ -142,8 +162,20 @@ function getSidebarMenus(pathname: string) {
     return sikampungMenus;
   }
 
+  if (pathname.startsWith("/sitekad")) {
+    return sitekadMenus;
+  }
+
+  if (pathname.startsWith("/aspirasiku")) {
+    return aspirasikuMenus;
+  }
+
   if (pathname.startsWith("/sidoka")) {
     return sidokaMenus;
+  }
+
+  if (pathname.startsWith("/sidak")) {
+    return sidakMenus;
   }
 
   if (pathname.startsWith("/arsip-pegawai")) {
@@ -172,6 +204,20 @@ function getSidebarBrand(pathname: string) {
     };
   }
 
+  if (pathname.startsWith("/sitekad")) {
+    return {
+      title: "SiTEKAD",
+      subtitle: "Potensi Kampung",
+    };
+  }
+
+  if (pathname.startsWith("/aspirasiku")) {
+    return {
+      title: "ASPIRASIKU",
+      subtitle: "Aspirasi Anonim",
+    };
+  }
+
   if (pathname.startsWith("/sidoka")) {
     return {
       title: "SIDOKA",
@@ -179,9 +225,16 @@ function getSidebarBrand(pathname: string) {
     };
   }
 
+  if (pathname.startsWith("/sidak")) {
+    return {
+      title: "SIDAK",
+      subtitle: "Data Kegiatan Dukcapil",
+    };
+  }
+
   if (pathname.startsWith("/arsip-pegawai")) {
     return {
-      title: "Arsipku",
+      title: "ARSIPKU",
       subtitle: "Dokumen Kepegawaian",
     };
   }
@@ -428,9 +481,7 @@ function SidebarContent({
                             )}
                           >
                             <ChildIcon
-                              className={cn(
-                                collapsed ? "h-6 w-6" : "h-5 w-5",
-                              )}
+                              className={cn(collapsed ? "h-6 w-6" : "h-5 w-5")}
                             />
 
                             {!collapsed && (
@@ -456,9 +507,7 @@ function SidebarContent({
                   onClick={onClose}
                   className={cn(
                     "flex items-center rounded-md transition-all",
-                    collapsed
-                      ? "justify-center px-0 py-3"
-                      : "gap-3 px-4 py-3",
+                    collapsed ? "justify-center px-0 py-3" : "gap-3 px-4 py-3",
                     active
                       ? "bg-pbd-navy text-white shadow-sm"
                       : "text-slate-600 hover:bg-slate-100 hover:text-pbd-navy",

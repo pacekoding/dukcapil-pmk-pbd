@@ -39,19 +39,21 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
     useState<PegawaiArchive[]>(pegawaiArchives);
 
   useEffect(() => {
-    const storedRecords = window.localStorage.getItem(
-      PEGAWAI_ARCHIVE_STORAGE_KEY,
-    );
+    queueMicrotask(() => {
+      const storedRecords = window.localStorage.getItem(
+        PEGAWAI_ARCHIVE_STORAGE_KEY,
+      );
 
-    if (!storedRecords) {
-      return;
-    }
+      if (!storedRecords) {
+        return;
+      }
 
-    try {
-      setPegawaiRecords(JSON.parse(storedRecords) as PegawaiArchive[]);
-    } catch {
-      window.localStorage.removeItem(PEGAWAI_ARCHIVE_STORAGE_KEY);
-    }
+      try {
+        setPegawaiRecords(JSON.parse(storedRecords) as PegawaiArchive[]);
+      } catch {
+        window.localStorage.removeItem(PEGAWAI_ARCHIVE_STORAGE_KEY);
+      }
+    });
   }, []);
 
   const pegawai = useMemo(
@@ -64,7 +66,7 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
       <main className="space-y-6">
         <PageHero
           icon={IdCard}
-          eyebrow="Detail Arsipku"
+          eyebrow="Detail ARSIPKU"
           title="Pegawai tidak ditemukan"
           description="Data pegawai belum tersedia atau sudah dihapus dari sistem arsip."
           aside={
@@ -84,7 +86,7 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
     <main className="space-y-6">
       <PageHero
         icon={IdCard}
-        eyebrow="Detail Arsipku"
+        eyebrow="Detail ARSIPKU"
         title={pegawai.name}
         description="Biodata singkat dan arsip dokumen pegawai."
         meta={
@@ -103,7 +105,10 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
       />
 
       <section className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <SectionCard title="Foto Pegawai" description="Identitas visual pegawai.">
+        <SectionCard
+          title="Foto Pegawai"
+          description="Identitas visual pegawai."
+        >
           <div className="flex flex-col items-center text-center">
             <div
               className={cn(
@@ -130,8 +135,16 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
           <div className="grid gap-4 md:grid-cols-2">
             <InfoItem label="NIP" value={pegawai.nip} icon={IdCard} />
             <InfoItem label="NIK" value={pegawai.nik} icon={ShieldCheck} />
-            <InfoItem label="Pangkat/Golongan" value={pegawai.rank} icon={BadgeCheck} />
-            <InfoItem label="No Rekening" value={pegawai.bankAccount} icon={IdCard} />
+            <InfoItem
+              label="Pangkat/Golongan"
+              value={pegawai.rank}
+              icon={BadgeCheck}
+            />
+            <InfoItem
+              label="No Rekening"
+              value={pegawai.bankAccount}
+              icon={IdCard}
+            />
             <InfoItem label="Email" value={pegawai.email} icon={Mail} />
             <InfoItem label="Telepon" value={pegawai.phone} icon={Phone} />
             <InfoItem

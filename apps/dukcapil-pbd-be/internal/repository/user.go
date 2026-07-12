@@ -27,36 +27,15 @@ type defaultAdminUser struct {
 	SystemAccess []string
 }
 
-var allSystemAccess = []string{"sibum", "sikampung", "sidoka", "arsip_pegawai"}
+var allSystemAccess = []string{"sibum", "sikampung", "sitekad", "aspirasiku", "sidoka", "sidak", "arsip_pegawai"}
 
 var defaultAdminUsers = []defaultAdminUser{
 	{
 		Username:     "superadmin",
 		Name:         "Super Admin",
 		Role:         model.RoleSuperAdmin,
-		Password:     "superadmin123",
+		Password:     "superadmin789",
 		SystemAccess: allSystemAccess,
-	},
-	{
-		Username:     "admin_dukcapil",
-		Name:         "Admin Dukcapil",
-		Role:         model.RoleAdminDukcapil,
-		Password:     "dukcapil123",
-		SystemAccess: []string{"sidoka"},
-	},
-	{
-		Username:     "admin_pmk",
-		Name:         "Admin PMK",
-		Role:         model.RoleAdminPMK,
-		Password:     "pmk123",
-		SystemAccess: []string{"sibum", "sikampung"},
-	},
-	{
-		Username:     "admin_sekretariat",
-		Name:         "Admin Sekretariat",
-		Role:         model.RoleAdminSekretariat,
-		Password:     "sekretariat123",
-		SystemAccess: []string{"arsip_pegawai"},
 	},
 }
 
@@ -81,9 +60,10 @@ func SeedDefaultAdminUsers(ctx context.Context, db *gorm.DB) error {
 			if err := tx.Model(&model.AdminUserEntity{}).
 				Where("id = ?", existing.ID).
 				Updates(map[string]any{
-					"full_name":  user.Name,
-					"role":       user.Role,
-					"updated_at": gorm.Expr("NOW()"),
+					"full_name":     user.Name,
+					"role":          user.Role,
+					"system_access": pq.StringArray(user.SystemAccess),
+					"updated_at":    gorm.Expr("NOW()"),
 				}).Error; err != nil {
 				return fmt.Errorf("update default admin user %s: %w", user.Username, normalizeWriteError(err))
 			}
@@ -301,39 +281,6 @@ func (r *UserRepository) ResetPassword(ctx context.Context, id int64, newPasswor
 	}
 
 	return record.ToAdminUser(), true, nil
-}
-
-func (r *UserRepository) ChangePassword(ctx context.Context, username, currentPassword, newPassword string) (bool, error) {
-	record, found, err := r.findActiveByUsername(ctx, username)
-	if err != nil || !found {
-		return found, err
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(record.PasswordHash), []byte(currentPassword)); err != nil {
-		return false, nil
-	}
-
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return false, fmt.Errorf("hash password: %w", err)
-	}
-
-	db, err := r.session(ctx)
-	if err != nil {
-		return false, err
-	}
-
-	result := db.Model(&model.AdminUserEntity{}).
-		Where("id = ? AND is_active = ?", record.ID, true).
-		Updates(map[string]any{
-			"password_hash": string(passwordHash),
-			"updated_at":    gorm.Expr("NOW()"),
-		})
-	if result.Error != nil {
-		return false, fmt.Errorf("change password: %w", result.Error)
-	}
-
-	return result.RowsAffected > 0, nil
 }
 
 func (r *UserRepository) findActiveByUsername(ctx context.Context, username string) (model.AdminUserEntity, bool, error) {

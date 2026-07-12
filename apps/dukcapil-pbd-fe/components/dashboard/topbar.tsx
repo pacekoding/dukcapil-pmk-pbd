@@ -81,6 +81,26 @@ const menuTitles: Record<
     description: "Kelola data kampung/desa kabupaten/kota",
   },
 
+  "/sitekad/dashboard": {
+    title: "SiTEKAD",
+    description: "Sistem Informasi Tekad",
+  },
+
+  "/sitekad/data": {
+    title: "Data Potensi Kampung",
+    description: "Kelola data evaluasi dan potensi kampung",
+  },
+
+  "/aspirasiku/dashboard": {
+    title: "ASPIRASIKU",
+    description: "Sistem aspirasi anonim",
+  },
+
+  "/aspirasiku/data": {
+    title: "Data Aspirasi",
+    description: "Kelola pesan aspirasi anonim dari website",
+  },
+
   "/dashboard/SDD": {
     title: "SSD",
     description: "Kelola master SSD melalui import XLSX dan pemutakhiran data",
@@ -96,8 +116,23 @@ const menuTitles: Record<
     description: "Kelola dokumen pelaksanaan kegiatan dan relasi DSSD",
   },
 
+  "/sidoka/dashboard": {
+    title: "SIDOKA",
+    description: "Sistem Informasi Dokumen Kegiatan",
+  },
+
+  "/sidak/dashboard": {
+    title: "SIDAK",
+    description: "Sistem Informasi Data Kegiatan Dukcapil",
+  },
+
+  "/sidak/data": {
+    title: "Data Pelaksanaan",
+    description: "Kelola dokumen pelaksanaan kegiatan Dukcapil dan relasi DSSD",
+  },
+
   "/arsip-pegawai": {
-    title: "Arsipku",
+    title: "ARSIPKU",
     description: "Data pegawai dan dokumen kepegawaian",
   },
 
@@ -145,6 +180,22 @@ function getPageInfo(pathname: string) {
     return menuTitles["/sikampung/data"];
   }
 
+  if (pathname.startsWith("/sitekad/dashboard")) {
+    return menuTitles["/sitekad/dashboard"];
+  }
+
+  if (pathname.startsWith("/sitekad/data")) {
+    return menuTitles["/sitekad/data"];
+  }
+
+  if (pathname.startsWith("/aspirasiku/dashboard")) {
+    return menuTitles["/aspirasiku/dashboard"];
+  }
+
+  if (pathname.startsWith("/aspirasiku/data")) {
+    return menuTitles["/aspirasiku/data"];
+  }
+
   if (pathname.startsWith("/dashboard/users")) {
     return menuTitles["/dashboard/users"];
   }
@@ -155,6 +206,18 @@ function getPageInfo(pathname: string) {
 
   if (pathname.startsWith("/sidoka/data")) {
     return menuTitles["/sidoka/data"];
+  }
+
+  if (pathname.startsWith("/sidoka/dashboard")) {
+    return menuTitles["/sidoka/dashboard"];
+  }
+
+  if (pathname.startsWith("/sidak/dashboard")) {
+    return menuTitles["/sidak/dashboard"];
+  }
+
+  if (pathname.startsWith("/sidak/data")) {
+    return menuTitles["/sidak/data"];
   }
 
   if (pathname.startsWith("/arsip-pegawai")) {

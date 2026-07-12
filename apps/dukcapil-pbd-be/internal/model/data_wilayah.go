@@ -73,6 +73,11 @@ type DataWilayahWebsiteSettingsResponse struct {
 	AvailableTahunAnggaran []string `json:"availableTahunAnggaran"`
 }
 
+type DataWilayahWebsiteSettingsPayload struct {
+	FeaturedTahunAnggaran  string   `json:"featuredTahunAnggaran"`
+	PublishedTahunAnggaran []string `json:"publishedTahunAnggaran"`
+}
+
 type DataWilayahEntity struct {
 	TahunAnggaran               string    `gorm:"primaryKey;column:tahun_anggaran"`
 	ID                          string    `gorm:"primaryKey;column:id"`

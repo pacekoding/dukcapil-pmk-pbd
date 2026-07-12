@@ -15,12 +15,24 @@ export const systemAccessOptions = [
     label: "SIKAMPUNG",
   },
   {
+    value: "sitekad",
+    label: "SiTEKAD",
+  },
+  {
+    value: "aspirasiku",
+    label: "ASPIRASIKU",
+  },
+  {
     value: "sidoka",
     label: "SIDOKA",
   },
   {
+    value: "sidak",
+    label: "SIDAK",
+  },
+  {
     value: "arsip_pegawai",
-    label: "Arsipku",
+    label: "ARSIPKU",
   },
 ] as const;
 

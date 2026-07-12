@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Edit, KeyRound, Plus, Search, Trash2, UserCog } from "lucide-react";
+import {
+  Edit,
+  KeyRound,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  UserCog,
+} from "lucide-react";
 
+import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +24,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -62,31 +77,44 @@ export default function SettingsUsersPage() {
   const [items, setItems] = useState<AdminUser[]>([]);
   const [query, setQuery] = useState("");
   const [form, setForm] = useState<UserForm>(emptyForm);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadItems = async () => {
-    try {
-      setLoading(true);
-      const data = await getAdminUsers();
-      setItems(data);
-      setError(null);
-    } catch (loadError) {
-      console.error(loadError);
-      setError("Data pengguna gagal dimuat.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let mounted = true;
+
+    const loadItems = async () => {
+      try {
+        const data = await getAdminUsers();
+        if (mounted) {
+          setItems(data);
+          setError(null);
+        }
+      } catch (loadError) {
+        console.error(loadError);
+        if (mounted) {
+          setError("Data pengguna gagal dimuat.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     void loadItems();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const filteredItems = useMemo(() => {
@@ -113,14 +141,14 @@ export default function SettingsUsersPage() {
     ? items.find((item) => item.id === editingId)
     : null;
 
-  const openCreateDialog = () => {
+  const openCreateForm = () => {
     setEditingId(null);
     setForm(emptyForm);
     setError(null);
-    setDialogOpen(true);
+    setFormOpen(true);
   };
 
-  const openEditDialog = (item: AdminUser) => {
+  const openEditForm = (item: AdminUser) => {
     setEditingId(item.id);
     setForm({
       username: item.username,
@@ -131,7 +159,17 @@ export default function SettingsUsersPage() {
       isActive: item.isActive,
     });
     setError(null);
-    setDialogOpen(true);
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    if (saving) {
+      return;
+    }
+
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(emptyForm);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -179,7 +217,7 @@ export default function SettingsUsersPage() {
         setMessage(`${created.name} berhasil ditambahkan.`);
       }
 
-      setDialogOpen(false);
+      setFormOpen(false);
       setEditingId(null);
       setForm(emptyForm);
     } catch (submitError) {
@@ -194,13 +232,21 @@ export default function SettingsUsersPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    setDeleting(true);
     setError(null);
     setMessage(null);
     try {
-      await deleteAdminUser(id);
-      setItems((current) => current.filter((item) => item.id !== id));
+      await deleteAdminUser(deleteTarget.id);
+      setItems((current) =>
+        current.filter((item) => item.id !== deleteTarget.id),
+      );
       setMessage("Pengguna berhasil dihapus.");
+      setDeleteTarget(null);
     } catch (deleteError) {
       console.error(deleteError);
       setError(
@@ -208,6 +254,8 @@ export default function SettingsUsersPage() {
           ? deleteError.message
           : "Pengguna gagal dihapus.",
       );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -259,149 +307,13 @@ export default function SettingsUsersPage() {
         }
       />
 
-      <SectionCard
-        title="Daftar Pengguna"
-        description="Super admin dapat mengatur akun dan sistem yang dapat dibuka setiap pengguna."
-        action={
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <div className="relative w-full sm:w-80">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="pl-9"
-                placeholder="Cari nama, username, role..."
-              />
-            </div>
-            <Button
-              type="button"
-              className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
-              onClick={openCreateDialog}
-            >
-              <Plus className="h-4 w-4" />
-              Tambah Pengguna
-            </Button>
-          </div>
-        }
-        contentClassName="p-0"
-      >
-        {message ? (
-          <div className="border-b border-emerald-100 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700">
-            {message}
-          </div>
-        ) : null}
-        {error ? (
-          <div className="border-b border-red-100 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700">
-            {error}
-          </div>
-        ) : null}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nama</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Hak Akses Sistem</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="py-10 text-center text-sm font-medium text-slate-500"
-                >
-                  Memuat data pengguna...
-                </TableCell>
-              </TableRow>
-            ) : filteredItems.length > 0 ? (
-              filteredItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-bold text-pbd-navy">
-                    {item.name}
-                  </TableCell>
-                  <TableCell>{item.username}</TableCell>
-                  <TableCell>{formatRole(item.role)}</TableCell>
-                  <TableCell className="min-w-[260px] whitespace-normal">
-                    {formatSystemAccess(item.systemAccess)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        item.isActive
-                          ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
-                          : "border border-slate-200 bg-slate-100 text-slate-600"
-                      }
-                    >
-                      {item.isActive ? "Aktif" : "Nonaktif"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditDialog(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setResetTarget(item);
-                          setNewPassword("");
-                          setError(null);
-                        }}
-                      >
-                        <KeyRound className="h-4 w-4" />
-                        Reset
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Hapus
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="py-10 text-center text-sm font-medium text-slate-500"
-                >
-                  Pengguna tidak ditemukan.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </SectionCard>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+      {formOpen ? (
+        <SectionCard
+          title={editingItem ? "Edit Pengguna" : "Tambah Pengguna"}
+          description="Atur identitas, role, status, dan hak akses sistem pengguna."
+        >
           <form onSubmit={handleSubmit} className="space-y-5">
-            <DialogHeader>
-              <DialogTitle>
-                {editingItem ? "Edit Pengguna" : "Tambah Pengguna"}
-              </DialogTitle>
-              <DialogDescription>
-                Atur identitas, role, status, dan hak akses sistem pengguna.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <FormInput
                 label="Nama"
                 value={form.name}
@@ -464,7 +376,7 @@ export default function SettingsUsersPage() {
                   Pengguna aktif
                 </span>
               </label>
-              <div className="grid gap-2">
+              <div className="grid gap-2 md:col-span-2">
                 <p className="text-sm font-bold text-pbd-navy">
                   Hak Akses Sistem
                 </p>
@@ -495,13 +407,12 @@ export default function SettingsUsersPage() {
                 </div>
               </div>
             </div>
-
-            <DialogFooter>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
                 disabled={saving}
-                onClick={() => setDialogOpen(false)}
+                onClick={closeForm}
               >
                 Batal
               </Button>
@@ -516,10 +427,142 @@ export default function SettingsUsersPage() {
                     ? "Simpan Perubahan"
                     : "Tambah Pengguna"}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
-        </DialogContent>
-      </Dialog>
+        </SectionCard>
+      ) : null}
+
+      <SectionCard
+        title="Daftar Pengguna"
+        description="Super admin dapat mengatur akun dan sistem yang dapat dibuka setiap pengguna."
+        action={
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <div className="relative w-full sm:w-80">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="pl-9"
+                placeholder="Cari nama, username, role..."
+              />
+            </div>
+            <Button
+              type="button"
+              className="h-10 rounded-lg bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              onClick={openCreateForm}
+            >
+              <Plus className="h-4 w-4" />
+              Tambah Pengguna
+            </Button>
+          </div>
+        }
+        contentClassName="p-0"
+      >
+        {message ? (
+          <div className="border-b border-emerald-100 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700">
+            {message}
+          </div>
+        ) : null}
+        {error ? (
+          <div className="border-b border-red-100 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700">
+            {error}
+          </div>
+        ) : null}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nama</TableHead>
+              <TableHead>Username</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Hak Akses Sistem</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="py-10 text-center text-sm font-medium text-slate-500"
+                >
+                  Memuat data pengguna...
+                </TableCell>
+              </TableRow>
+            ) : filteredItems.length > 0 ? (
+              filteredItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-bold text-pbd-navy">
+                    {item.name}
+                  </TableCell>
+                  <TableCell>{item.username}</TableCell>
+                  <TableCell>{formatRole(item.role)}</TableCell>
+                  <TableCell className="min-w-[260px] whitespace-normal">
+                    {formatSystemAccess(item.systemAccess)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        item.isActive
+                          ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
+                          : "border border-slate-200 bg-slate-100 text-slate-600"
+                      }
+                    >
+                      {item.isActive ? "Aktif" : "Nonaktif"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Buka aksi untuk ${item.name}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEditForm(item)}>
+                          <Edit className="h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setResetTarget(item);
+                            setNewPassword("");
+                            setError(null);
+                          }}
+                        >
+                          <KeyRound className="h-4 w-4" />
+                          Reset Password
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteTarget(item)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Hapus
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="py-10 text-center text-sm font-medium text-slate-500"
+                >
+                  Tidak ada pengguna yang sesuai dengan pencarian.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </SectionCard>
 
       <Dialog open={Boolean(resetTarget)} onOpenChange={() => setResetTarget(null)}>
         <DialogContent>
@@ -559,6 +602,19 @@ export default function SettingsUsersPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Hapus Pengguna?"
+        description={`Akun ${deleteTarget?.name ?? "pengguna"} akan dihapus dan tidak dapat digunakan lagi.`}
+        loading={deleting}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDelete}
+      />
     </main>
   );
 }

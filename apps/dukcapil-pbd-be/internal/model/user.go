@@ -101,11 +101,6 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"newPassword"`
 }
 
-type ChangePasswordRequest struct {
-	CurrentPassword string `json:"currentPassword"`
-	NewPassword     string `json:"newPassword"`
-}
-
 type LoginRequest struct {
 	Username      string `json:"username"`
 	Password      string `json:"password"`

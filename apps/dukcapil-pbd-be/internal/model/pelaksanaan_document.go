@@ -12,10 +12,11 @@ const (
 )
 
 type PelaksanaanDocumentListParams struct {
-	TahunAnggaran string
-	Search        string
-	Page          int
-	Limit         int
+	TahunAnggaran     string
+	Search            string
+	SubkegiatanPrefix string
+	Page              int
+	Limit             int
 }
 
 type PelaksanaanDocumentPayload struct {
@@ -28,10 +29,10 @@ type PelaksanaanDocumentPayload struct {
 	IsDokumenDSSD bool
 }
 
-type PelaksanaanDocumentUpdatePayload struct {
-	SubkegiatanID *int64
-	Nama          string
-	IsDokumenDSSD bool
+type UpdatePelaksanaanDocumentPayload struct {
+	SubkegiatanID *int64 `json:"subkegiatan_id"`
+	Nama          string `json:"nama"`
+	IsDokumenDSSD bool   `json:"is_dokumen_dssd"`
 }
 
 type PelaksanaanDocumentItem struct {
@@ -46,7 +47,6 @@ type PelaksanaanDocumentItem struct {
 	FileSize        int64     `json:"fileSize" gorm:"column:file_size"`
 	StorageURL      string    `json:"-" gorm:"column:storage_url"`
 	DownloadURL     string    `json:"downloadUrl" gorm:"-"`
-	PreviewURL      string    `json:"previewUrl,omitempty" gorm:"-"`
 	IsDokumenDSSD   bool      `json:"isDokumenDssd" gorm:"column:is_dokumen_dssd"`
 	TanggalUpload   time.Time `json:"tanggalUpload" gorm:"column:tanggal_upload"`
 }

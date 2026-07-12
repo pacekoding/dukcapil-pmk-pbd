@@ -58,3 +58,12 @@ export type DataWilayahWebsiteSettings = {
   featuredTahunAnggaran: string;
   publishedTahunAnggaran: string[];
 };
+
+export type DataWilayahAdminSettings = DataWilayahWebsiteSettings & {
+  availableTahunAnggaran: string[];
+};
+
+export type DataWilayahSettingsPayload = {
+  featuredTahunAnggaran: string;
+  publishedTahunAnggaran: string[];
+};

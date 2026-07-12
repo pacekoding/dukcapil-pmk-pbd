@@ -144,18 +144,18 @@ func (r *PelaksanaanDocumentRepository) DocumentByID(ctx context.Context, tahunA
 	return records[0], true, nil
 }
 
-func (r *PelaksanaanDocumentRepository) UpdateDocument(ctx context.Context, tahunAnggaran string, id int64, payload model.PelaksanaanDocumentUpdatePayload) (model.PelaksanaanDocumentItem, bool, error) {
+func (r *PelaksanaanDocumentRepository) Update(ctx context.Context, tahunAnggaran string, id int64, payload model.UpdatePelaksanaanDocumentPayload) (model.PelaksanaanDocumentItem, bool, error) {
 	db, err := r.session(ctx)
 	if err != nil {
 		return model.PelaksanaanDocumentItem{}, false, err
 	}
 
-	result := db.
-		Model(&model.PelaksanaanDocumentEntity{}).
-		Where("tahun_anggaran = ? AND id = ?", strings.TrimSpace(tahunAnggaran), id).
-		Updates(map[string]interface{}{
-			"subkegiatan_id":  payload.SubkegiatanID,
+	tahunAnggaran = strings.TrimSpace(tahunAnggaran)
+	result := db.Model(&model.PelaksanaanDocumentEntity{}).
+		Where("tahun_anggaran = ? AND id = ?", tahunAnggaran, id).
+		Updates(map[string]any{
 			"nama":            strings.TrimSpace(payload.Nama),
+			"subkegiatan_id":  payload.SubkegiatanID,
 			"is_dokumen_dssd": payload.IsDokumenDSSD,
 		})
 	if result.Error != nil {
@@ -165,27 +165,36 @@ func (r *PelaksanaanDocumentRepository) UpdateDocument(ctx context.Context, tahu
 		return model.PelaksanaanDocumentItem{}, false, nil
 	}
 
-	return r.DocumentByID(ctx, tahunAnggaran, id)
+	document, found, err := r.DocumentByID(ctx, tahunAnggaran, id)
+	if err != nil {
+		return model.PelaksanaanDocumentItem{}, false, err
+	}
+	return document, found, nil
 }
 
-func (r *PelaksanaanDocumentRepository) DeleteDocument(ctx context.Context, tahunAnggaran string, id int64) (model.PelaksanaanDocumentItem, bool, error) {
+func (r *PelaksanaanDocumentRepository) Delete(ctx context.Context, tahunAnggaran string, id int64) (model.PelaksanaanDocumentItem, bool, error) {
 	db, err := r.session(ctx)
 	if err != nil {
 		return model.PelaksanaanDocumentItem{}, false, err
 	}
 
+	tahunAnggaran = strings.TrimSpace(tahunAnggaran)
 	document, found, err := r.DocumentByID(ctx, tahunAnggaran, id)
 	if err != nil || !found {
-		return model.PelaksanaanDocumentItem{}, found, err
+		return document, found, err
 	}
 
 	result := db.
-		Where("tahun_anggaran = ? AND id = ?", strings.TrimSpace(tahunAnggaran), id).
+		Where("tahun_anggaran = ? AND id = ?", tahunAnggaran, id).
 		Delete(&model.PelaksanaanDocumentEntity{})
 	if result.Error != nil {
 		return model.PelaksanaanDocumentItem{}, false, fmt.Errorf("delete pelaksanaan document: %w", result.Error)
 	}
-	return document, result.RowsAffected > 0, nil
+	if result.RowsAffected == 0 {
+		return model.PelaksanaanDocumentItem{}, false, nil
+	}
+
+	return document, true, nil
 }
 
 func (r *PelaksanaanDocumentRepository) documentQuery(db *gorm.DB, params model.PelaksanaanDocumentListParams) *gorm.DB {
@@ -204,6 +213,11 @@ func (r *PelaksanaanDocumentRepository) documentQuery(db *gorm.DB, params model.
 		`, like, like, like, like)
 	}
 
+	subkegiatanPrefix := strings.TrimSpace(strings.ToLower(params.SubkegiatanPrefix))
+	if subkegiatanPrefix != "" {
+		query = query.Where("LOWER(COALESCE(s.kode, '')) LIKE ?", subkegiatanPrefix+"%")
+	}
+
 	return query
 }
 
@@ -220,9 +234,6 @@ func (r *PelaksanaanDocumentRepository) finalizeDocuments(records []model.Pelaks
 		}
 		records[index].FileType = pelaksanaanDocumentFileType(typeSource, records[index].MimeType)
 		records[index].DownloadURL = fmt.Sprintf("/api/v1/pelaksanaan-documents/%d/download", records[index].ID)
-		if records[index].FileType == string(model.PelaksanaanDocumentTypePDF) || records[index].FileType == string(model.PelaksanaanDocumentTypeImage) {
-			records[index].PreviewURL = fmt.Sprintf("/api/v1/pelaksanaan-documents/%d/preview", records[index].ID)
-		}
 	}
 	return records
 }
