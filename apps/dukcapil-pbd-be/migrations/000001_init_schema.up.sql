@@ -141,27 +141,64 @@ CREATE TABLE IF NOT EXISTS subkegiatan_ssd (
 CREATE INDEX IF NOT EXISTS idx_subkegiatan_ssd_tahun_subkegiatan ON subkegiatan_ssd(tahun_anggaran, subkegiatan_id);
 CREATE INDEX IF NOT EXISTS idx_subkegiatan_ssd_tahun_ssd ON subkegiatan_ssd(tahun_anggaran, ssd_id);
 
-CREATE TABLE IF NOT EXISTS pelaksanaan_documents (
+CREATE TABLE IF NOT EXISTS arsip_pegawai (
+	id BIGSERIAL PRIMARY KEY,
+	nip VARCHAR(32) NOT NULL,
+	nik VARCHAR(32) NOT NULL DEFAULT '',
+	nama TEXT NOT NULL,
+	jabatan TEXT NOT NULL DEFAULT '',
+	unit TEXT NOT NULL DEFAULT '',
+	pangkat_golongan TEXT NOT NULL DEFAULT '',
+	email TEXT NOT NULL DEFAULT '',
+	telepon TEXT NOT NULL DEFAULT '',
+	no_rekening TEXT NOT NULL DEFAULT '',
+	alamat TEXT NOT NULL DEFAULT '',
+	status VARCHAR(16) NOT NULL DEFAULT 'Aktif',
+	photo_color TEXT NOT NULL DEFAULT 'bg-blue-100 text-blue-700',
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	CONSTRAINT arsip_pegawai_nip_not_blank_check CHECK (BTRIM(nip) <> ''),
+	CONSTRAINT arsip_pegawai_nama_not_blank_check CHECK (BTRIM(nama) <> ''),
+	CONSTRAINT arsip_pegawai_status_check CHECK (status IN ('Aktif', 'Cuti', 'Mutasi'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_arsip_pegawai_nip_unique ON arsip_pegawai(LOWER(nip));
+CREATE INDEX IF NOT EXISTS idx_arsip_pegawai_nama ON arsip_pegawai(LOWER(nama));
+
+CREATE TABLE IF NOT EXISTS arsip (
 	id BIGSERIAL PRIMARY KEY,
 	tahun_anggaran VARCHAR(4) NOT NULL,
+	sumber_aplikasi VARCHAR(32) NOT NULL,
+	bidang VARCHAR(16) NOT NULL,
 	subkegiatan_id BIGINT,
+	pegawai_id BIGINT,
 	nama TEXT NOT NULL,
 	original_name TEXT NOT NULL,
 	mime_type TEXT NOT NULL,
 	size BIGINT NOT NULL DEFAULT 0,
 	url TEXT NOT NULL,
 	is_dokumen_dssd BOOLEAN NOT NULL DEFAULT FALSE,
+	kategori TEXT NOT NULL DEFAULT '',
+	nomor_dokumen TEXT NOT NULL DEFAULT '',
+	tahun_dokumen VARCHAR(4) NOT NULL DEFAULT '',
+	status_verifikasi VARCHAR(32) NOT NULL DEFAULT 'Lengkap',
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	CONSTRAINT pelaksanaan_documents_tahun_anggaran_check CHECK (tahun_anggaran ~ '^\d{4}$'),
-	CONSTRAINT pelaksanaan_documents_nama_not_blank_check CHECK (BTRIM(nama) <> ''),
-	CONSTRAINT pelaksanaan_documents_original_name_not_blank_check CHECK (BTRIM(original_name) <> ''),
-	CONSTRAINT pelaksanaan_documents_size_non_negative_check CHECK (size >= 0),
-	CONSTRAINT pelaksanaan_documents_subkegiatan_fk FOREIGN KEY (tahun_anggaran, subkegiatan_id) REFERENCES subkegiatan(tahun_anggaran, id) ON DELETE SET NULL (subkegiatan_id)
+	CONSTRAINT arsip_tahun_anggaran_check CHECK (tahun_anggaran ~ '^\d{4}$'),
+	CONSTRAINT arsip_sumber_aplikasi_check CHECK (sumber_aplikasi IN ('sidoka', 'sidak', 'arsip_pegawai')),
+	CONSTRAINT arsip_bidang_check CHECK (bidang IN ('sekretariat', 'dukcapil', 'pmk')),
+	CONSTRAINT arsip_nama_not_blank_check CHECK (BTRIM(nama) <> ''),
+	CONSTRAINT arsip_original_name_not_blank_check CHECK (BTRIM(original_name) <> ''),
+	CONSTRAINT arsip_size_non_negative_check CHECK (size >= 0),
+	CONSTRAINT arsip_status_verifikasi_check CHECK (status_verifikasi IN ('Lengkap', 'Perlu Verifikasi')),
+	CONSTRAINT arsip_subkegiatan_fk FOREIGN KEY (tahun_anggaran, subkegiatan_id) REFERENCES subkegiatan(tahun_anggaran, id) ON DELETE SET NULL (subkegiatan_id),
+	CONSTRAINT arsip_pegawai_fk FOREIGN KEY (pegawai_id) REFERENCES arsip_pegawai(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_pelaksanaan_documents_tahun_created ON pelaksanaan_documents(tahun_anggaran, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_pelaksanaan_documents_subkegiatan ON pelaksanaan_documents(tahun_anggaran, subkegiatan_id);
-CREATE INDEX IF NOT EXISTS idx_pelaksanaan_documents_is_dssd ON pelaksanaan_documents(tahun_anggaran, is_dokumen_dssd);
+CREATE INDEX IF NOT EXISTS idx_arsip_tahun_created ON arsip(tahun_anggaran, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_arsip_sumber_bidang ON arsip(tahun_anggaran, sumber_aplikasi, bidang);
+CREATE INDEX IF NOT EXISTS idx_arsip_subkegiatan ON arsip(tahun_anggaran, subkegiatan_id);
+CREATE INDEX IF NOT EXISTS idx_arsip_pegawai ON arsip(pegawai_id);
+CREATE INDEX IF NOT EXISTS idx_arsip_is_dssd ON arsip(tahun_anggaran, is_dokumen_dssd);
 
 CREATE TABLE IF NOT EXISTS bum_kampung (
 	id BIGSERIAL PRIMARY KEY,
@@ -208,7 +245,7 @@ INSERT INTO admin_users (
 	'superadmin',
 	'Super Admin',
 	'superadmin',
-	ARRAY['sibum', 'sikampung', 'sidoka', 'sidak', 'arsip_pegawai']::TEXT[],
+	ARRAY['sibum', 'sikampung', 'sidoka', 'sidak', 'optima_info', 'arsip_pegawai']::TEXT[],
 	'$2a$10$3dHI5XvIZcE4b8BLaZgxyem2NYo1a1WaNfPS4yptzzv8ipjIUxMbi',
 	TRUE
 )

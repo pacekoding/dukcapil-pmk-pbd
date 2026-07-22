@@ -27,17 +27,25 @@ func (r *PelaksanaanDocumentRepository) Create(ctx context.Context, tahunAnggara
 	}
 
 	record := model.PelaksanaanDocumentEntity{
-		TahunAnggaran: strings.TrimSpace(tahunAnggaran),
-		SubkegiatanID: payload.SubkegiatanID,
-		Nama:          strings.TrimSpace(payload.Nama),
-		OriginalName:  strings.TrimSpace(payload.OriginalName),
-		MimeType:      strings.TrimSpace(payload.MimeType),
-		Size:          payload.Size,
-		URL:           strings.TrimSpace(payload.URL),
-		IsDokumenDSSD: payload.IsDokumenDSSD,
+		TahunAnggaran:  strings.TrimSpace(tahunAnggaran),
+		SumberAplikasi: strings.TrimSpace(payload.SumberAplikasi),
+		Bidang:         strings.TrimSpace(payload.Bidang),
+		SubkegiatanID:  payload.SubkegiatanID,
+		Nama:           strings.TrimSpace(payload.Nama),
+		OriginalName:   strings.TrimSpace(payload.OriginalName),
+		MimeType:       strings.TrimSpace(payload.MimeType),
+		Size:           payload.Size,
+		URL:            strings.TrimSpace(payload.URL),
+		IsDokumenDSSD:  payload.IsDokumenDSSD,
 	}
 	if record.Nama == "" {
 		record.Nama = record.OriginalName
+	}
+	if record.SumberAplikasi == "" {
+		record.SumberAplikasi = "sidoka"
+	}
+	if record.Bidang == "" {
+		record.Bidang = "pmk"
 	}
 
 	if err := db.Create(&record).Error; err != nil {
@@ -80,6 +88,8 @@ func (r *PelaksanaanDocumentRepository) ListDocuments(ctx context.Context, param
 	if err := r.documentQuery(db, params).
 		Select(`
 			d.id,
+			d.sumber_aplikasi,
+			d.bidang,
 			d.nama,
 			d.subkegiatan_id,
 			COALESCE(d.original_name, '') AS stored_file_name,
@@ -121,6 +131,8 @@ func (r *PelaksanaanDocumentRepository) DocumentByID(ctx context.Context, tahunA
 		Where("d.id = ?", id).
 		Select(`
 			d.id,
+			d.sumber_aplikasi,
+			d.bidang,
 			d.nama,
 			d.subkegiatan_id,
 			COALESCE(d.original_name, '') AS stored_file_name,
@@ -198,9 +210,19 @@ func (r *PelaksanaanDocumentRepository) Delete(ctx context.Context, tahunAnggara
 }
 
 func (r *PelaksanaanDocumentRepository) documentQuery(db *gorm.DB, params model.PelaksanaanDocumentListParams) *gorm.DB {
-	query := db.Table("pelaksanaan_documents AS d").
+	query := db.Table("arsip AS d").
 		Joins("LEFT JOIN subkegiatan AS s ON s.tahun_anggaran = d.tahun_anggaran AND s.id = d.subkegiatan_id").
 		Where("d.tahun_anggaran = ?", strings.TrimSpace(params.TahunAnggaran))
+
+	sumberAplikasi := strings.TrimSpace(strings.ToLower(params.SumberAplikasi))
+	if sumberAplikasi != "" {
+		query = query.Where("d.sumber_aplikasi = ?", sumberAplikasi)
+	}
+
+	bidang := strings.TrimSpace(strings.ToLower(params.Bidang))
+	if bidang != "" {
+		query = query.Where("d.bidang = ?", bidang)
+	}
 
 	search := strings.TrimSpace(strings.ToLower(params.Search))
 	if search != "" {

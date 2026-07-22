@@ -23,6 +23,10 @@ var validSystemAccess = map[string]bool{
 	"aspirasiku":    true,
 	"sidoka":        true,
 	"sidak":         true,
+	"siber":         true,
+	"sisurat":       true,
+	"simonev":       true,
+	"optima_info":   true,
 	"arsip_pegawai": true,
 }
 

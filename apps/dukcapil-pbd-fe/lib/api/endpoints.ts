@@ -23,6 +23,10 @@ export const apiEndpoints = {
   kabKota: `${API_PREFIX}/kab-kota`,
   kabKotaDetail: (id: number) => `${API_PREFIX}/kab-kota/${id}`,
   dataWilayahSettings: `${API_PREFIX}/data-wilayah/settings`,
+  siberDataWilayah: `${API_PREFIX}/siber/data-wilayah`,
+  siberDataWilayahSettings: `${API_PREFIX}/siber/data-wilayah/settings`,
+  siberDataWilayahDetail: (id: string) =>
+    `${API_PREFIX}/siber/data-wilayah/${encodeURIComponent(id)}`,
   pelaksanaanDocuments: `${API_PREFIX}/pelaksanaan-documents`,
   pelaksanaanDocumentDetail: (id: number) =>
     `${API_PREFIX}/pelaksanaan-documents/${id}`,
@@ -30,6 +34,14 @@ export const apiEndpoints = {
     `${API_PREFIX}/pelaksanaan-documents/${id}/preview`,
   pelaksanaanDocumentDownload: (id: number) =>
     `${API_PREFIX}/pelaksanaan-documents/${id}/download`,
+  arsipPegawai: `${API_PREFIX}/arsip-pegawai`,
+  arsipPegawaiDetail: (id: number) => `${API_PREFIX}/arsip-pegawai/${id}`,
+  arsipPegawaiDocumentList: (pegawaiId: number) =>
+    `${API_PREFIX}/arsip-pegawai/${pegawaiId}/documents`,
+  arsipPegawaiDocumentDetail: (pegawaiId: number, documentId: number) =>
+    `${API_PREFIX}/arsip-pegawai/${pegawaiId}/documents/${documentId}`,
+  arsipPegawaiDocumentDownload: (pegawaiId: number, documentId: number) =>
+    `${API_PREFIX}/arsip-pegawai/${pegawaiId}/documents/${documentId}/download`,
   websiteHome: `${API_PREFIX}/website/home`,
   websitePortalApps: `${API_PREFIX}/website/portal-apps`,
   websiteAspirasiku: `${API_PREFIX}/website/aspirasiku`,

@@ -47,6 +47,8 @@ type PelaksanaanDocumentUploadDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUploaded: (document: PelaksanaanDocument) => void;
+  sumberAplikasi: string;
+  bidang: "sekretariat" | "dukcapil" | "pmk";
   subkegiatanPrefix?: string;
   subkegiatanRequired?: boolean;
 };
@@ -58,6 +60,8 @@ type PelaksanaanDocumentUploadFormProps = {
   onCompleted?: () => void;
   onCancel?: () => void;
   cancelLabel?: string;
+  sumberAplikasi: string;
+  bidang: "sekretariat" | "dukcapil" | "pmk";
   subkegiatanPrefix?: string;
   subkegiatanRequired?: boolean;
 };
@@ -77,6 +81,8 @@ export function PelaksanaanDocumentUploadForm({
   onCompleted,
   onCancel,
   cancelLabel = "Bersihkan",
+  sumberAplikasi,
+  bidang,
   subkegiatanPrefix,
   subkegiatanRequired = false,
 }: PelaksanaanDocumentUploadFormProps) {
@@ -193,6 +199,8 @@ export function PelaksanaanDocumentUploadForm({
     try {
       const uploaded = await uploadDokumenPelaksanaan({
         file: selectedFile,
+        sumberAplikasi,
+        bidang,
         nama,
         subkegiatanId: selectedSubkegiatanId || null,
         isDokumenDssd,
@@ -338,6 +346,8 @@ export function PelaksanaanDocumentUploadDialog({
   open,
   onOpenChange,
   onUploaded,
+  sumberAplikasi,
+  bidang,
   subkegiatanPrefix,
   subkegiatanRequired = false,
 }: PelaksanaanDocumentUploadDialogProps) {
@@ -363,6 +373,8 @@ export function PelaksanaanDocumentUploadDialog({
             onCompleted={() => onOpenChange(false)}
             onCancel={() => onOpenChange(false)}
             cancelLabel="Batal"
+            sumberAplikasi={sumberAplikasi}
+            bidang={bidang}
             subkegiatanPrefix={subkegiatanPrefix}
             subkegiatanRequired={subkegiatanRequired}
           />

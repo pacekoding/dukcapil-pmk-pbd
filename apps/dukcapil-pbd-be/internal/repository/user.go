@@ -27,7 +27,7 @@ type defaultAdminUser struct {
 	SystemAccess []string
 }
 
-var allSystemAccess = []string{"sibum", "sikampung", "sitekad", "aspirasiku", "sidoka", "sidak", "arsip_pegawai"}
+var allSystemAccess = []string{"sibum", "sikampung", "sitekad", "aspirasiku", "sidoka", "sidak", "siber", "sisurat", "simonev", "optima_info", "arsip_pegawai"}
 
 var defaultAdminUsers = []defaultAdminUser{
 	{

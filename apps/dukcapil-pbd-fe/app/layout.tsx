@@ -1,40 +1,8 @@
 import type { Metadata } from "next";
 
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
-
 import "./globals.css";
 
 import { cn } from "@/lib/utils";
-
-/* =========================
-   FONTS
-========================= */
-
-/* =========================
-   BODY FONT
-   Clean & readable
-========================= */
-
-const inter = Inter({
-  subsets: ["latin"],
-
-  variable: "--font-sans",
-
-  display: "swap",
-});
-
-/* =========================
-   HEADING FONT
-   Elegant & formal
-========================= */
-
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-
-  variable: "--font-heading",
-
-  display: "swap",
-});
 
 /* =========================
    METADATA
@@ -135,7 +103,6 @@ export default function RootLayout({
       lang="id"
       translate="yes"
       suppressHydrationWarning
-      className={cn(inter.variable, plusJakarta.variable)}
     >
       <body
         suppressHydrationWarning

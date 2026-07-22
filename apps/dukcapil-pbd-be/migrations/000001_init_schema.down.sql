@@ -1,5 +1,6 @@
 DROP TABLE IF EXISTS bum_kampung;
-DROP TABLE IF EXISTS pelaksanaan_documents;
+DROP TABLE IF EXISTS arsip;
+DROP TABLE IF EXISTS arsip_pegawai;
 DROP TABLE IF EXISTS subkegiatan_ssd;
 DROP TABLE IF EXISTS ssd;
 DROP TABLE IF EXISTS subkegiatan;

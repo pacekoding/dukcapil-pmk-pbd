@@ -19,6 +19,7 @@ type Config struct {
 	SSD            *controller.SSDController
 	Subkegiatan    *controller.SubkegiatanController
 	Documents      *controller.PelaksanaanDocumentController
+	ArsipPegawai   *controller.ArsipPegawaiController
 	BumKampung     *controller.BumKampungController
 	Sitekad        *controller.SitekadController
 	Aspirasiku     *controller.AspirasikuController
@@ -65,6 +66,14 @@ func New(config Config) *echo.Echo {
 	protected.PUT("/pelaksanaan-documents/:id", config.Documents.UpdateDocument)
 	protected.DELETE("/pelaksanaan-documents/:id", config.Documents.DeleteDocument)
 	protected.GET("/pelaksanaan-documents/:id/download", config.Documents.DownloadDocument)
+	protected.GET("/arsip-pegawai", config.ArsipPegawai.List)
+	protected.POST("/arsip-pegawai", config.ArsipPegawai.Create)
+	protected.GET("/arsip-pegawai/:id", config.ArsipPegawai.Detail)
+	protected.PUT("/arsip-pegawai/:id", config.ArsipPegawai.Update)
+	protected.DELETE("/arsip-pegawai/:id", config.ArsipPegawai.Delete)
+	protected.POST("/arsip-pegawai/:id/documents", config.ArsipPegawai.UploadDocument)
+	protected.DELETE("/arsip-pegawai/:id/documents/:document_id", config.ArsipPegawai.DeleteDocument)
+	protected.GET("/arsip-pegawai/:id/documents/:document_id/download", config.ArsipPegawai.DownloadDocument)
 	protected.GET("/bum-kampung", config.BumKampung.List)
 	protected.POST("/bum-kampung", config.BumKampung.Create)
 	protected.PUT("/bum-kampung/:id", config.BumKampung.Update)
@@ -77,6 +86,15 @@ func New(config Config) *echo.Echo {
 	protected.GET("/aspirasiku", config.Aspirasiku.List)
 	protected.PATCH("/aspirasiku/:id/status", config.Aspirasiku.UpdateStatus)
 	protected.DELETE("/aspirasiku/:id", config.Aspirasiku.Delete)
+
+	siber := api.Group(
+		"/siber",
+		config.AuthMiddleware.RequireRoles(adminRoles...),
+		config.AuthMiddleware.RequireSystemAccess("siber"),
+	)
+	siber.GET("/data-wilayah/settings", config.DataWilayah.AdminWebsiteSettings)
+	siber.GET("/data-wilayah", config.DataWilayah.SiberList)
+	siber.PUT("/data-wilayah/:id", config.DataWilayah.UpdateSiberRegion)
 
 	superAdmin := api.Group("", config.AuthMiddleware.RequireRoles(model.RoleSuperAdmin))
 	superAdmin.POST("/ssd", config.SSD.Create)

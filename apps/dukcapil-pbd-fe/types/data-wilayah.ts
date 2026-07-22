@@ -52,6 +52,7 @@ export type RegionData = {
 export type DataWilayahResponse = {
   tahunAnggaran: string;
   regions: RegionData[];
+  updatedAt?: string;
 };
 
 export type DataWilayahWebsiteSettings = {
@@ -66,4 +67,15 @@ export type DataWilayahAdminSettings = DataWilayahWebsiteSettings & {
 export type DataWilayahSettingsPayload = {
   featuredTahunAnggaran: string;
   publishedTahunAnggaran: string[];
+};
+
+export type SiberOapPayload = Pick<
+  OapData,
+  "luasWilayah" | "jumlahOap" | "jumlahNonOap"
+>;
+
+export type SiberDataWilayahPayload = {
+  registration: PopulationRegistrationData;
+  civil: CivilRegistrationData;
+  oap: SiberOapPayload;
 };

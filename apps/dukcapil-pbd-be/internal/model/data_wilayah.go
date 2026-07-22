@@ -37,6 +37,18 @@ type OapData struct {
 	JumlahJiwa   int     `json:"jumlahJiwa"`
 }
 
+type DataWilayahOapPayload struct {
+	LuasWilayah  float64 `json:"luasWilayah"`
+	JumlahOap    int     `json:"jumlahOap"`
+	JumlahNonOap int     `json:"jumlahNonOap"`
+}
+
+type DataWilayahDukcapilPayload struct {
+	Registration PopulationRegistrationData `json:"registration"`
+	Civil        CivilRegistrationData      `json:"civil"`
+	Oap          DataWilayahOapPayload      `json:"oap"`
+}
+
 type CivilRegistrationData struct {
 	AktaKelahiran  int `json:"aktaKelahiran"`
 	AktaKematian   int `json:"aktaKematian"`
@@ -60,6 +72,7 @@ type RegionData struct {
 type DataWilayahResponse struct {
 	TahunAnggaran string       `json:"tahunAnggaran"`
 	Regions       []RegionData `json:"regions"`
+	UpdatedAt     *time.Time   `json:"updatedAt,omitempty"`
 }
 
 type DataWilayahWebsiteSettings struct {

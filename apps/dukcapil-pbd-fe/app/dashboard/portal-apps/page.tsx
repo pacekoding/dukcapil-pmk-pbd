@@ -60,6 +60,26 @@ const portalApps = [
     subtitle: "Sistem Informasi Data Kegiatan Dukcapil",
   },
   {
+    accessKey: "siber",
+    title: "SIBER",
+    subtitle: "Dashboard Data Dukcapil",
+  },
+  {
+    accessKey: "sisurat",
+    title: "SISURAT DUKCAPIL",
+    subtitle: "Surat Keluar Bidang Dukcapil",
+  },
+  {
+    accessKey: "simonev",
+    title: "SIMONEV DUKCAPIL",
+    subtitle: "Monitoring Evaluasi SSD",
+  },
+  {
+    accessKey: "optima_info",
+    title: "OPTIMA-INFO",
+    subtitle: "Dashboard Informasi Website",
+  },
+  {
     accessKey: "arsip_pegawai",
     title: "ARSIPKU",
     subtitle: "Sistem ARSIPKU",
@@ -75,6 +95,10 @@ const defaultStatuses: Record<string, PortalAppStatus> = {
   aspirasiku: "Aktif",
   sidoka: "Pemeliharaan",
   sidak: "Pemeliharaan",
+  siber: "Aktif",
+  sisurat: "Aktif",
+  simonev: "Aktif",
+  optima_info: "Aktif",
   arsip_pegawai: "Pemeliharaan",
 };
 

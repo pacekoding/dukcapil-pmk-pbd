@@ -14,6 +14,8 @@ export default function SidokaDataPage() {
       tableTitle="Dokumen Pelaksanaan PMK"
       emptyTitle="Belum ada dokumen pelaksanaan PMK."
       emptyDescription="Tambah dokumen pelaksanaan PMK untuk menampilkan data pada tabel ini."
+      sumberAplikasi="sidoka"
+      bidang="pmk"
       subkegiatanPrefix="2.13"
       subkegiatanScopeLabel="PMK 2.13"
     />

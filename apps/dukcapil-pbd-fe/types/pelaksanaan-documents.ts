@@ -7,6 +7,8 @@ export type PelaksanaanDocumentFileType =
 
 export type PelaksanaanDocument = {
   id: number;
+  sumberAplikasi: string;
+  bidang: "sekretariat" | "dukcapil" | "pmk";
   nama: string;
   subkegiatanId: number | null;
   subkegiatanCode: string | null;
@@ -35,6 +37,8 @@ export type PelaksanaanDocumentListResponse = {
 
 export type PelaksanaanDocumentListParams = {
   search?: string;
+  sumberAplikasi?: string;
+  bidang?: string;
   subkegiatanPrefix?: string;
   page?: number;
   limit?: number;
@@ -42,6 +46,8 @@ export type PelaksanaanDocumentListParams = {
 
 export type UploadPelaksanaanDocumentPayload = {
   file: File;
+  sumberAplikasi: string;
+  bidang: "sekretariat" | "dukcapil" | "pmk";
   nama?: string;
   subkegiatanId?: string | number | null;
   isDokumenDssd: boolean;

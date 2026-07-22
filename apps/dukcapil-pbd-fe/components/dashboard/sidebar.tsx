@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 import {
   Building2,
   CalendarClock,
+  ClipboardCheck,
   ChevronDown,
   Database,
   Home,
@@ -19,6 +20,7 @@ import {
   ListChecks,
   MapPinned,
   MessageSquareText,
+  MonitorPlay,
   FileText,
   FolderArchive,
   PanelLeftClose,
@@ -37,9 +39,13 @@ import {
   arsipPegawaiMenus,
   aspirasikuMenus,
   dashboardMenus,
+  optimaInfoMenus,
   settingsMenus,
   sidakMenus,
   sidokaMenus,
+  siberMenus,
+  simonevMenus,
+  sisuratMenus,
   sitekadMenus,
   sikampungMenus,
   sibumMenus,
@@ -74,8 +80,10 @@ const dashboardMenuIconMap: Record<DashboardMenuIcon, LucideIcon> = {
   fileText: FileText,
   folderArchive: FolderArchive,
   listChecks: ListChecks,
+  clipboardCheck: ClipboardCheck,
   messageSquare: MessageSquareText,
   calendarClock: CalendarClock,
+  monitorPlay: MonitorPlay,
   toggle: ToggleLeft,
   users: UsersRound,
   keyRound: KeyRound,
@@ -108,6 +116,18 @@ function systemAccessForHref(href: string) {
   }
   if (href.startsWith("/sidak")) {
     return "sidak";
+  }
+  if (href.startsWith("/siber")) {
+    return "siber";
+  }
+  if (href.startsWith("/sisurat")) {
+    return "sisurat";
+  }
+  if (href.startsWith("/simonev")) {
+    return "simonev";
+  }
+  if (href.startsWith("/optima-info")) {
+    return "optima_info";
   }
   if (href.startsWith("/arsip-pegawai")) {
     return "arsip_pegawai";
@@ -178,6 +198,22 @@ function getSidebarMenus(pathname: string) {
     return sidakMenus;
   }
 
+  if (pathname.startsWith("/siber")) {
+    return siberMenus;
+  }
+
+  if (pathname.startsWith("/sisurat")) {
+    return sisuratMenus;
+  }
+
+  if (pathname.startsWith("/simonev")) {
+    return simonevMenus;
+  }
+
+  if (pathname.startsWith("/optima-info")) {
+    return optimaInfoMenus;
+  }
+
   if (pathname.startsWith("/arsip-pegawai")) {
     return arsipPegawaiMenus;
   }
@@ -229,6 +265,34 @@ function getSidebarBrand(pathname: string) {
     return {
       title: "SIDAK",
       subtitle: "Data Kegiatan Dukcapil",
+    };
+  }
+
+  if (pathname.startsWith("/siber")) {
+    return {
+      title: "SIBER",
+      subtitle: "Dashboard Data Dukcapil",
+    };
+  }
+
+  if (pathname.startsWith("/sisurat")) {
+    return {
+      title: "SISURAT DUKCAPIL",
+      subtitle: "Surat Keluar Dukcapil",
+    };
+  }
+
+  if (pathname.startsWith("/simonev")) {
+    return {
+      title: "SIMONEV DUKCAPIL",
+      subtitle: "Monitoring Evaluasi SSD",
+    };
+  }
+
+  if (pathname.startsWith("/optima-info")) {
+    return {
+      title: "OPTIMA-INFO",
+      subtitle: "Informasi Website",
     };
   }
 

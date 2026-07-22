@@ -131,6 +131,32 @@ const menuTitles: Record<
     description: "Kelola dokumen pelaksanaan kegiatan Dukcapil dan relasi DSSD",
   },
 
+  "/siber/dashboard": {
+    title: "SIBER",
+    description: "Dashboard Data Dukcapil",
+  },
+
+  "/siber/data": {
+    title: "Data Dukcapil",
+    description:
+      "Kelola data kependudukan, pencatatan sipil, dan OAP per kabupaten/kota",
+  },
+
+  "/simonev/dashboard": {
+    title: "SIMONEV DUKCAPIL",
+    description: "Sistem informasi monitoring dan evaluasi data SSD",
+  },
+
+  "/simonev/data": {
+    title: "Form Monev SSD",
+    description: "Buat dan cetak formulir monitoring evaluasi data SSD",
+  },
+
+  "/optima-info/dashboard": {
+    title: "OPTIMA-INFO",
+    description: "Kelola informasi aktif yang tampil di website publik",
+  },
+
   "/arsip-pegawai": {
     title: "ARSIPKU",
     description: "Data pegawai dan dokumen kepegawaian",
@@ -218,6 +244,26 @@ function getPageInfo(pathname: string) {
 
   if (pathname.startsWith("/sidak/data")) {
     return menuTitles["/sidak/data"];
+  }
+
+  if (pathname.startsWith("/siber/dashboard")) {
+    return menuTitles["/siber/dashboard"];
+  }
+
+  if (pathname.startsWith("/siber/data")) {
+    return menuTitles["/siber/data"];
+  }
+
+  if (pathname.startsWith("/simonev/dashboard")) {
+    return menuTitles["/simonev/dashboard"];
+  }
+
+  if (pathname.startsWith("/simonev/data")) {
+    return menuTitles["/simonev/data"];
+  }
+
+  if (pathname.startsWith("/optima-info/dashboard")) {
+    return menuTitles["/optima-info/dashboard"];
   }
 
   if (pathname.startsWith("/arsip-pegawai")) {

@@ -62,8 +62,31 @@ import {
 import { cn } from "@/lib/utils";
 import type { RegionData } from "@/types/data-wilayah";
 
-const LAST_UPDATED_LABEL = "10 Juli 2026";
+const LAST_UPDATED_FALLBACK = "Belum tersedia";
 const DATA_SOURCE = "Dinas Dukcapil dan PMK Provinsi Papua Barat Daya";
+
+const formatLastUpdated = (updatedAt: string | null) => {
+  if (!updatedAt) {
+    return LAST_UPDATED_FALLBACK;
+  }
+
+  const date = new Date(updatedAt);
+  if (Number.isNaN(date.getTime())) {
+    return LAST_UPDATED_FALLBACK;
+  }
+
+  const formatted = new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jayapura",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(date);
+
+  return `${formatted} WIT`;
+};
 
 const mapPalette = {
   ocean: "#E0F2FE",
@@ -232,6 +255,7 @@ export default function DataWilayahPage() {
   const [regions, setRegions] = useState<RegionData[]>(defaultRegionData);
   const [tahunAnggaran, setTahunAnggaran] = useState("");
   const [tahunAnggaranOptions, setTahunAnggaranOptions] = useState<string[]>([]);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [hoveredRegionId, setHoveredRegionId] = useState<string | null>(null);
@@ -240,6 +264,7 @@ export default function DataWilayahPage() {
   const [reloadKey, setReloadKey] = useState(0);
 
   const totals = useMemo(() => getProvinceTotals(regions), [regions]);
+  const lastUpdatedLabel = useMemo(() => formatLastUpdated(updatedAt), [updatedAt]);
   const orderedRegions = useMemo(() => sortRegions(regions), [regions]);
   const selectedRegion =
     selectedRegionId !== null
@@ -319,7 +344,12 @@ export default function DataWilayahPage() {
     const loadDataWilayah = async () => {
       try {
         const data = await getWebsiteDataWilayahByYear(tahunAnggaran);
-        if (mounted && data.regions.length > 0) {
+        if (!mounted) {
+          return;
+        }
+
+        setUpdatedAt(data.updatedAt ?? null);
+        if (data.regions.length > 0) {
           setRegions(data.regions);
           setSelectedRegionId((currentRegionId) => {
             if (!currentRegionId) {
@@ -336,6 +366,7 @@ export default function DataWilayahPage() {
       } catch (error) {
         console.error(error);
         if (mounted) {
+          setUpdatedAt(null);
           setDataError("Data wilayah gagal dimuat.");
         }
       }
@@ -376,6 +407,7 @@ export default function DataWilayahPage() {
   };
 
   const handlePeriodChange = (period: string) => {
+    setUpdatedAt(null);
     setTahunAnggaran(period);
     updateUrlState({
       regionId: selectedRegionId,
@@ -400,6 +432,7 @@ export default function DataWilayahPage() {
       <DataWilayahHeader
         tahunAnggaran={tahunAnggaran}
         tahunAnggaranOptions={tahunAnggaranOptions}
+        lastUpdatedLabel={lastUpdatedLabel}
         dataError={dataError}
         onPeriodChange={handlePeriodChange}
         onRetry={() => setReloadKey((current) => current + 1)}
@@ -435,6 +468,7 @@ export default function DataWilayahPage() {
               region={selectedRegion}
               activeTab={activeTab}
               tahunAnggaran={tahunAnggaran}
+              lastUpdatedLabel={lastUpdatedLabel}
               onTabChange={handleTabChange}
             />
           ) : (
@@ -448,6 +482,7 @@ export default function DataWilayahPage() {
         <DataSourceMeta
           activeTab={activeTab}
           tahunAnggaran={tahunAnggaran}
+          lastUpdatedLabel={lastUpdatedLabel}
           className="mt-5"
         />
       </section>
@@ -458,12 +493,14 @@ export default function DataWilayahPage() {
 function DataWilayahHeader({
   tahunAnggaran,
   tahunAnggaranOptions,
+  lastUpdatedLabel,
   dataError,
   onPeriodChange,
   onRetry,
 }: {
   tahunAnggaran: string;
   tahunAnggaranOptions: string[];
+  lastUpdatedLabel: string;
   dataError: string | null;
   onPeriodChange: (period: string) => void;
   onRetry: () => void;
@@ -528,7 +565,7 @@ function DataWilayahHeader({
           <p className="text-xs text-slate-500">
             Diperbarui{" "}
             <span className="font-semibold text-slate-700">
-              {LAST_UPDATED_LABEL}
+              {lastUpdatedLabel}
             </span>
           </p>
           {dataError ? (
@@ -1054,11 +1091,13 @@ function RegionSummaryPanel({
   region,
   activeTab,
   tahunAnggaran,
+  lastUpdatedLabel,
   onTabChange,
 }: {
   region: RegionData;
   activeTab: RegionTab;
   tahunAnggaran: string;
+  lastUpdatedLabel: string;
   onTabChange: (tab: RegionTab) => void;
 }) {
   return (
@@ -1126,6 +1165,7 @@ function RegionSummaryPanel({
         <DataSourceMeta
           activeTab={activeTab}
           tahunAnggaran={tahunAnggaran}
+          lastUpdatedLabel={lastUpdatedLabel}
           compact
           className="mt-4"
         />
@@ -1495,11 +1535,13 @@ function DatasetEmptyState({
 function DataSourceMeta({
   activeTab,
   tahunAnggaran,
+  lastUpdatedLabel,
   compact = false,
   className,
 }: {
   activeTab: RegionTab;
   tahunAnggaran: string;
+  lastUpdatedLabel: string;
   compact?: boolean;
   className?: string;
 }) {
@@ -1520,7 +1562,7 @@ function DataSourceMeta({
         <span className="font-bold text-slate-700">Periode data:</span>{" "}
         {tahunAnggaran || "Belum dipilih"} ·{" "}
         <span className="font-bold text-slate-700">Diperbarui:</span>{" "}
-        {LAST_UPDATED_LABEL}
+        {lastUpdatedLabel}
       </p>
       <p className="mt-1 text-slate-500">{meta.definition}</p>
     </div>

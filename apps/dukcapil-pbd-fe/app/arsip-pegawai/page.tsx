@@ -19,6 +19,7 @@ import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialo
 import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { ErrorState, SuccessState } from "@/components/dashboard/state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,12 +37,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import {
-  PEGAWAI_ARCHIVE_STORAGE_KEY,
-  pegawaiArchives,
-  type PegawaiArchive,
-} from "@/app/arsip-pegawai/_data/pegawai-archive";
+  createArsipPegawai,
+  deleteArsipPegawai,
+  getArsipPegawai,
+  updateArsipPegawai,
+} from "@/lib/api/arsip-pegawai";
+import { cn } from "@/lib/utils";
+import type { PegawaiArchive } from "@/types/arsip-pegawai";
 
 type PegawaiForm = {
   nip: string;
@@ -66,46 +69,48 @@ const photoColors = [
 ];
 
 export default function ArsipPegawaiPage() {
-  const [pegawaiRecords, setPegawaiRecords] =
-    useState<PegawaiArchive[]>(pegawaiArchives);
-  const [storageReady, setStorageReady] = useState(false);
+  const [pegawaiRecords, setPegawaiRecords] = useState<PegawaiArchive[]>([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PegawaiArchive | null>(null);
   const [form, setForm] = useState<PegawaiForm>(() => createEmptyPegawaiForm());
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      const storedRecords = window.localStorage.getItem(
-        PEGAWAI_ARCHIVE_STORAGE_KEY,
-      );
+    let mounted = true;
 
-      if (!storedRecords) {
-        setStorageReady(true);
-        return;
-      }
-
+    const loadPegawai = async () => {
+      setLoading(true);
       try {
-        setPegawaiRecords(JSON.parse(storedRecords) as PegawaiArchive[]);
-      } catch {
-        window.localStorage.removeItem(PEGAWAI_ARCHIVE_STORAGE_KEY);
+        const records = await getArsipPegawai();
+        if (mounted) {
+          setPegawaiRecords(Array.isArray(records) ? records : []);
+          setError(null);
+        }
+      } catch (loadError) {
+        console.error(loadError);
+        if (mounted) {
+          setPegawaiRecords([]);
+          setError("Data pegawai gagal dimuat.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
+    };
 
-      setStorageReady(true);
-    });
+    void loadPegawai();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
-
-  useEffect(() => {
-    if (!storageReady) {
-      return;
-    }
-
-    window.localStorage.setItem(
-      PEGAWAI_ARCHIVE_STORAGE_KEY,
-      JSON.stringify(pegawaiRecords),
-    );
-  }, [pegawaiRecords, storageReady]);
 
   const filteredPegawai = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -176,41 +181,76 @@ export default function ArsipPegawaiPage() {
     setForm(createEmptyPegawaiForm());
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSaving(true);
+    setError(null);
+    setMessage(null);
 
-    if (editingId) {
-      setPegawaiRecords((currentRecords) =>
-        currentRecords.map((pegawai) =>
-          pegawai.id === editingId ? { ...pegawai, ...form } : pegawai,
-        ),
-      );
-    } else {
-      setPegawaiRecords((currentRecords) => [
-        {
-          id: `pegawai-${Date.now()}`,
+    try {
+      if (editingId) {
+        const current = pegawaiRecords.find(
+          (pegawai) => pegawai.id === editingId,
+        );
+        const updated = await updateArsipPegawai(editingId, {
           ...form,
-          photoColor: photoColors[currentRecords.length % photoColors.length],
-          documents: [],
-        },
-        ...currentRecords,
-      ]);
-    }
+          photoColor: current?.photoColor ?? photoColors[0],
+        });
+        setPegawaiRecords((currentRecords) =>
+          currentRecords.map((pegawai) =>
+            pegawai.id === editingId ? updated : pegawai,
+          ),
+        );
+        setMessage(`${updated.name} berhasil diperbarui.`);
+      } else {
+        const created = await createArsipPegawai({
+          ...form,
+          photoColor: photoColors[pegawaiRecords.length % photoColors.length],
+        });
+        setPegawaiRecords((currentRecords) => [created, ...currentRecords]);
+        setMessage(`${created.name} berhasil ditambahkan.`);
+      }
 
-    setFormOpen(false);
-    setEditingId(null);
-    setForm(createEmptyPegawaiForm());
+      setFormOpen(false);
+      setEditingId(null);
+      setForm(createEmptyPegawaiForm());
+    } catch (submitError) {
+      console.error(submitError);
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Data pegawai gagal disimpan.",
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) {
       return;
     }
 
-    setPegawaiRecords((currentRecords) =>
-      currentRecords.filter((pegawai) => pegawai.id !== deleteTarget.id),
-    );
-    setDeleteTarget(null);
+    setDeleting(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await deleteArsipPegawai(deleteTarget.id);
+      setPegawaiRecords((currentRecords) =>
+        currentRecords.filter((pegawai) => pegawai.id !== deleteTarget.id),
+      );
+      setMessage(`${deleteTarget.name} berhasil dihapus.`);
+      setDeleteTarget(null);
+    } catch (deleteError) {
+      console.error(deleteError);
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Data pegawai gagal dihapus.",
+      );
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -260,6 +300,9 @@ export default function ArsipPegawaiPage() {
           tone="amber"
         />
       </section>
+
+      {message ? <SuccessState message={message} /> : null}
+      {error ? <ErrorState message={error} /> : null}
 
       {formOpen ? (
         <SectionCard
@@ -374,9 +417,14 @@ export default function ArsipPegawaiPage() {
               </Button>
               <Button
                 type="submit"
+                disabled={saving}
                 className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
               >
-                {editingPegawai ? "Simpan Perubahan" : "Tambah Data"}
+                {saving
+                  ? "Menyimpan..."
+                  : editingPegawai
+                    ? "Simpan Perubahan"
+                    : "Tambah Data"}
               </Button>
             </div>
           </form>
@@ -423,7 +471,16 @@ export default function ArsipPegawaiPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPegawai.length > 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="py-10 text-center text-sm font-medium text-slate-500"
+                >
+                  Memuat data pegawai...
+                </TableCell>
+              </TableRow>
+            ) : filteredPegawai.length > 0 ? (
               filteredPegawai.map((pegawai) => (
                 <TableRow key={pegawai.id} className="group">
                   <TableCell className="min-w-[260px] whitespace-normal">
@@ -523,6 +580,7 @@ export default function ArsipPegawaiPage() {
           }
         }}
         onConfirm={handleDelete}
+        loading={deleting}
       />
     </main>
   );

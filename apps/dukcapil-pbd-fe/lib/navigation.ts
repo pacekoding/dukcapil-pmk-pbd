@@ -12,8 +12,10 @@ export type DashboardMenuIcon =
   | "fileText"
   | "folderArchive"
   | "listChecks"
+  | "clipboardCheck"
   | "messageSquare"
   | "calendarClock"
+  | "monitorPlay"
   | "toggle"
   | "users"
   | "keyRound"
@@ -93,6 +95,26 @@ export const dashboardMenus: DashboardMenuItem[] = [
     title: "SIDAK",
     href: "/sidak/dashboard",
     icon: "fileText",
+  },
+  {
+    title: "SIBER",
+    href: "/siber/dashboard",
+    icon: "database",
+  },
+  {
+    title: "SISURAT DUKCAPIL",
+    href: "/sisurat/dashboard",
+    icon: "fileText",
+  },
+  {
+    title: "SIMONEV DUKCAPIL",
+    href: "/simonev/dashboard",
+    icon: "clipboardCheck",
+  },
+  {
+    title: "OPTIMA-INFO",
+    href: "/optima-info/dashboard",
+    icon: "monitorPlay",
   },
   {
     title: "ARSIPKU",
@@ -176,6 +198,68 @@ export const sidakMenus: DashboardMenuItem[] = [
     title: "Data Pelaksanaan",
     href: "/sidak/data",
     icon: "fileText",
+  },
+];
+
+export const siberMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/siber/dashboard",
+    icon: "home",
+  },
+  {
+    title: "Data Dukcapil",
+    href: "/siber/data",
+    icon: "database",
+  },
+];
+
+export const sisuratMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/sisurat/dashboard",
+    icon: "home",
+  },
+  {
+    title: "Daftar Surat Keluar",
+    href: "/sisurat/data",
+    icon: "database",
+  },
+  {
+    title: "Buat Surat Keluar",
+    href: "/sisurat/generate",
+    icon: "fileText",
+  },
+  {
+    title: "Template Surat",
+    href: "/sisurat/template",
+    icon: "folderArchive",
+  },
+  {
+    title: "Pengaturan",
+    href: "/sisurat/settings",
+    icon: "settings",
+  },
+];
+
+export const simonevMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/simonev/dashboard",
+    icon: "home",
+  },
+  {
+    title: "Data Form Monev",
+    href: "/simonev/data",
+    icon: "clipboardCheck",
+  },
+];
+
+export const optimaInfoMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/optima-info/dashboard",
+    icon: "home",
   },
 ];
 

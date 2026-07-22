@@ -13,6 +13,8 @@ const (
 
 type PelaksanaanDocumentListParams struct {
 	TahunAnggaran     string
+	SumberAplikasi    string
+	Bidang            string
 	Search            string
 	SubkegiatanPrefix string
 	Page              int
@@ -20,13 +22,15 @@ type PelaksanaanDocumentListParams struct {
 }
 
 type PelaksanaanDocumentPayload struct {
-	SubkegiatanID *int64
-	Nama          string
-	OriginalName  string
-	MimeType      string
-	Size          int64
-	URL           string
-	IsDokumenDSSD bool
+	SumberAplikasi string
+	Bidang         string
+	SubkegiatanID  *int64
+	Nama           string
+	OriginalName   string
+	MimeType       string
+	Size           int64
+	URL            string
+	IsDokumenDSSD  bool
 }
 
 type UpdatePelaksanaanDocumentPayload struct {
@@ -37,6 +41,8 @@ type UpdatePelaksanaanDocumentPayload struct {
 
 type PelaksanaanDocumentItem struct {
 	ID              int64     `json:"id" gorm:"column:id"`
+	SumberAplikasi  string    `json:"sumberAplikasi" gorm:"column:sumber_aplikasi"`
+	Bidang          string    `json:"bidang" gorm:"column:bidang"`
 	Nama            string    `json:"nama" gorm:"column:nama"`
 	SubkegiatanID   *int64    `json:"subkegiatanId" gorm:"column:subkegiatan_id"`
 	SubkegiatanCode *string   `json:"subkegiatanCode" gorm:"column:subkegiatan_code"`
@@ -64,18 +70,25 @@ type PelaksanaanDocumentListResponse struct {
 }
 
 type PelaksanaanDocumentEntity struct {
-	ID            int64     `gorm:"primaryKey;column:id"`
-	TahunAnggaran string    `gorm:"column:tahun_anggaran"`
-	SubkegiatanID *int64    `gorm:"column:subkegiatan_id"`
-	Nama          string    `gorm:"column:nama"`
-	OriginalName  string    `gorm:"column:original_name"`
-	MimeType      string    `gorm:"column:mime_type"`
-	Size          int64     `gorm:"column:size"`
-	URL           string    `gorm:"column:url"`
-	IsDokumenDSSD bool      `gorm:"column:is_dokumen_dssd"`
-	CreatedAt     time.Time `gorm:"column:created_at"`
+	ID               int64     `gorm:"primaryKey;column:id"`
+	TahunAnggaran    string    `gorm:"column:tahun_anggaran"`
+	SumberAplikasi   string    `gorm:"column:sumber_aplikasi"`
+	Bidang           string    `gorm:"column:bidang"`
+	SubkegiatanID    *int64    `gorm:"column:subkegiatan_id"`
+	PegawaiID        *int64    `gorm:"column:pegawai_id"`
+	Nama             string    `gorm:"column:nama"`
+	OriginalName     string    `gorm:"column:original_name"`
+	MimeType         string    `gorm:"column:mime_type"`
+	Size             int64     `gorm:"column:size"`
+	URL              string    `gorm:"column:url"`
+	IsDokumenDSSD    bool      `gorm:"column:is_dokumen_dssd"`
+	Kategori         string    `gorm:"column:kategori"`
+	NomorDokumen     string    `gorm:"column:nomor_dokumen"`
+	TahunDokumen     string    `gorm:"column:tahun_dokumen"`
+	StatusVerifikasi string    `gorm:"column:status_verifikasi"`
+	CreatedAt        time.Time `gorm:"column:created_at"`
 }
 
 func (PelaksanaanDocumentEntity) TableName() string {
-	return "pelaksanaan_documents"
+	return "arsip"
 }

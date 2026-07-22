@@ -47,6 +47,7 @@ func main() {
 	ssdRepo := repository.NewSSDRepository(db)
 	subkegiatanRepo := repository.NewSubkegiatanRepository(db)
 	pelaksanaanDocumentRepo := repository.NewPelaksanaanDocumentRepository(db)
+	arsipPegawaiRepo := repository.NewArsipPegawaiRepository(db)
 	bumKampungRepo := repository.NewBumKampungRepository(db)
 	sitekadRepo := repository.NewSitekadRepository(db)
 	aspirasikuRepo := repository.NewAspirasikuRepository(db)
@@ -63,6 +64,7 @@ func main() {
 		SSD:            controller.NewSSDController(ssdRepo),
 		Subkegiatan:    controller.NewSubkegiatanController(subkegiatanRepo),
 		Documents:      controller.NewPelaksanaanDocumentController(pelaksanaanDocumentRepo),
+		ArsipPegawai:   controller.NewArsipPegawaiController(arsipPegawaiRepo),
 		BumKampung:     controller.NewBumKampungController(bumKampungRepo),
 		Sitekad:        controller.NewSitekadController(sitekadRepo),
 		Aspirasiku:     controller.NewAspirasikuController(aspirasikuRepo),

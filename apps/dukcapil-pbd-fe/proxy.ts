@@ -50,6 +50,21 @@ export default function proxy(
       "/sidak"
     );
 
+  const isSiber =
+    pathname.startsWith(
+      "/siber"
+    );
+
+  const isSisurat =
+    pathname.startsWith(
+      "/sisurat"
+    );
+
+  const isSimonev =
+    pathname.startsWith(
+      "/simonev"
+    );
+
   const isSikampung =
     pathname.startsWith(
       "/sikampung"
@@ -68,6 +83,11 @@ export default function proxy(
   const isArsipPegawai =
     pathname.startsWith(
       "/arsip-pegawai"
+    );
+
+  const isOptimaInfo =
+    pathname.startsWith(
+      "/optima-info"
     );
 
   const isSettings =
@@ -106,10 +126,14 @@ export default function proxy(
       isSibum ||
       isSidoka ||
       isSidak ||
+      isSiber ||
+      isSisurat ||
+      isSimonev ||
       isSikampung ||
       isSitekad ||
       isAspirasiku ||
       isArsipPegawai ||
+      isOptimaInfo ||
       isSettings) &&
     !token
   ) {
@@ -178,9 +202,15 @@ export const config = {
     "/sibum/:path*",
     "/sidoka/:path*",
     "/sidak/:path*",
+    "/siber/:path*",
+    "/sisurat",
+    "/sisurat/:path*",
+    "/simonev",
+    "/simonev/:path*",
     "/sikampung/:path*",
     "/sitekad/:path*",
     "/aspirasiku/:path*",
+    "/optima-info/:path*",
     "/arsip-pegawai",
     "/arsip-pegawai/:path*",
     "/settings",

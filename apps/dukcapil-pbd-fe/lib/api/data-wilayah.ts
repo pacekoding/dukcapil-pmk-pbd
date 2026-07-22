@@ -5,6 +5,8 @@ import type {
   DataWilayahResponse,
   DataWilayahSettingsPayload,
   DataWilayahWebsiteSettings,
+  RegionData,
+  SiberDataWilayahPayload,
 } from "@/types/data-wilayah";
 
 export function getWebsiteDataWilayah() {
@@ -30,5 +32,28 @@ export function getWebsiteDataWilayahByYear(tahunAnggaran: string) {
   const params = new URLSearchParams({ tahunAnggaran });
   return apiRequest<DataWilayahResponse>(
     `${apiEndpoints.websiteDataWilayah}?${params.toString()}`,
+  );
+}
+
+export function getSiberDataWilayah() {
+  return apiRequest<DataWilayahResponse>(apiEndpoints.siberDataWilayah);
+}
+
+export function getSiberDataWilayahSettings() {
+  return apiRequest<DataWilayahAdminSettings>(
+    apiEndpoints.siberDataWilayahSettings,
+  );
+}
+
+export function updateSiberDataWilayah(
+  id: string,
+  payload: SiberDataWilayahPayload,
+) {
+  return apiRequest<RegionData>(
+    apiEndpoints.siberDataWilayahDetail(id),
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
   );
 }

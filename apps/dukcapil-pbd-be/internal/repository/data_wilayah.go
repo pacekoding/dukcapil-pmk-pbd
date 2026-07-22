@@ -27,9 +27,6 @@ func (r *DataWilayahRepository) List(ctx context.Context, tahunAnggaran string) 
 	}
 
 	tahunAnggaran = strings.TrimSpace(tahunAnggaran)
-	if err := r.ensureYearData(db, tahunAnggaran); err != nil {
-		return model.DataWilayahResponse{}, err
-	}
 
 	var records []model.DataWilayahEntity
 	if err := db.Where("tahun_anggaran = ?", tahunAnggaran).Order("sort_order ASC").Find(&records).Error; err != nil {
@@ -37,14 +34,83 @@ func (r *DataWilayahRepository) List(ctx context.Context, tahunAnggaran string) 
 	}
 
 	regions := make([]model.RegionData, 0, len(records))
+	latestUpdatedAt := time.Time{}
 	for _, record := range records {
 		regions = append(regions, record.ToRegionData())
+		if record.UpdatedAt.After(latestUpdatedAt) {
+			latestUpdatedAt = record.UpdatedAt
+		}
+	}
+
+	var updatedAt *time.Time
+	if !latestUpdatedAt.IsZero() {
+		updatedAt = &latestUpdatedAt
 	}
 
 	return model.DataWilayahResponse{
 		TahunAnggaran: tahunAnggaran,
 		Regions:       regions,
+		UpdatedAt:     updatedAt,
 	}, nil
+}
+
+func (r *DataWilayahRepository) UpdateDukcapil(
+	ctx context.Context,
+	tahunAnggaran string,
+	id string,
+	payload model.DataWilayahDukcapilPayload,
+) (model.RegionData, bool, error) {
+	db, err := r.session(ctx)
+	if err != nil {
+		return model.RegionData{}, false, err
+	}
+
+	tahunAnggaran = strings.TrimSpace(tahunAnggaran)
+	id = strings.TrimSpace(id)
+
+	jumlahJiwa := int64(payload.Oap.JumlahOap) + int64(payload.Oap.JumlahNonOap)
+	if jumlahJiwa < 0 || jumlahJiwa > 2147483647 {
+		return model.RegionData{}, false, fmt.Errorf("jumlah jiwa is out of range")
+	}
+
+	var record model.DataWilayahEntity
+	err = db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&model.DataWilayahEntity{}).
+			Where("tahun_anggaran = ? AND id = ?", tahunAnggaran, id).
+			Updates(map[string]any{
+				"registration_penerbitan_kk":     payload.Registration.PenerbitanKk,
+				"registration_perubahan_kk":      payload.Registration.PerubahanKk,
+				"registration_kia":               payload.Registration.Kia,
+				"registration_nik_wni":           payload.Registration.NikWni,
+				"registration_perekaman_ktp_el":  payload.Registration.PerekamanKtpEl,
+				"registration_pencetakan_ktp_el": payload.Registration.PencetakanKtpEl,
+				"oap_luas_wilayah":               payload.Oap.LuasWilayah,
+				"oap_jumlah_oap":                 payload.Oap.JumlahOap,
+				"oap_jumlah_non_oap":             payload.Oap.JumlahNonOap,
+				"oap_jumlah_jiwa":                int(jumlahJiwa),
+				"civil_akta_kelahiran":           payload.Civil.AktaKelahiran,
+				"civil_akta_kematian":            payload.Civil.AktaKematian,
+				"civil_akta_perkawinan":          payload.Civil.AktaPerkawinan,
+				"civil_akta_perceraian":          payload.Civil.AktaPerceraian,
+				"updated_at":                     gorm.Expr("NOW()"),
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+
+		return tx.First(&record, "tahun_anggaran = ? AND id = ?", tahunAnggaran, id).Error
+	})
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return model.RegionData{}, false, nil
+	}
+	if err != nil {
+		return model.RegionData{}, false, fmt.Errorf("update data wilayah Dukcapil: %w", err)
+	}
+
+	return record.ToRegionData(), true, nil
 }
 
 func (r *DataWilayahRepository) GetWebsiteSettings(ctx context.Context) (model.DataWilayahWebsiteSettingsResponse, error) {
@@ -127,61 +193,6 @@ func (r *DataWilayahRepository) UpdateWebsiteSettings(
 		PublishedTahunAnggaran: append([]string(nil), entity.PublishedTahunAnggaran...),
 		AvailableTahunAnggaran: availableYears,
 	}, nil
-}
-
-func (r *DataWilayahRepository) ensureYearData(db *gorm.DB, tahunAnggaran string) error {
-	if tahunAnggaran == "" {
-		return fmt.Errorf("tahun anggaran is required")
-	}
-
-	var count int64
-	if err := db.Model(&model.DataWilayahEntity{}).
-		Where("tahun_anggaran = ?", tahunAnggaran).
-		Count(&count).Error; err != nil {
-		return fmt.Errorf("count data wilayah: %w", err)
-	}
-	if count > 0 {
-		return nil
-	}
-
-	var sourceYear string
-	if err := db.Model(&model.DataWilayahEntity{}).
-		Select("tahun_anggaran").
-		Order("tahun_anggaran DESC").
-		Limit(1).
-		Scan(&sourceYear).Error; err != nil {
-		return fmt.Errorf("find source data wilayah: %w", err)
-	}
-	if sourceYear == "" {
-		return fmt.Errorf("source data wilayah is empty")
-	}
-
-	if err := db.Exec(`
-		INSERT INTO data_wilayah (
-			tahun_anggaran, id, sort_order, name, short_name, region_type, map_label,
-			idm_sangat_tertinggal, idm_tertinggal, idm_berkembang, idm_maju, idm_mandiri,
-			bumdes_jumlah, bumdes_aktif, bumdes_tidak_aktif, bumdes_bersama,
-			registration_penerbitan_kk, registration_perubahan_kk, registration_kia, registration_nik_wni,
-			registration_perekaman_ktp_el, registration_pencetakan_ktp_el,
-			oap_luas_wilayah, oap_jumlah_oap, oap_jumlah_non_oap, oap_jumlah_jiwa,
-			civil_akta_kelahiran, civil_akta_kematian, civil_akta_perkawinan, civil_akta_perceraian
-		)
-		SELECT
-			?, id, sort_order, name, short_name, region_type, map_label,
-			idm_sangat_tertinggal, idm_tertinggal, idm_berkembang, idm_maju, idm_mandiri,
-			bumdes_jumlah, bumdes_aktif, bumdes_tidak_aktif, bumdes_bersama,
-			registration_penerbitan_kk, registration_perubahan_kk, registration_kia, registration_nik_wni,
-			registration_perekaman_ktp_el, registration_pencetakan_ktp_el,
-			oap_luas_wilayah, oap_jumlah_oap, oap_jumlah_non_oap, oap_jumlah_jiwa,
-			civil_akta_kelahiran, civil_akta_kematian, civil_akta_perkawinan, civil_akta_perceraian
-		FROM data_wilayah
-		WHERE tahun_anggaran = ?
-		ON CONFLICT (tahun_anggaran, id) DO NOTHING
-	`, tahunAnggaran, sourceYear).Error; err != nil {
-		return fmt.Errorf("seed data wilayah year: %w", err)
-	}
-
-	return nil
 }
 
 func (r *DataWilayahRepository) listAvailableYears(db *gorm.DB) ([]string, error) {

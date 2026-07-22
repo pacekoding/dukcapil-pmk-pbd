@@ -14,6 +14,8 @@ export default function SidakDataPage() {
       tableTitle="Dokumen Pelaksanaan Dukcapil"
       emptyTitle="Belum ada dokumen pelaksanaan Dukcapil."
       emptyDescription="Tambah dokumen pelaksanaan Dukcapil untuk menampilkan data pada tabel ini."
+      sumberAplikasi="sidak"
+      bidang="dukcapil"
       subkegiatanPrefix="2.12"
       subkegiatanScopeLabel="Dukcapil 2.12"
     />

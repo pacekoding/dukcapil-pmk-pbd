@@ -31,6 +31,22 @@ export const systemAccessOptions = [
     label: "SIDAK",
   },
   {
+    value: "siber",
+    label: "SIBER",
+  },
+  {
+    value: "sisurat",
+    label: "SISURAT DUKCAPIL",
+  },
+  {
+    value: "simonev",
+    label: "SIMONEV DUKCAPIL",
+  },
+  {
+    value: "optima_info",
+    label: "OPTIMA-INFO",
+  },
+  {
     value: "arsip_pegawai",
     label: "ARSIPKU",
   },

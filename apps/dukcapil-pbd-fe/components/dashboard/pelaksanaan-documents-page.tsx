@@ -76,6 +76,8 @@ type PelaksanaanDocumentsPageProps = {
   tableTitle: string;
   emptyTitle: string;
   emptyDescription: string;
+  sumberAplikasi: string;
+  bidang: "sekretariat" | "dukcapil" | "pmk";
   subkegiatanPrefix: string;
   subkegiatanScopeLabel: string;
 };
@@ -88,6 +90,8 @@ export function PelaksanaanDocumentsPage({
   tableTitle,
   emptyTitle,
   emptyDescription,
+  sumberAplikasi,
+  bidang,
   subkegiatanPrefix,
   subkegiatanScopeLabel,
 }: PelaksanaanDocumentsPageProps) {
@@ -141,6 +145,8 @@ export function PelaksanaanDocumentsPage({
       try {
         const response = await getPelaksanaanDocuments({
           search: query,
+          sumberAplikasi,
+          bidang,
           subkegiatanPrefix,
           page,
           limit: PAGE_SIZE,
@@ -169,7 +175,7 @@ export function PelaksanaanDocumentsPage({
     return () => {
       mounted = false;
     };
-  }, [query, page, reloadKey, subkegiatanPrefix]);
+  }, [query, page, reloadKey, sumberAplikasi, bidang, subkegiatanPrefix]);
 
   const handleUploadSuccess = (document: PelaksanaanDocument) => {
     setMessage(`${document.nama || "Dokumen"} berhasil diupload.`);
@@ -286,6 +292,8 @@ export function PelaksanaanDocumentsPage({
             onCompleted={() => setDesktopUploadOpen(false)}
             onCancel={() => setDesktopUploadOpen(false)}
             cancelLabel="Batal"
+            sumberAplikasi={sumberAplikasi}
+            bidang={bidang}
             subkegiatanPrefix={subkegiatanPrefix}
             subkegiatanRequired
           />
@@ -456,6 +464,8 @@ export function PelaksanaanDocumentsPage({
         open={uploadOpen}
         onOpenChange={setUploadOpen}
         onUploaded={handleUploadSuccess}
+        sumberAplikasi={sumberAplikasi}
+        bidang={bidang}
         subkegiatanPrefix={subkegiatanPrefix}
         subkegiatanRequired
       />

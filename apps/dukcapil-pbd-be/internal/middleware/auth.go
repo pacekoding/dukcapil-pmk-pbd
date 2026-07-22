@@ -48,6 +48,40 @@ func (m *AuthMiddleware) RequireRoles(roles ...model.Role) echo.MiddlewareFunc {
 	}
 }
 
+func (m *AuthMiddleware) RequireSystemAccess(accessKey string) echo.MiddlewareFunc {
+	requiredAccess := strings.ToLower(strings.TrimSpace(accessKey))
+
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			claims, ok := ClaimsFromContext(c)
+			if !ok {
+				token := bearerToken(c.Request().Header.Get(echo.HeaderAuthorization))
+				if token == "" {
+					return echo.NewHTTPError(http.StatusUnauthorized, "token login wajib dikirim")
+				}
+
+				verifiedClaims, err := m.tokens.Verify(token)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusUnauthorized, "token login tidak valid")
+				}
+				claims = verifiedClaims
+				c.Set(ClaimsContextKey, claims)
+			}
+
+			if claims.Role == model.RoleSuperAdmin {
+				return next(c)
+			}
+			for _, systemAccess := range claims.SystemAccess {
+				if strings.EqualFold(strings.TrimSpace(systemAccess), requiredAccess) {
+					return next(c)
+				}
+			}
+
+			return echo.NewHTTPError(http.StatusForbidden, "user tidak memiliki akses sistem")
+		}
+	}
+}
+
 func ClaimsFromContext(c echo.Context) (security.Claims, bool) {
 	claims, ok := c.Get(ClaimsContextKey).(security.Claims)
 	return claims, ok

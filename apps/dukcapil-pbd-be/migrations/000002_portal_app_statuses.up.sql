@@ -13,5 +13,6 @@ VALUES
 	('sikampung', 'Pemeliharaan'),
 	('sidoka', 'Pemeliharaan'),
 	('sidak', 'Pemeliharaan'),
+	('optima_info', 'Aktif'),
 	('arsip_pegawai', 'Pemeliharaan')
 ON CONFLICT (access_key) DO NOTHING;

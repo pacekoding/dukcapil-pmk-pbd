@@ -16,6 +16,8 @@ type DashboardShellProps = {
     | "aspirasiku"
     | "sidoka"
     | "sidak"
+    | "simonev"
+    | "optimaInfo"
     | "arsip"
     | "settings";
 };

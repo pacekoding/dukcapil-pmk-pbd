@@ -17,6 +17,10 @@ var defaultPortalAppStatuses = []model.PortalAppStatusUpdateItem{
 	{AccessKey: "aspirasiku", Status: model.PortalAppStatusActive},
 	{AccessKey: "sidoka", Status: model.PortalAppStatusMaintenance},
 	{AccessKey: "sidak", Status: model.PortalAppStatusMaintenance},
+	{AccessKey: "siber", Status: model.PortalAppStatusActive},
+	{AccessKey: "sisurat", Status: model.PortalAppStatusActive},
+	{AccessKey: "simonev", Status: model.PortalAppStatusActive},
+	{AccessKey: "optima_info", Status: model.PortalAppStatusActive},
 	{AccessKey: "arsip_pegawai", Status: model.PortalAppStatusMaintenance},
 }
 

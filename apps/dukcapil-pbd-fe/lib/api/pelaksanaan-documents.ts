@@ -16,6 +16,12 @@ export function getPelaksanaanDocuments(
   if (params.search?.trim()) {
     searchParams.set("search", params.search.trim());
   }
+  if (params.sumberAplikasi?.trim()) {
+    searchParams.set("sumber_aplikasi", params.sumberAplikasi.trim());
+  }
+  if (params.bidang?.trim()) {
+    searchParams.set("bidang", params.bidang.trim());
+  }
   if (params.subkegiatanPrefix?.trim()) {
     searchParams.set("subkegiatan_prefix", params.subkegiatanPrefix.trim());
   }
@@ -39,6 +45,8 @@ export function uploadDokumenPelaksanaan(
 ) {
   const formData = new FormData();
   formData.append("file", payload.file);
+  formData.append("sumber_aplikasi", payload.sumberAplikasi);
+  formData.append("bidang", payload.bidang);
   formData.append("is_dokumen_dssd", String(payload.isDokumenDssd));
 
   if (payload.subkegiatanId) {

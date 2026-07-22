@@ -24,6 +24,18 @@ const maxPelaksanaanDocumentUploadSize = 15 << 20
 
 var pelaksanaanDocumentTahunAnggaranPattern = regexp.MustCompile(`^\d{4}$`)
 
+var allowedArsipSources = map[string]bool{
+	"sidoka":        true,
+	"sidak":         true,
+	"arsip_pegawai": true,
+}
+
+var allowedArsipBidang = map[string]bool{
+	"sekretariat": true,
+	"dukcapil":    true,
+	"pmk":         true,
+}
+
 type PelaksanaanDocumentStore interface {
 	Create(ctx context.Context, tahunAnggaran string, payload model.PelaksanaanDocumentPayload) (model.PelaksanaanDocumentItem, error)
 	ListDocuments(ctx context.Context, params model.PelaksanaanDocumentListParams) (model.PelaksanaanDocumentListResponse, error)
@@ -63,7 +75,21 @@ func (p *PelaksanaanDocumentController) UploadDocument(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	file, err := savePelaksanaanDocumentUpload(c, tahunAnggaran, subkegiatanID)
+	sumberAplikasi := documentFormValue(c, "sumber_aplikasi", "sumberAplikasi", "source_app", "sourceApp")
+	if sumberAplikasi == "" {
+		sumberAplikasi = "sidoka"
+	}
+	if err := validateArsipSource(sumberAplikasi); err != nil {
+		return err
+	}
+	bidang := documentFormValue(c, "bidang")
+	if bidang == "" {
+		bidang = defaultBidangForArsipSource(sumberAplikasi)
+	}
+	if err := validateArsipBidang(bidang); err != nil {
+		return err
+	}
+	file, err := savePelaksanaanDocumentUpload(c, tahunAnggaran, sumberAplikasi, bidang, subkegiatanID)
 	if err != nil {
 		return err
 	}
@@ -77,13 +103,15 @@ func (p *PelaksanaanDocumentController) UploadDocument(c echo.Context) error {
 	}
 
 	document, err := p.documents.Create(c.Request().Context(), tahunAnggaran, model.PelaksanaanDocumentPayload{
-		SubkegiatanID: subkegiatanID,
-		Nama:          nama,
-		OriginalName:  file.OriginalName,
-		MimeType:      file.MimeType,
-		Size:          file.Size,
-		URL:           file.URL,
-		IsDokumenDSSD: parseDocumentBoolForm(c.FormValue("is_dokumen_dssd")),
+		SumberAplikasi: sumberAplikasi,
+		Bidang:         bidang,
+		SubkegiatanID:  subkegiatanID,
+		Nama:           nama,
+		OriginalName:   file.OriginalName,
+		MimeType:       file.MimeType,
+		Size:           file.Size,
+		URL:            file.URL,
+		IsDokumenDSSD:  parseDocumentBoolForm(c.FormValue("is_dokumen_dssd")),
 	})
 	if err != nil {
 		deletePelaksanaanDocumentStoredFile(c, file.URL)
@@ -196,11 +224,48 @@ func pelaksanaanDocumentListParams(c echo.Context) (model.PelaksanaanDocumentLis
 
 	return model.PelaksanaanDocumentListParams{
 		TahunAnggaran:     tahunAnggaran,
+		SumberAplikasi:    documentQueryValue(c, "sumber_aplikasi", "sumberAplikasi", "source_app", "sourceApp"),
+		Bidang:            documentQueryValue(c, "bidang"),
 		Search:            c.QueryParam("search"),
 		SubkegiatanPrefix: documentQueryValue(c, "subkegiatan_prefix", "subkegiatanPrefix"),
 		Page:              parsePositiveDocumentQueryInt(c.QueryParam("page"), 1),
 		Limit:             parsePositiveDocumentQueryInt(c.QueryParam("limit"), 10),
 	}, nil
+}
+
+func documentFormValue(c echo.Context, keys ...string) string {
+	for _, key := range keys {
+		value := strings.TrimSpace(c.FormValue(key))
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func validateArsipSource(value string) error {
+	if !allowedArsipSources[strings.ToLower(strings.TrimSpace(value))] {
+		return echo.NewHTTPError(http.StatusBadRequest, "sumber aplikasi arsip tidak valid")
+	}
+	return nil
+}
+
+func validateArsipBidang(value string) error {
+	if !allowedArsipBidang[strings.ToLower(strings.TrimSpace(value))] {
+		return echo.NewHTTPError(http.StatusBadRequest, "bidang arsip tidak valid")
+	}
+	return nil
+}
+
+func defaultBidangForArsipSource(source string) string {
+	switch strings.ToLower(strings.TrimSpace(source)) {
+	case "sidak":
+		return "dukcapil"
+	case "arsip_pegawai":
+		return "sekretariat"
+	default:
+		return "pmk"
+	}
 }
 
 func documentQueryValue(c echo.Context, keys ...string) string {
@@ -265,7 +330,7 @@ func parseDocumentBoolForm(value string) bool {
 	}
 }
 
-func savePelaksanaanDocumentUpload(c echo.Context, tahunAnggaran string, subkegiatanID *int64) (model.PelaksanaanDocumentPayload, error) {
+func savePelaksanaanDocumentUpload(c echo.Context, tahunAnggaran string, sumberAplikasi string, bidang string, subkegiatanID *int64) (model.PelaksanaanDocumentPayload, error) {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
 		return model.PelaksanaanDocumentPayload{}, echo.NewHTTPError(http.StatusBadRequest, "file dokumen wajib diupload")
@@ -281,7 +346,14 @@ func savePelaksanaanDocumentUpload(c echo.Context, tahunAnggaran string, subkegi
 	if subkegiatanID != nil {
 		owner = strconv.FormatInt(*subkegiatanID, 10)
 	}
-	baseDir := filepath.Join("uploads", "pelaksanaan-documents", strings.TrimSpace(tahunAnggaran), owner)
+	baseDir := filepath.Join(
+		"uploads",
+		"arsip",
+		strings.TrimSpace(tahunAnggaran),
+		strings.ToLower(strings.TrimSpace(sumberAplikasi)),
+		strings.ToLower(strings.TrimSpace(bidang)),
+		owner,
+	)
 	if err := os.MkdirAll(baseDir, 0o755); err != nil {
 		return model.PelaksanaanDocumentPayload{}, echo.NewHTTPError(http.StatusInternalServerError, "folder upload gagal dibuat")
 	}
@@ -359,6 +431,7 @@ func pelaksanaanDocumentStoragePath(storageURL string) (string, error) {
 func allowedPelaksanaanDocumentStoragePrefix(cleanSlashPath string) bool {
 	allowedPrefixes := []string{
 		"uploads/pelaksanaan-documents/",
+		"uploads/arsip/",
 		"uploads/realisasi-subkegiatan/",
 	}
 	for _, prefix := range allowedPrefixes {

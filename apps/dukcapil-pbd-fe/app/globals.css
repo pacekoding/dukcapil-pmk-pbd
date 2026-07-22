@@ -31,8 +31,8 @@
 @theme inline {
   /* FONTS */
 
-  --font-heading: var(--font-sans);
-  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading-stack);
+  --font-sans: var(--font-body-stack);
 
   /* APP */
 
@@ -128,6 +128,15 @@
 ========================= */
 
 :root {
+  /* FONTS */
+
+  --font-body-stack:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-heading-stack:
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+
   /* APP */
 
   --background: #f6f8fb;
@@ -411,6 +420,18 @@
   --sidebar-accent-foreground: #1e3a8a;
 }
 
+.dashboard-theme-optimaInfo {
+  --color-pbd-navy: #0f3f4a;
+  --color-pbd-blue: #0f766e;
+  --color-pbd-bg: #f3fbfb;
+  --color-pbd-line: #cbe6e5;
+  --primary: #0f3f4a;
+  --ring: #0f766e;
+  --sidebar-primary: #0f3f4a;
+  --sidebar-accent: #ecfdf5;
+  --sidebar-accent-foreground: #0f3f4a;
+}
+
 .dashboard-theme-arsip {
   --color-pbd-navy: #3f3f1f;
   --color-pbd-blue: #8a6f18;
@@ -531,6 +552,38 @@
   border-color: #bfdbfe;
 }
 
+.dashboard-theme-simonev .bg-blue-50 {
+  background-color: #ecfdf5;
+}
+
+.dashboard-theme-simonev .text-blue-700 {
+  color: #047857;
+}
+
+.dashboard-theme-simonev .ring-blue-100 {
+  --tw-ring-color: #a7f3d0;
+}
+
+.dashboard-theme-simonev .border-blue-100 {
+  border-color: #a7f3d0;
+}
+
+.dashboard-theme-optimaInfo .bg-blue-50 {
+  background-color: #ecfdf5;
+}
+
+.dashboard-theme-optimaInfo .text-blue-700 {
+  color: #0f766e;
+}
+
+.dashboard-theme-optimaInfo .ring-blue-100 {
+  --tw-ring-color: #99f6e4;
+}
+
+.dashboard-theme-optimaInfo .border-blue-100 {
+  border-color: #99f6e4;
+}
+
 .dashboard-theme-arsip .bg-blue-50 {
   background-color: #f7f4e5;
 }
@@ -569,6 +622,8 @@
 .dashboard-theme-aspirasiku .text-pbd-navy,
 .dashboard-theme-sidoka .text-pbd-navy,
 .dashboard-theme-sidak .text-pbd-navy,
+.dashboard-theme-simonev .text-pbd-navy,
+.dashboard-theme-optimaInfo .text-pbd-navy,
 .dashboard-theme-arsip .text-pbd-navy,
 .dashboard-theme-settings .text-pbd-navy {
   color: #10243f;
@@ -580,6 +635,8 @@
 .dashboard-theme-aspirasiku .hover\:text-pbd-navy:hover,
 .dashboard-theme-sidoka .hover\:text-pbd-navy:hover,
 .dashboard-theme-sidak .hover\:text-pbd-navy:hover,
+.dashboard-theme-simonev .hover\:text-pbd-navy:hover,
+.dashboard-theme-optimaInfo .hover\:text-pbd-navy:hover,
 .dashboard-theme-arsip .hover\:text-pbd-navy:hover,
 .dashboard-theme-settings .hover\:text-pbd-navy:hover {
   color: #10243f;
@@ -588,4 +645,60 @@
 .app-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #b7c4d4 transparent;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .sisurat-print-area,
+  .sisurat-print-area *,
+  .simonev-print-area,
+  .simonev-print-area * {
+    visibility: visible;
+  }
+
+  .sisurat-print-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    overflow: visible !important;
+  }
+
+  .simonev-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-sizing: border-box !important;
+    min-height: auto !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    padding: 10mm 12mm !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  .simonev-print-area *,
+  .simonev-print-area *::before,
+  .simonev-print-area *::after {
+    box-sizing: border-box !important;
+  }
+
+  .sisurat-document-sheet {
+    margin: 0 auto !important;
+    box-shadow: none !important;
+  }
 }
