@@ -32,6 +32,7 @@ type ArsipPegawaiPayload struct {
 }
 
 type ArsipPegawaiDocumentPayload struct {
+	File          *StoredFileInput
 	PegawaiID     int64
 	TahunAnggaran string
 	Bidang        string
@@ -76,8 +77,11 @@ type ArsipPegawaiDocument struct {
 	FileSize       int64     `json:"fileSize" gorm:"column:file_size"`
 	Status         string    `json:"status" gorm:"column:status"`
 	StoredFileName string    `json:"storedFileName" gorm:"column:stored_file_name"`
+	FileID         *int64    `json:"fileId,omitempty" gorm:"column:file_id"`
+	ChecksumSHA256 string    `json:"checksumSha256,omitempty" gorm:"column:checksum_sha256"`
 	StorageURL     string    `json:"-" gorm:"column:storage_url"`
 	DownloadURL    string    `json:"downloadUrl" gorm:"-"`
+	PreviewURL     string    `json:"previewUrl,omitempty" gorm:"-"`
 	UploadedAt     time.Time `json:"uploadedAt" gorm:"column:uploaded_at"`
 }
 

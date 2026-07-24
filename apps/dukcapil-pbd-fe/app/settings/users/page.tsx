@@ -51,6 +51,7 @@ import type {
   AdminUser,
   CreateAdminUserPayload,
   SystemAccess,
+  UserRegionScope,
   UpdateAdminUserPayload,
 } from "@/types/admin-user";
 import { roleOptions, systemAccessOptions } from "@/types/admin-user";
@@ -60,6 +61,7 @@ type UserForm = {
   name: string;
   role: AdminRole;
   systemAccess: SystemAccess[];
+  regionScope: UserRegionScope;
   password: string;
   isActive: boolean;
 };
@@ -69,6 +71,11 @@ const emptyForm: UserForm = {
   name: "",
   role: "admin_sekretariat",
   systemAccess: [],
+  regionScope: {
+    kabupatenKota: "",
+    distrik: "",
+    kampung: "",
+  },
   password: "",
   isActive: true,
 };
@@ -129,6 +136,9 @@ export default function SettingsUsersPage() {
         item.username,
         item.role,
         item.systemAccess.join(" "),
+        item.regionScope?.kabupatenKota ?? "",
+        item.regionScope?.distrik ?? "",
+        item.regionScope?.kampung ?? "",
         item.isActive ? "aktif" : "nonaktif",
       ]
         .join(" ")
@@ -155,6 +165,7 @@ export default function SettingsUsersPage() {
       name: item.name,
       role: item.role,
       systemAccess: item.systemAccess ?? [],
+      regionScope: item.regionScope ?? emptyForm.regionScope,
       password: "",
       isActive: item.isActive,
     });
@@ -196,6 +207,7 @@ export default function SettingsUsersPage() {
           name: form.name.trim(),
           role: form.role,
           systemAccess: form.systemAccess,
+          regionScope: form.regionScope,
           isActive: form.isActive,
         };
         const updated = await updateAdminUser(editingId, payload);
@@ -209,6 +221,7 @@ export default function SettingsUsersPage() {
           name: form.name.trim(),
           role: form.role,
           systemAccess: form.systemAccess,
+          regionScope: form.regionScope,
           password: form.password,
           isActive: form.isActive,
         };
@@ -378,6 +391,61 @@ export default function SettingsUsersPage() {
               </label>
               <div className="grid gap-2 md:col-span-2">
                 <p className="text-sm font-bold text-pbd-navy">
+                  Scope Wilayah MACEKU PKK
+                </p>
+                <div className="grid gap-4 rounded-lg border border-slate-200 p-3 md:grid-cols-3">
+                  <OptionalFormInput
+                    label="Kabupaten/Kota"
+                    value={form.regionScope.kabupatenKota}
+                    placeholder="Contoh: Kota Sorong"
+                    onChange={(value) =>
+                      setForm((current) => ({
+                        ...current,
+                        regionScope: {
+                          ...current.regionScope,
+                          kabupatenKota: value,
+                          distrik: value ? current.regionScope.distrik : "",
+                          kampung: value ? current.regionScope.kampung : "",
+                        },
+                      }))
+                    }
+                  />
+                  <OptionalFormInput
+                    label="Kecamatan/Distrik"
+                    value={form.regionScope.distrik}
+                    placeholder="Contoh: Sorong Barat"
+                    onChange={(value) =>
+                      setForm((current) => ({
+                        ...current,
+                        regionScope: {
+                          ...current.regionScope,
+                          distrik: value,
+                          kampung: value ? current.regionScope.kampung : "",
+                        },
+                      }))
+                    }
+                  />
+                  <OptionalFormInput
+                    label="Desa/Kampung"
+                    value={form.regionScope.kampung}
+                    placeholder="Contoh: Malawele"
+                    onChange={(value) =>
+                      setForm((current) => ({
+                        ...current,
+                        regionScope: {
+                          ...current.regionScope,
+                          kampung: value,
+                        },
+                      }))
+                    }
+                  />
+                </div>
+                <p className="text-xs text-slate-500">
+                  Scope ini dipakai untuk pembatasan backend modul MACEKU PKK.
+                </p>
+              </div>
+              <div className="grid gap-2 md:col-span-2">
+                <p className="text-sm font-bold text-pbd-navy">
                   Hak Akses Sistem
                 </p>
                 <div className="grid gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-2">
@@ -496,7 +564,14 @@ export default function SettingsUsersPage() {
                     {item.name}
                   </TableCell>
                   <TableCell>{item.username}</TableCell>
-                  <TableCell>{formatRole(item.role)}</TableCell>
+                  <TableCell>
+                    <span className="font-medium">{formatRole(item.role)}</span>
+                    {formatRegionScope(item.regionScope) ? (
+                      <span className="mt-1 block text-xs text-slate-500">
+                        {formatRegionScope(item.regionScope)}
+                      </span>
+                    ) : null}
+                  </TableCell>
                   <TableCell className="min-w-[260px] whitespace-normal">
                     {formatSystemAccess(item.systemAccess)}
                   </TableCell>
@@ -646,6 +721,29 @@ function FormInput({
   );
 }
 
+function OptionalFormInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-bold text-pbd-navy">{label}</span>
+      <Input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+      />
+    </label>
+  );
+}
+
 function formatRole(role: string) {
   return role
     .split(/[-_\s]+/)
@@ -664,4 +762,15 @@ function formatSystemAccess(values: string[]) {
   );
 
   return values.map((value) => labels.get(value as SystemAccess) ?? value).join(", ");
+}
+
+function formatRegionScope(scope?: UserRegionScope) {
+  if (!scope) {
+    return "";
+  }
+
+  return [scope.kabupatenKota, scope.distrik, scope.kampung]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join(" / ");
 }

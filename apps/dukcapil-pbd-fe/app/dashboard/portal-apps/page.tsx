@@ -30,6 +30,11 @@ import type { PortalAppStatus, PortalAppStatusItem } from "@/types/portal-app";
 
 const portalApps = [
   {
+    accessKey: "maceku_pkk",
+    title: "MACEKU PKK",
+    subtitle: "Manajemen Cakupan Keluarga PKK",
+  },
+  {
     accessKey: "sibum",
     title: "SIBUM Kampung",
     subtitle: "Sistem Informasi BUM Kampung",
@@ -89,6 +94,7 @@ const portalApps = [
 const statusOptions: PortalAppStatus[] = ["Aktif", "Pemeliharaan", "Nonaktif"];
 
 const defaultStatuses: Record<string, PortalAppStatus> = {
+  maceku_pkk: "Aktif",
   sibum: "Aktif",
   sikampung: "Pemeliharaan",
   sitekad: "Aktif",

@@ -18,6 +18,24 @@ Backend Go memakai struktur `cmd/api` sebagai entrypoint dan `internal/` untuk `
 
 ## Menjalankan dengan Docker
 
+Salin `.env.example` menjadi `.env`, lalu pastikan `UPLOADS_HOST_PATH` menunjuk ke
+direktori absolut di host. Direktori ini menyimpan file pengguna di luar lifecycle
+container.
+
+Mac:
+
+```bash
+mkdir -p /Users/Shared/dukcapil-pmk/uploads
+```
+
+Linux:
+
+```bash
+sudo install -d -m 0770 -o 10001 -g 10001 /srv/dukcapil-pmk/uploads
+```
+
+Setelah direktori tersedia:
+
 ```bash
 docker compose up --build
 ```
@@ -61,6 +79,7 @@ POSTGRES_DB=dukcapil_pbd
 POSTGRES_USER=dukcapil_pbd
 POSTGRES_PASSWORD=dukcapil_pbd_password
 POSTGRES_PORT=5432
+DATABASE_URL=postgres://dukcapil_pbd:dukcapil_pbd_password@dukcapil-pbd-db:5432/dukcapil_pbd?sslmode=disable
 NEXT_PUBLIC_API_BASE_URL=
 NEXT_PUBLIC_API_PREFIX=/api/backend
 SERVER_API_BASE_URL=http://dukcapil-pbd-be:8080
@@ -68,9 +87,62 @@ SERVER_API_PREFIX=/api/v1
 CORS_ALLOWED_ORIGIN=*
 AUTH_COOKIE_SECURE=false
 JWT_SECRET=dev-secret-change-me
+UPLOADS_HOST_PATH=/Users/Shared/dukcapil-pmk/uploads
+STORAGE_ROOT=/app/storage/uploads
+MAX_UPLOAD_SIZE_MB=20
 ```
 
 Frontend memakai route proxy Next.js `/api/backend` untuk meneruskan request ke backend Go. Dashboard API wajib login dan token disimpan sebagai cookie HTTP-only.
+
+`STORAGE_ROOT` adalah path di dalam container backend. Jangan mengisinya dengan
+path host. `MAX_UPLOAD_SIZE_MB` diterapkan oleh backend dan diteruskan ke validasi
+frontend saat image dibangun.
+
+## Penyimpanan File
+
+File PDF dan image disimpan di bind mount host, sedangkan PostgreSQL hanya
+menyimpan metadata dan storage key relatif. Format yang diterima adalah PDF,
+JPEG, PNG, dan WebP. Nama file fisik menggunakan UUID dan penulisan dilakukan
+secara atomik tanpa menimpa file yang sudah ada.
+
+Endpoint file baru menggunakan ID metadata:
+
+```txt
+GET /api/backend/files/{file_id}/preview
+GET /api/backend/files/{file_id}/download
+GET /api/backend/website/files/{file_id}/preview
+GET /api/backend/website/files/{file_id}/download
+```
+
+Endpoint tanpa `/website` memerlukan login dan pemeriksaan scope. Endpoint
+website hanya dapat membuka file OPTIMA yang metadata-nya public dan artikel
+induknya sedang Published dalam periode tayang.
+
+Panduan arsitektur, migrasi volume lama, backup, dan restore tersedia di
+[`docs/02_FILE_UPLOAD_STORAGE_RULES.md`](docs/02_FILE_UPLOAD_STORAGE_RULES.md).
+
+## Backup Wajib
+
+Backup portal harus selalu mencakup dump PostgreSQL dan folder
+`UPLOADS_HOST_PATH` dari waktu yang sama. Salah satu tanpa yang lain tidak cukup.
+
+Contoh:
+
+```bash
+set -a
+. ./.env
+set +a
+mkdir -p backups
+docker compose exec -T dukcapil-pbd-db sh -lc \
+  'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' \
+  > backups/dukcapil-pbd.dump
+tar -C "$(dirname "$UPLOADS_HOST_PATH")" \
+  -czf backups/dukcapil-pbd-uploads.tar.gz "$(basename "$UPLOADS_HOST_PATH")"
+```
+
+Jangan menjalankan `docker compose down -v` pada server yang menyimpan data.
+Opsi `-v` menghapus volume PostgreSQL. Bind mount upload tidak menggantikan
+kebutuhan backup.
 
 User seed backend:
 

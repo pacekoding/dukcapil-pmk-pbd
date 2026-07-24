@@ -1,137 +1,223 @@
-# File Upload and Storage Rules
+# File Upload and Persistent Storage Rules
 
-## Purpose
+## Tujuan
 
-Menetapkan aturan upload, penyimpanan, preview, download, dan penghapusan file agar tidak terjadi kehilangan dokumen atau risiko keamanan.
+Dokumen ini adalah kontrak implementasi upload, penyimpanan, preview, download,
+penghapusan, migrasi, dan backup file portal DUKCAPIL-PBD.
 
-## Scope
+## Cakupan
 
-Berlaku untuk file PDF, Word, Excel, dan image yang diupload sebagai dokumen pendukung subkegiatan.
+Storage persisten dipakai oleh:
 
-## Rules
+- dokumen pelaksanaan dan arsip pegawai;
+- logo serta arsip MACEKU PKK;
+- thumbnail, gambar isi, dan lampiran OPTIMA INFO.
 
-### Allowed Formats
+Import XLSX yang hanya diproses sementara bukan arsip persisten dan tidak masuk
+ke tabel `stored_files`.
 
-Allowed:
+## Arsitektur
 
-- `.pdf`
-- `.doc`
-- `.docx`
-- `.xls`
-- `.xlsx`
-- `.png`
-- `.jpg`
-- `.jpeg`
+- File binary disimpan di filesystem host.
+- PostgreSQL menyimpan metadata dan storage key relatif, bukan binary/base64.
+- Docker memasang `${UPLOADS_HOST_PATH}` ke `${STORAGE_ROOT}`.
+- Nilai Compose yang direkomendasikan untuk `STORAGE_ROOT` adalah
+  `/app/storage/uploads`.
+- Backend harus gagal saat startup jika storage root tidak dapat dibuat, dibaca,
+  atau ditulis.
+- Semua operasi filesystem melalui `internal/storage.Service`:
+  `Save`, `Open`, `Delete`, `Exists`, dan `GetMetadata`.
 
-Current implementation may support subset. Jika menambah image, update frontend accept, backend allowlist, fileType mapper, dan preview route.
-
-### Size Limit
-
-- Default max: 15MB per file.
-- Jika perlu lebih besar, ubah backend limit, reverse proxy limit, dan UI helper.
-
-### Storage Path
-
-Gunakan path:
+Contoh path file baru:
 
 ```txt
-uploads/realisasi-documents/{tahun_anggaran}/{subkegiatan_id}/{random}.{ext}
+private/arsip/sidoka-pmk/2026/{uuid}.pdf
+private/maceku-pkk/lkpj/2026/{uuid}.pdf
+private/maceku-pkk/kepengurusan/2026/{uuid}.webp
+public/optima-info/images/2026/{uuid}.jpg
+public/optima-info/documents/2026/{uuid}.pdf
 ```
 
-Rules:
+`storage_key` di database selalu relatif terhadap `STORAGE_ROOT`. Path absolut,
+path kosong, null byte, dan traversal `..` ditolak.
 
-- Random filename minimal 16 bytes entropy.
-- Original filename hanya metadata.
-- Path DB harus relatif, bukan absolute.
-- Jangan mengizinkan `..` atau path traversal.
+## Format dan Batas
 
-### Upload Sequence
+Format arsip yang diizinkan:
 
-1. Validate auth/role.
-2. Parse multipart.
-3. Validate required fields.
-4. Validate file extension and MIME.
-5. Generate random filename.
-6. Create directory.
-7. Stream copy file to disk.
-8. Insert DB metadata in transaction.
-9. Write audit log.
-10. On DB failure, remove new file.
+| Jenis | Ekstensi | MIME |
+| --- | --- | --- |
+| PDF | `.pdf` | `application/pdf` |
+| JPEG | `.jpg`, `.jpeg` | `image/jpeg` |
+| PNG | `.png` | `image/png` |
+| WebP | `.webp` | `image/webp` |
 
-### Download Sequence
+Validasi backend harus mencocokkan ekstensi, declared MIME, dan magic bytes.
+File kosong, file palsu dengan ekstensi benar, dan format lain ditolak.
 
-1. Validate auth/role.
-2. Load document metadata scoped by tahun anggaran.
-3. Validate file path inside uploads.
-4. Audit download attempt.
-5. Stream file.
+`MAX_UPLOAD_SIZE_MB` mengatur batas file aktual. Backend tetap menghitung byte
+yang dibaca dan tidak hanya mempercayai ukuran multipart dari client. Compose
+meneruskan nilai yang sama ke validasi frontend.
 
-### Preview Sequence
+## Metadata
 
-- PDF and image only.
-- Word/Excel must download.
-- Preview must use `inline` disposition.
+Tabel `stored_files` menyimpan:
 
-### Delete Strategy
+- module, related entity type, related entity ID, dan category;
+- original filename dan UUID stored filename;
+- storage key, MIME, file size, dan SHA-256;
+- visibility `private` atau `public`;
+- uploaded user, created/updated time, dan soft-delete time.
 
-Production preferred:
+Nama asli hanya digunakan sebagai metadata dan `Content-Disposition`. Nama asli
+disanitasi, tetapi Unicode dan spasi yang aman tetap dipertahankan.
 
-- Soft-delete DB row.
-- Keep file until retention window expires.
-- Audit delete.
+## Urutan Upload
 
-If hard delete:
+1. Validasi login, role, system access, wilayah, tahun anggaran, dan metadata.
+2. Validasi ukuran, ekstensi, MIME, dan magic bytes.
+3. Buat path server dari allowlist segment dan UUID v4.
+4. Stream ke file sementara di direktori tujuan sambil menghitung SHA-256.
+5. `fsync`, publish secara atomik tanpa overwrite, lalu sinkronkan direktori.
+6. Simpan metadata file dan foreign key parent dalam transaksi database.
+7. Jika transaksi database gagal, hapus file baru.
+8. Jika file parent diganti, commit metadata baru dan soft-delete metadata lama,
+   lalu hapus binary lama setelah transaksi berhasil.
 
-- Delete DB row first in transaction/audit.
-- Delete file after DB success.
-- Log if file delete fails.
+Upload dengan nama asli yang sama harus menghasilkan storage key berbeda.
 
-### Prevent Accidental Loss
+## Akses File
 
-- Never overwrite existing stored file.
-- Do not reuse original filename as stored filename.
-- Keep backups of uploads volume.
-- Do not run cleanup jobs without dry-run and retention rules.
+Endpoint private:
 
-## Implementation Examples
-
-Path validation:
-
-```go
-clean := filepath.Clean(strings.TrimPrefix(storageURL, "/"))
-if !strings.HasPrefix(filepath.ToSlash(clean), "uploads/realisasi-documents/") {
-  return "", fmt.Errorf("storage path is outside uploads")
-}
+```txt
+GET|HEAD /api/v1/files/{file_id}/preview
+GET|HEAD /api/v1/files/{file_id}/download
 ```
 
-File input accept:
+Endpoint public:
 
-```tsx
-accept="application/pdf,.pdf,.doc,.docx,.xls,.xlsx,image/png,image/jpeg"
+```txt
+GET|HEAD /api/v1/website/files/{file_id}/preview
+GET|HEAD /api/v1/website/files/{file_id}/download
 ```
 
-## Checklist
+Frontend mengakses endpoint tersebut melalui proxy same-origin
+`/api/backend/...`.
 
-- [ ] Extension allowlist.
-- [ ] MIME allowlist.
-- [ ] Random stored filename.
-- [ ] Original filename stored.
-- [ ] File copy streaming.
-- [ ] DB failure removes newly copied file.
-- [ ] Download streams file.
-- [ ] Backup includes uploads.
+Aturan akses:
 
-## Anti-patterns
+- OPTIMA dashboard memerlukan system access `optima_info`.
+- File OPTIMA public hanya tersedia jika visibility public, artikel induk
+  berstatus `Published`, dan tanggal tayang aktif.
+- MACEKU memerlukan system access `maceku_pkk` dan scope wilayah yang sesuai.
+- Arsip private dibatasi oleh tahun anggaran pada token user.
+- Super Admin tetap melalui endpoint terproteksi untuk file private.
+- Storage key tidak dikirim ke response JSON.
 
-- Storing upload as base64.
-- Using original filename in disk path.
-- Allowing all MIME types.
-- Deleting file before DB update.
-- Serving private docs via unauthenticated static URL.
+Preview menggunakan `Content-Disposition: inline`; download menggunakan
+`attachment`. Response mengirim MIME yang benar, `nosniff`, `Accept-Ranges`,
+`ETag` jika checksum tersedia, dan mendukung Range request untuk PDF viewer.
 
-## Acceptance Criteria
+Jangan menyajikan file private melalui static route atau URL filesystem.
 
-- Upload invalid format fails before DB insert.
-- Same filename can be uploaded multiple times without overwrite.
-- Download large file does not spike memory.
-- A deleted document can be audited and recovered if policy requires.
+## Penghapusan
+
+- Metadata `stored_files` di-soft-delete di dalam transaksi.
+- Binary dihapus setelah transaksi database berhasil.
+- Kegagalan penghapusan binary dicatat dan tidak membatalkan transaksi parent.
+- Penghapusan parent harus mencakup seluruh metadata file anak.
+- Cleanup otomatis hanya boleh ditambahkan dengan retention policy, dry-run,
+  dan audit yang eksplisit.
+
+## Konfigurasi Host
+
+Mac:
+
+```env
+UPLOADS_HOST_PATH=/Users/Shared/dukcapil-pmk/uploads
+STORAGE_ROOT=/app/storage/uploads
+MAX_UPLOAD_SIZE_MB=20
+```
+
+Linux:
+
+```env
+UPLOADS_HOST_PATH=/srv/dukcapil-pmk/uploads
+STORAGE_ROOT=/app/storage/uploads
+MAX_UPLOAD_SIZE_MB=20
+```
+
+Siapkan direktori Linux agar UID/GID backend `10001:10001` dapat menulis:
+
+```bash
+sudo install -d -m 0770 -o 10001 -g 10001 /srv/dukcapil-pmk/uploads
+```
+
+## Migrasi Volume Docker Lama
+
+Versi lama menggunakan named volume pada `/app/uploads`. Sebelum menjalankan
+Compose baru, salin isinya ke bind mount host dan jangan hapus volume lama:
+
+```bash
+set -a
+. ./.env
+set +a
+mkdir -p "$UPLOADS_HOST_PATH"
+docker run --rm \
+  -v dukcapil-pbd_dukcapil-pbd-uploads:/source:ro \
+  -v "$UPLOADS_HOST_PATH":/target \
+  alpine:3.20 sh -c 'cp -a /source/. /target/'
+```
+
+Nama volume dapat diperiksa dengan `docker volume ls`. Setelah aplikasi baru
+aktif, bandingkan jumlah file dan checksum file penting sebelum mempertimbangkan
+penghapusan volume lama.
+
+Migrasi SQL `000011_persistent_file_storage` membackfill metadata dan foreign key
+untuk path legacy `/uploads/...`. Row legacy yang binary-nya sudah hilang tetap
+tidak dapat direkonstruksi; file tersebut harus diunggah ulang.
+
+## Backup dan Restore
+
+Backup konsisten harus berisi dua artefak dari waktu yang sama:
+
+```bash
+set -a
+. ./.env
+set +a
+mkdir -p backups
+docker compose exec -T dukcapil-pbd-db sh -lc \
+  'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' \
+  > backups/dukcapil-pbd.dump
+tar -C "$(dirname "$UPLOADS_HOST_PATH")" \
+  -czf backups/dukcapil-pbd-uploads.tar.gz "$(basename "$UPLOADS_HOST_PATH")"
+```
+
+Restore dilakukan dengan menghentikan traffic upload, mengembalikan folder file
+ke `UPLOADS_HOST_PATH`, lalu menjalankan `pg_restore` ke database tujuan. Setelah
+restore, periksa permission direktori, jalankan aplikasi, dan validasi checksum
+serta endpoint preview/download.
+
+Jangan menjalankan:
+
+```bash
+docker compose down -v
+```
+
+Opsi `-v` menghapus volume PostgreSQL. Bind mount upload tetap harus dibackup
+karena penghapusan folder host tidak dilindungi Docker.
+
+## Checklist Verifikasi
+
+- [ ] Storage root startup check berhasil.
+- [ ] PDF, JPEG, PNG, dan WebP valid dapat diunggah.
+- [ ] Format palsu, file kosong, dan file terlalu besar ditolak.
+- [ ] Dua upload bernama sama menghasilkan UUID berbeda.
+- [ ] Kegagalan database tidak meninggalkan file orphan.
+- [ ] Metadata hanya menyimpan path relatif dan checksum SHA-256.
+- [ ] User tanpa izin tidak dapat preview/download file private.
+- [ ] Draft OPTIMA tidak dapat diakses dari endpoint public.
+- [ ] Thumbnail dan PDF dapat dirender melalui proxy Next.js.
+- [ ] File tetap ada setelah rebuild dan restart container.
+- [ ] Backup PostgreSQL dan folder uploads tersedia.

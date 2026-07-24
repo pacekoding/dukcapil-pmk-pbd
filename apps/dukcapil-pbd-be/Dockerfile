@@ -10,12 +10,14 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /out/api ./cmd/api
 
 FROM alpine:3.20
 
-RUN adduser -D -H appuser
+RUN addgroup -S -g 10001 appgroup \
+  && adduser -S -D -H -u 10001 -G appgroup appuser
 
 WORKDIR /app
 
 COPY --from=build /out/api /app/api
-RUN mkdir -p /app/uploads && chown -R appuser:appuser /app/uploads
+RUN mkdir -p /app/storage/uploads \
+  && chown -R appuser:appgroup /app/storage
 
 USER appuser
 

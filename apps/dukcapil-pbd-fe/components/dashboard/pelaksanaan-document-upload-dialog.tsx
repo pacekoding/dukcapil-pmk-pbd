@@ -24,24 +24,14 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { uploadDokumenPelaksanaan } from "@/lib/api/pelaksanaan-documents";
+import {
+  ARCHIVE_FILE_ACCEPT,
+  validateClientUpload,
+} from "@/lib/api/file-policy";
 import { getSubkegiatan } from "@/lib/api/subkegiatan";
 import { cn } from "@/lib/utils";
 import type { PelaksanaanDocument } from "@/types/pelaksanaan-documents";
 import type { Subkegiatan } from "@/types/subkegiatan";
-
-const DOCUMENT_ACCEPT =
-  "application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/png,image/jpeg";
-const ALLOWED_EXTENSIONS = [
-  ".pdf",
-  ".doc",
-  ".docx",
-  ".xls",
-  ".xlsx",
-  ".png",
-  ".jpg",
-  ".jpeg",
-];
-const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
 
 type PelaksanaanDocumentUploadDialogProps = {
   open: boolean;
@@ -64,11 +54,6 @@ type PelaksanaanDocumentUploadFormProps = {
   bidang: "sekretariat" | "dukcapil" | "pmk";
   subkegiatanPrefix?: string;
   subkegiatanRequired?: boolean;
-};
-
-const fileExtension = (fileName: string) => {
-  const extension = fileName.slice(fileName.lastIndexOf(".")).toLowerCase();
-  return extension.startsWith(".") ? extension : "";
 };
 
 const defaultDocumentName = (fileName: string) =>
@@ -173,10 +158,14 @@ export function PelaksanaanDocumentUploadForm({
     }
 
     setNama(defaultDocumentName(file.name));
-    if (!ALLOWED_EXTENSIONS.includes(fileExtension(file.name))) {
-      setFileError("Format file tidak didukung.");
-    } else if (file.size > MAX_UPLOAD_SIZE) {
-      setFileError("Ukuran file maksimal 15MB.");
+    try {
+      validateClientUpload(file, "archive");
+    } catch (validationError) {
+      setFileError(
+        validationError instanceof Error
+          ? validationError.message
+          : "File tidak valid.",
+      );
     }
   };
 
@@ -229,7 +218,7 @@ export function PelaksanaanDocumentUploadForm({
             ref={fileInputRef}
             id={`${idPrefix}-file`}
             type="file"
-            accept={DOCUMENT_ACCEPT}
+            accept={ARCHIVE_FILE_ACCEPT}
             disabled={uploading}
             onChange={(event) =>
               handleFileChange(event.target.files?.[0] ?? null)

@@ -25,22 +25,33 @@ func (r Role) Valid() bool {
 }
 
 type User struct {
-	Username     string   `json:"username"`
-	Name         string   `json:"name"`
-	Role         Role     `json:"role"`
-	SystemAccess []string `json:"systemAccess"`
+	ID           int64           `json:"id"`
+	Username     string          `json:"username"`
+	Name         string          `json:"name"`
+	Role         Role            `json:"role"`
+	SystemAccess []string        `json:"systemAccess"`
+	RegionScope  UserRegionScope `json:"regionScope"`
+}
+
+type UserRegionScope struct {
+	KabupatenKota string `json:"kabupatenKota"`
+	Distrik       string `json:"distrik"`
+	Kampung       string `json:"kampung"`
 }
 
 type AdminUserEntity struct {
-	ID           int64          `gorm:"primaryKey;column:id"`
-	Username     string         `gorm:"column:username"`
-	FullName     string         `gorm:"column:full_name"`
-	Role         Role           `gorm:"column:role"`
-	SystemAccess pq.StringArray `gorm:"type:text[];column:system_access"`
-	PasswordHash string         `gorm:"column:password_hash"`
-	IsActive     bool           `gorm:"column:is_active"`
-	CreatedAt    time.Time      `gorm:"column:created_at"`
-	UpdatedAt    time.Time      `gorm:"column:updated_at"`
+	ID            int64          `gorm:"primaryKey;column:id"`
+	Username      string         `gorm:"column:username"`
+	FullName      string         `gorm:"column:full_name"`
+	Role          Role           `gorm:"column:role"`
+	SystemAccess  pq.StringArray `gorm:"type:text[];column:system_access"`
+	KabupatenKota string         `gorm:"column:wilayah_kabupaten_kota"`
+	Distrik       string         `gorm:"column:wilayah_distrik"`
+	Kampung       string         `gorm:"column:wilayah_kampung"`
+	PasswordHash  string         `gorm:"column:password_hash"`
+	IsActive      bool           `gorm:"column:is_active"`
+	CreatedAt     time.Time      `gorm:"column:created_at"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at"`
 }
 
 func (AdminUserEntity) TableName() string {
@@ -49,10 +60,16 @@ func (AdminUserEntity) TableName() string {
 
 func (u AdminUserEntity) ToUser() User {
 	return User{
+		ID:           u.ID,
 		Username:     u.Username,
 		Name:         u.FullName,
 		Role:         u.Role,
 		SystemAccess: []string(u.SystemAccess),
+		RegionScope: UserRegionScope{
+			KabupatenKota: u.KabupatenKota,
+			Distrik:       u.Distrik,
+			Kampung:       u.Kampung,
+		},
 	}
 }
 
@@ -63,38 +80,46 @@ func (u AdminUserEntity) ToAdminUser() AdminUser {
 		Name:         u.FullName,
 		Role:         u.Role,
 		SystemAccess: []string(u.SystemAccess),
-		IsActive:     u.IsActive,
-		CreatedAt:    formatJSONTime(u.CreatedAt),
-		UpdatedAt:    formatJSONTime(u.UpdatedAt),
+		RegionScope: UserRegionScope{
+			KabupatenKota: u.KabupatenKota,
+			Distrik:       u.Distrik,
+			Kampung:       u.Kampung,
+		},
+		IsActive:  u.IsActive,
+		CreatedAt: formatJSONTime(u.CreatedAt),
+		UpdatedAt: formatJSONTime(u.UpdatedAt),
 	}
 }
 
 type AdminUser struct {
-	ID           int64    `json:"id"`
-	Username     string   `json:"username"`
-	Name         string   `json:"name"`
-	Role         Role     `json:"role"`
-	SystemAccess []string `json:"systemAccess"`
-	IsActive     bool     `json:"isActive"`
-	CreatedAt    string   `json:"createdAt"`
-	UpdatedAt    string   `json:"updatedAt"`
+	ID           int64           `json:"id"`
+	Username     string          `json:"username"`
+	Name         string          `json:"name"`
+	Role         Role            `json:"role"`
+	SystemAccess []string        `json:"systemAccess"`
+	RegionScope  UserRegionScope `json:"regionScope"`
+	IsActive     bool            `json:"isActive"`
+	CreatedAt    string          `json:"createdAt"`
+	UpdatedAt    string          `json:"updatedAt"`
 }
 
 type CreateAdminUserRequest struct {
-	Username     string   `json:"username"`
-	Name         string   `json:"name"`
-	Role         Role     `json:"role"`
-	SystemAccess []string `json:"systemAccess"`
-	Password     string   `json:"password"`
-	IsActive     bool     `json:"isActive"`
+	Username     string          `json:"username"`
+	Name         string          `json:"name"`
+	Role         Role            `json:"role"`
+	SystemAccess []string        `json:"systemAccess"`
+	RegionScope  UserRegionScope `json:"regionScope"`
+	Password     string          `json:"password"`
+	IsActive     bool            `json:"isActive"`
 }
 
 type UpdateAdminUserRequest struct {
-	Username     string   `json:"username"`
-	Name         string   `json:"name"`
-	Role         Role     `json:"role"`
-	SystemAccess []string `json:"systemAccess"`
-	IsActive     bool     `json:"isActive"`
+	Username     string          `json:"username"`
+	Name         string          `json:"name"`
+	Role         Role            `json:"role"`
+	SystemAccess []string        `json:"systemAccess"`
+	RegionScope  UserRegionScope `json:"regionScope"`
+	IsActive     bool            `json:"isActive"`
 }
 
 type ResetPasswordRequest struct {

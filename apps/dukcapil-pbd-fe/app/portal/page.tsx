@@ -21,6 +21,7 @@ import {
   MessageSquareText,
   MonitorPlay,
   ShieldCheck,
+  UsersRound,
   Wrench,
   type LucideProps,
 } from "lucide-react";
@@ -63,6 +64,22 @@ type AppMenu = {
 };
 
 const appMenus: AppMenu[] = [
+  {
+    title: "MACEKU PKK",
+    subtitle: "Manajemen Cakupan Keluarga PKK",
+    description:
+      "Kelola profil organisasi PKK dari tingkat kabupaten/kota sampai desa/kampung beserta arsip dokumennya.",
+    href: "/maceku-pkk/dashboard",
+    accessKey: "maceku_pkk",
+    icon: UsersRound,
+    tone: {
+      icon: "bg-rose-50 text-rose-700 ring-rose-100",
+      subtitle: "text-rose-700",
+      button: "border-rose-600 text-rose-700",
+      hover: "group-hover:bg-rose-50 group-hover:border-rose-300",
+    },
+    status: "Aktif",
+  },
   {
     title: "SIBUM Kampung",
     subtitle: "Sistem Informasi BUM Kampung",

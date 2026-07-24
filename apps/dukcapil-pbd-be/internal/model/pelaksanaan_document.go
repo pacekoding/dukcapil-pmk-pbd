@@ -22,6 +22,7 @@ type PelaksanaanDocumentListParams struct {
 }
 
 type PelaksanaanDocumentPayload struct {
+	File           *StoredFileInput
 	SumberAplikasi string
 	Bidang         string
 	SubkegiatanID  *int64
@@ -48,11 +49,14 @@ type PelaksanaanDocumentItem struct {
 	SubkegiatanCode *string   `json:"subkegiatanCode" gorm:"column:subkegiatan_code"`
 	SubkegiatanName *string   `json:"subkegiatanName" gorm:"column:subkegiatan_name"`
 	StoredFileName  string    `json:"storedFileName" gorm:"column:stored_file_name"`
+	FileID          *int64    `json:"fileId,omitempty" gorm:"column:file_id"`
+	ChecksumSHA256  string    `json:"checksumSha256,omitempty" gorm:"column:checksum_sha256"`
 	FileType        string    `json:"fileType" gorm:"-"`
 	MimeType        string    `json:"mimeType" gorm:"column:mime_type"`
 	FileSize        int64     `json:"fileSize" gorm:"column:file_size"`
 	StorageURL      string    `json:"-" gorm:"column:storage_url"`
 	DownloadURL     string    `json:"downloadUrl" gorm:"-"`
+	PreviewURL      string    `json:"previewUrl,omitempty" gorm:"-"`
 	IsDokumenDSSD   bool      `json:"isDokumenDssd" gorm:"column:is_dokumen_dssd"`
 	TanggalUpload   time.Time `json:"tanggalUpload" gorm:"column:tanggal_upload"`
 }
@@ -81,6 +85,7 @@ type PelaksanaanDocumentEntity struct {
 	MimeType         string    `gorm:"column:mime_type"`
 	Size             int64     `gorm:"column:size"`
 	URL              string    `gorm:"column:url"`
+	FileID           *int64    `gorm:"column:file_id"`
 	IsDokumenDSSD    bool      `gorm:"column:is_dokumen_dssd"`
 	Kategori         string    `gorm:"column:kategori"`
 	NomorDokumen     string    `gorm:"column:nomor_dokumen"`

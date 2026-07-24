@@ -360,6 +360,18 @@
   --sidebar-accent-foreground: #14532d;
 }
 
+.dashboard-theme-maceku {
+  --color-pbd-navy: #29434e;
+  --color-pbd-blue: #4f6f75;
+  --color-pbd-bg: #f4f8f7;
+  --color-pbd-line: #d8e4e1;
+  --primary: #29434e;
+  --ring: #4f6f75;
+  --sidebar-primary: #29434e;
+  --sidebar-accent: #edf4f2;
+  --sidebar-accent-foreground: #29434e;
+}
+
 .dashboard-theme-sikampung {
   --color-pbd-navy: #164e63;
   --color-pbd-blue: #0891b2;
@@ -458,6 +470,22 @@
 
 .dashboard-theme-sibum .bg-blue-50 {
   background-color: #ecfdf3;
+}
+
+.dashboard-theme-maceku .bg-blue-50 {
+  background-color: #edf4f2;
+}
+
+.dashboard-theme-maceku .text-blue-700 {
+  color: #3f6268;
+}
+
+.dashboard-theme-maceku .ring-blue-100 {
+  --tw-ring-color: #cdded9;
+}
+
+.dashboard-theme-maceku .border-blue-100 {
+  border-color: #cdded9;
 }
 
 .dashboard-theme-sibum .text-blue-700 {

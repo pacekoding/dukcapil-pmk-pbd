@@ -27,13 +27,15 @@ services:
       APP_ENV: ${APP_ENV:-development}
       PORT: 8080
       CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-*}
-      DATABASE_URL: postgres://${POSTGRES_USER:-dukcapil_pbd}:${POSTGRES_PASSWORD:-dukcapil_pbd_password}@dukcapil-pbd-db:5432/${POSTGRES_DB:-dukcapil_pbd}?sslmode=disable
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-dukcapil_pbd}:${POSTGRES_PASSWORD:-dukcapil_pbd_password}@dukcapil-pbd-db:5432/${POSTGRES_DB:-dukcapil_pbd}?sslmode=disable}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      STORAGE_ROOT: ${STORAGE_ROOT:-/app/storage/uploads}
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-20}
     depends_on:
       dukcapil-pbd-db:
         condition: service_healthy
     volumes:
-      - dukcapil-pbd-uploads:/app/uploads
+      - "${UPLOADS_HOST_PATH:?UPLOADS_HOST_PATH wajib diisi}:/app/storage/uploads"
     ports:
       - "${BE_HOST:-0.0.0.0}:${BE_PORT:-8080}:8080"
     restart: unless-stopped
@@ -44,6 +46,7 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
         NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/backend}
+        NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-20}
     container_name: dukcapil-pbd-fe
     environment:
       NODE_ENV: production
@@ -52,6 +55,7 @@ services:
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
       NEXT_PUBLIC_API_PREFIX: ${NEXT_PUBLIC_API_PREFIX:-/api/backend}
+      NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-20}
       SERVER_API_BASE_URL: ${SERVER_API_BASE_URL:-http://dukcapil-pbd-be:8080}
       SERVER_API_PREFIX: ${SERVER_API_PREFIX:-/api/v1}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
@@ -63,4 +67,3 @@ services:
 
 volumes:
   dukcapil-pbd-postgres-data:
-  dukcapil-pbd-uploads:

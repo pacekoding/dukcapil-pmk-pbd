@@ -72,10 +72,12 @@ func (a *AuthController) Me(c echo.Context) error {
 	return jsonData(c, http.StatusOK, model.SessionResponse{
 		Authenticated: true,
 		User: model.User{
+			ID:           claims.UserID,
 			Username:     claims.Username,
 			Name:         claims.Name,
 			Role:         claims.Role,
 			SystemAccess: claims.SystemAccess,
+			RegionScope:  claims.RegionScope,
 		},
 		TahunAnggaran: claims.TahunAnggaran,
 	})
@@ -98,10 +100,12 @@ func (a *AuthController) SwitchTahunAnggaran(c echo.Context) error {
 	}
 
 	user := model.User{
+		ID:           claims.UserID,
 		Username:     claims.Username,
 		Name:         claims.Name,
 		Role:         claims.Role,
 		SystemAccess: claims.SystemAccess,
+		RegionScope:  claims.RegionScope,
 	}
 	token, err := a.tokens.Issue(user, request.TahunAnggaran)
 	if err != nil {

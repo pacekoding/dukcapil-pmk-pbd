@@ -10,6 +10,7 @@ type DashboardShellProps = {
   children: React.ReactNode;
   theme?:
     | "default"
+    | "maceku"
     | "sibum"
     | "sikampung"
     | "sitekad"

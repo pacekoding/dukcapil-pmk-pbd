@@ -51,6 +51,7 @@ import {
   getPelaksanaanDocuments,
   updatePelaksanaanDocument,
 } from "@/lib/api/pelaksanaan-documents";
+import { withInlineBackendAssetDisposition } from "@/lib/api/assets";
 import { getSubkegiatan } from "@/lib/api/subkegiatan";
 import { getCurrentTahunAnggaran } from "@/lib/tahun-anggaran";
 import type {
@@ -406,14 +407,15 @@ export function PelaksanaanDocumentsPage({
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
                             <a
-                              href={apiEndpoints.pelaksanaanDocumentDownload(
-                                document.id,
+                              href={withInlineBackendAssetDisposition(
+                                document.previewUrl ??
+                                  apiEndpoints.pelaksanaanDocumentDownload(document.id),
                               )}
                               target="_blank"
                               rel="noreferrer"
                             >
                               <Eye className="h-4 w-4" />
-                              Unduh
+                              Lihat
                             </a>
                           </DropdownMenuItem>
                           <DropdownMenuItem

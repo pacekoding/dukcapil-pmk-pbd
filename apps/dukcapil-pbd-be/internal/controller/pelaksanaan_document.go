@@ -2,25 +2,21 @@ package controller
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"mime/multipart"
+	"mime"
 	"net/http"
-	"os"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"dukcapil-pbd-be/internal/fileasset"
 	authmiddleware "dukcapil-pbd-be/internal/middleware"
 	"dukcapil-pbd-be/internal/model"
 
 	"github.com/labstack/echo"
 )
-
-const maxPelaksanaanDocumentUploadSize = 15 << 20
 
 var pelaksanaanDocumentTahunAnggaranPattern = regexp.MustCompile(`^\d{4}$`)
 
@@ -46,10 +42,18 @@ type PelaksanaanDocumentStore interface {
 
 type PelaksanaanDocumentController struct {
 	documents PelaksanaanDocumentStore
+	files     *fileasset.Service
 }
 
-func NewPelaksanaanDocumentController(documents PelaksanaanDocumentStore) *PelaksanaanDocumentController {
-	return &PelaksanaanDocumentController{documents: documents}
+func NewPelaksanaanDocumentController(
+	documents PelaksanaanDocumentStore,
+	files ...*fileasset.Service,
+) *PelaksanaanDocumentController {
+	var service *fileasset.Service
+	if len(files) > 0 {
+		service = files[0]
+	}
+	return &PelaksanaanDocumentController{documents: documents, files: service}
 }
 
 func (p *PelaksanaanDocumentController) ListDocuments(c echo.Context) error {
@@ -89,7 +93,18 @@ func (p *PelaksanaanDocumentController) UploadDocument(c echo.Context) error {
 	if err := validateArsipBidang(bidang); err != nil {
 		return err
 	}
-	file, err := savePelaksanaanDocumentUpload(c, tahunAnggaran, sumberAplikasi, bidang, subkegiatanID)
+	claims, ok := authmiddleware.ClaimsFromContext(c)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "session login tidak valid")
+	}
+	file, err := savePelaksanaanDocumentUpload(
+		c,
+		p.files,
+		tahunAnggaran,
+		sumberAplikasi,
+		bidang,
+		claims.UserID,
+	)
 	if err != nil {
 		return err
 	}
@@ -99,22 +114,23 @@ func (p *PelaksanaanDocumentController) UploadDocument(c echo.Context) error {
 		nama = strings.TrimSpace(c.FormValue("nama_dokumen"))
 	}
 	if nama == "" {
-		nama = file.OriginalName
+		nama = file.OriginalFilename
 	}
 
 	document, err := p.documents.Create(c.Request().Context(), tahunAnggaran, model.PelaksanaanDocumentPayload{
+		File:           &file,
 		SumberAplikasi: sumberAplikasi,
 		Bidang:         bidang,
 		SubkegiatanID:  subkegiatanID,
 		Nama:           nama,
-		OriginalName:   file.OriginalName,
+		OriginalName:   file.OriginalFilename,
 		MimeType:       file.MimeType,
-		Size:           file.Size,
-		URL:            file.URL,
+		Size:           file.FileSize,
+		URL:            file.StorageKey,
 		IsDokumenDSSD:  parseDocumentBoolForm(c.FormValue("is_dokumen_dssd")),
 	})
 	if err != nil {
-		deletePelaksanaanDocumentStoredFile(c, file.URL)
+		deleteManagedStoredFile(c, p.files, file.StorageKey)
 		return echo.NewHTTPError(http.StatusInternalServerError, "dokumen pelaksanaan gagal disimpan")
 	}
 
@@ -122,6 +138,14 @@ func (p *PelaksanaanDocumentController) UploadDocument(c echo.Context) error {
 }
 
 func (p *PelaksanaanDocumentController) DownloadDocument(c echo.Context) error {
+	return p.serveDocument(c, "attachment")
+}
+
+func (p *PelaksanaanDocumentController) PreviewDocument(c echo.Context) error {
+	return p.serveDocument(c, "inline")
+}
+
+func (p *PelaksanaanDocumentController) serveDocument(c echo.Context, disposition string) error {
 	tahunAnggaran, err := pelaksanaanDocumentTahunAnggaran(c)
 	if err != nil {
 		return err
@@ -139,21 +163,15 @@ func (p *PelaksanaanDocumentController) DownloadDocument(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "dokumen pelaksanaan tidak ditemukan")
 	}
 
-	filePath, err := pelaksanaanDocumentStoragePath(document.StorageURL)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "file dokumen tidak ditemukan")
-	}
-	if _, err := os.Stat(filePath); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "file dokumen tidak ditemukan")
-	}
-
-	c.Response().Header().Set(echo.HeaderContentDisposition, documentContentDisposition("attachment", document.Nama))
-	if document.MimeType != "" {
-		c.Response().Header().Set(echo.HeaderContentType, document.MimeType)
-	}
-
-	http.ServeFile(c.Response(), c.Request(), filePath)
-	return nil
+	return serveManagedStoredFile(
+		c,
+		p.files,
+		document.StorageURL,
+		document.MimeType,
+		document.StoredFileName,
+		documentRequestDisposition(c, disposition),
+		false,
+	)
 }
 
 func (p *PelaksanaanDocumentController) UpdateDocument(c echo.Context) error {
@@ -204,7 +222,7 @@ func (p *PelaksanaanDocumentController) DeleteDocument(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "dokumen pelaksanaan tidak ditemukan")
 	}
 
-	deletePelaksanaanDocumentStoredFile(c, document.StorageURL)
+	deleteManagedStoredFile(c, p.files, document.StorageURL)
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -330,158 +348,84 @@ func parseDocumentBoolForm(value string) bool {
 	}
 }
 
-func savePelaksanaanDocumentUpload(c echo.Context, tahunAnggaran string, sumberAplikasi string, bidang string, subkegiatanID *int64) (model.PelaksanaanDocumentPayload, error) {
+func savePelaksanaanDocumentUpload(
+	c echo.Context,
+	files *fileasset.Service,
+	tahunAnggaran string,
+	sumberAplikasi string,
+	bidang string,
+	uploadedBy int64,
+) (model.StoredFileInput, error) {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		return model.PelaksanaanDocumentPayload{}, echo.NewHTTPError(http.StatusBadRequest, "file dokumen wajib diupload")
+		return model.StoredFileInput{}, echo.NewHTTPError(http.StatusBadRequest, "file dokumen wajib diunggah")
 	}
-	if fileHeader.Size > maxPelaksanaanDocumentUploadSize {
-		return model.PelaksanaanDocumentPayload{}, echo.NewHTTPError(http.StatusBadRequest, "ukuran file maksimal 15MB")
+	if files == nil {
+		return model.StoredFileInput{}, echo.NewHTTPError(http.StatusInternalServerError, "storage file belum dikonfigurasi")
 	}
-	if err := validatePelaksanaanDocumentUploadType(fileHeader); err != nil {
-		return model.PelaksanaanDocumentPayload{}, err
-	}
-
-	owner := "umum"
-	if subkegiatanID != nil {
-		owner = strconv.FormatInt(*subkegiatanID, 10)
-	}
-	baseDir := filepath.Join(
-		"uploads",
-		"arsip",
-		strings.TrimSpace(tahunAnggaran),
-		strings.ToLower(strings.TrimSpace(sumberAplikasi)),
-		strings.ToLower(strings.TrimSpace(bidang)),
-		owner,
-	)
-	if err := os.MkdirAll(baseDir, 0o755); err != nil {
-		return model.PelaksanaanDocumentPayload{}, echo.NewHTTPError(http.StatusInternalServerError, "folder upload gagal dibuat")
-	}
-
-	extension := strings.ToLower(filepath.Ext(fileHeader.Filename))
-	fileName := fmt.Sprintf("%s%s", randomDocumentHex(16), extension)
-	targetPath := filepath.Join(baseDir, fileName)
-	if err := copyUploadedDocumentFile(fileHeader, targetPath); err != nil {
-		return model.PelaksanaanDocumentPayload{}, echo.NewHTTPError(http.StatusInternalServerError, "file gagal disimpan")
-	}
-
-	return model.PelaksanaanDocumentPayload{
-		OriginalName: fileHeader.Filename,
-		MimeType:     fileHeader.Header.Get("Content-Type"),
-		Size:         fileHeader.Size,
-		URL:          "/" + filepath.ToSlash(targetPath),
-	}, nil
-}
-
-func validatePelaksanaanDocumentUploadType(header *multipart.FileHeader) error {
-	contentType := strings.ToLower(header.Header.Get("Content-Type"))
-	extension := strings.ToLower(filepath.Ext(header.Filename))
-	allowedExtensions := map[string]bool{
-		".pdf":  true,
-		".doc":  true,
-		".docx": true,
-		".xls":  true,
-		".xlsx": true,
-		".png":  true,
-		".jpg":  true,
-		".jpeg": true,
-	}
-	allowedMimeTypes := map[string]bool{
-		"application/pdf":    true,
-		"application/msword": true,
-		"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
-		"application/vnd.ms-excel": true,
-		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true,
-		"image/png":                true,
-		"image/jpeg":               true,
-		"application/octet-stream": true,
-	}
-	if !allowedExtensions[extension] || (contentType != "" && !allowedMimeTypes[contentType]) {
-		return echo.NewHTTPError(http.StatusBadRequest, "format file tidak didukung")
-	}
-	return nil
-}
-
-func pelaksanaanDocumentStoragePath(storageURL string) (string, error) {
-	normalized := strings.TrimPrefix(strings.TrimSpace(storageURL), "/")
-	if normalized == "" {
-		return "", fmt.Errorf("storage path is empty")
-	}
-	cleanPath := filepath.Clean(normalized)
-	cleanSlashPath := filepath.ToSlash(cleanPath)
-	if !allowedPelaksanaanDocumentStoragePrefix(cleanSlashPath) {
-		return "", fmt.Errorf("storage path is outside uploads")
-	}
-
-	uploadsRoot, err := filepath.Abs("uploads")
+	category := strings.ToLower(strings.TrimSpace(sumberAplikasi + "-" + bidang))
+	category = strings.ReplaceAll(category, "_", "-")
+	file, err := files.Save(c.Request().Context(), fileasset.SaveRequest{
+		Header:          fileHeader,
+		Kind:            fileasset.KindAny,
+		Visibility:      model.FileVisibilityPrivate,
+		Module:          "arsip",
+		RelatedType:     "pelaksanaan_document",
+		Category:        "pelaksanaan",
+		StorageCategory: category,
+		Year:            tahunAnggaran,
+		UploadedBy:      &uploadedBy,
+	})
 	if err != nil {
-		return "", err
+		return model.StoredFileInput{}, managedUploadHTTPError(err)
 	}
-	targetPath, err := filepath.Abs(cleanPath)
-	if err != nil {
-		return "", err
-	}
-	if targetPath != uploadsRoot && !strings.HasPrefix(targetPath, uploadsRoot+string(os.PathSeparator)) {
-		return "", fmt.Errorf("storage path is outside uploads")
-	}
-
-	return targetPath, nil
-}
-
-func allowedPelaksanaanDocumentStoragePrefix(cleanSlashPath string) bool {
-	allowedPrefixes := []string{
-		"uploads/pelaksanaan-documents/",
-		"uploads/arsip/",
-		"uploads/realisasi-subkegiatan/",
-	}
-	for _, prefix := range allowedPrefixes {
-		if strings.HasPrefix(cleanSlashPath, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
-func deletePelaksanaanDocumentStoredFile(c echo.Context, storageURL string) {
-	filePath, err := pelaksanaanDocumentStoragePath(storageURL)
-	if err != nil {
-		c.Logger().Warnf("skip delete document upload %q: %v", storageURL, err)
-		return
-	}
-	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
-		c.Logger().Warnf("delete document upload %q failed: %v", filePath, err)
-	}
+	return file, nil
 }
 
 func documentContentDisposition(disposition string, fileName string) string {
-	safeName := strings.ReplaceAll(filepath.Base(fileName), `"`, "")
-	if safeName == "." || safeName == string(os.PathSeparator) || safeName == "" {
-		safeName = "dokumen"
+	safeName := fileasset.SanitizeFilename(fileName)
+	asciiName := strings.Map(func(character rune) rune {
+		switch {
+		case character == '"' || character == '\\':
+			return -1
+		case character >= 0x20 && character <= 0x7e:
+			return character
+		default:
+			return '_'
+		}
+	}, safeName)
+	if strings.TrimSpace(asciiName) == "" {
+		asciiName = "file"
 	}
-	return fmt.Sprintf(`%s; filename="%s"`, disposition, safeName)
+	encodedName := strings.ReplaceAll(url.PathEscape(safeName), "+", "%20")
+	return fmt.Sprintf(
+		`%s; filename="%s"; filename*=UTF-8''%s`,
+		disposition,
+		asciiName,
+		encodedName,
+	)
 }
 
-func copyUploadedDocumentFile(header *multipart.FileHeader, targetPath string) error {
-	source, err := header.Open()
-	if err != nil {
-		return err
+func documentRequestDisposition(c echo.Context, fallback string) string {
+	switch strings.ToLower(strings.TrimSpace(c.QueryParam("disposition"))) {
+	case "inline":
+		return "inline"
+	case "attachment":
+		return "attachment"
 	}
-	defer source.Close()
-
-	target, err := os.Create(targetPath)
-	if err != nil {
-		return err
+	if strings.TrimSpace(fallback) == "" {
+		return "attachment"
 	}
-	defer target.Close()
-
-	_, err = io.Copy(target, source)
-	return err
+	return fallback
 }
 
-func randomDocumentHex(size int) string {
-	buffer := make([]byte, size)
-	if _, err := rand.Read(buffer); err != nil {
-		return fmt.Sprintf("%d", os.Getpid())
+func documentServeMimeType(mimeType string, originalName string) string {
+	trimmed := strings.TrimSpace(mimeType)
+	if trimmed != "" && !strings.EqualFold(trimmed, "application/octet-stream") {
+		return trimmed
 	}
-	return hex.EncodeToString(buffer)
+	if inferred := mime.TypeByExtension(strings.ToLower(filepath.Ext(originalName))); inferred != "" {
+		return inferred
+	}
+	return trimmed
 }

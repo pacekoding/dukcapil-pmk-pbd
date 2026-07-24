@@ -65,6 +65,16 @@ const menuTitles: Record<
     description: "Sistem Informasi BUM Kampung",
   },
 
+  "/maceku-pkk/dashboard": {
+    title: "MACEKU PKK",
+    description: "Manajemen profil organisasi dan arsip PKK",
+  },
+
+  "/maceku-pkk/data": {
+    title: "Profil PKK",
+    description: "Kelola profil organisasi PKK beserta wilayah dan arsipnya",
+  },
+
   "/sibum/data": {
     title: "Data BUMKam",
     description:
@@ -157,6 +167,11 @@ const menuTitles: Record<
     description: "Kelola informasi aktif yang tampil di website publik",
   },
 
+  "/optima-info/create": {
+    title: "Tambah Informasi",
+    description: "Buat draft informasi baru untuk website publik",
+  },
+
   "/arsip-pegawai": {
     title: "ARSIPKU",
     description: "Data pegawai dan dokumen kepegawaian",
@@ -192,6 +207,17 @@ function getPageInfo(pathname: string) {
 
   if (pathname.startsWith("/sibum/dashboard")) {
     return menuTitles["/sibum/dashboard"];
+  }
+
+  if (pathname.startsWith("/maceku-pkk/dashboard")) {
+    return menuTitles["/maceku-pkk/dashboard"];
+  }
+
+  if (
+    pathname.startsWith("/maceku-pkk/data") ||
+    pathname.startsWith("/maceku-pkk/")
+  ) {
+    return menuTitles["/maceku-pkk/data"];
   }
 
   if (pathname.startsWith("/sibum/data")) {
@@ -264,6 +290,24 @@ function getPageInfo(pathname: string) {
 
   if (pathname.startsWith("/optima-info/dashboard")) {
     return menuTitles["/optima-info/dashboard"];
+  }
+
+  if (pathname.startsWith("/optima-info/create")) {
+    return menuTitles["/optima-info/create"];
+  }
+
+  if (pathname.startsWith("/optima-info/preview")) {
+    return {
+      title: "Preview Informasi",
+      description: "Pratinjau informasi dengan viewer publik",
+    };
+  }
+
+  if (pathname.startsWith("/optima-info/") && pathname.endsWith("/edit")) {
+    return {
+      title: "Edit Informasi",
+      description: "Perbarui draft atau informasi yang sudah diterbitkan",
+    };
   }
 
   if (pathname.startsWith("/arsip-pegawai")) {

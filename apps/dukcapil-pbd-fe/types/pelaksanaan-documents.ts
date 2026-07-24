@@ -17,6 +17,8 @@ export type PelaksanaanDocument = {
   fileType: PelaksanaanDocumentFileType;
   mimeType: string;
   fileSize: number;
+  fileId?: number;
+  checksumSha256?: string;
   downloadUrl: string;
   previewUrl?: string;
   isDokumenDssd: boolean;

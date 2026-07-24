@@ -7,6 +7,10 @@ export const roleOptions = [
 
 export const systemAccessOptions = [
   {
+    value: "maceku_pkk",
+    label: "MACEKU PKK",
+  },
+  {
     value: "sibum",
     label: "SIBUM Kampung",
   },
@@ -56,12 +60,19 @@ export type AdminRole = (typeof roleOptions)[number];
 
 export type SystemAccess = (typeof systemAccessOptions)[number]["value"];
 
+export type UserRegionScope = {
+  kabupatenKota: string;
+  distrik: string;
+  kampung: string;
+};
+
 export type AdminUser = {
   id: number;
   username: string;
   name: string;
   role: AdminRole;
   systemAccess: SystemAccess[];
+  regionScope: UserRegionScope;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -72,6 +83,7 @@ export type CreateAdminUserPayload = {
   name: string;
   role: AdminRole;
   systemAccess: SystemAccess[];
+  regionScope: UserRegionScope;
   password: string;
   isActive: boolean;
 };

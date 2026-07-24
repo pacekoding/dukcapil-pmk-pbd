@@ -169,11 +169,33 @@ func (r *ArsipPegawaiRepository) Delete(ctx context.Context, id int64) (bool, er
 		return false, err
 	}
 
-	result := db.Where("id = ?", id).Delete(&model.ArsipPegawaiEntity{})
-	if result.Error != nil {
-		return false, fmt.Errorf("delete arsip pegawai: %w", result.Error)
+	found := true
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec(`
+			UPDATE stored_files
+			SET deleted_at = NOW(), updated_at = NOW()
+			WHERE module = 'arsip'
+			  AND related_entity_type = 'arsip_pegawai_document'
+			  AND related_entity_id IN (
+			    SELECT id FROM arsip WHERE sumber_aplikasi = 'arsip_pegawai' AND pegawai_id = ?
+			  )
+			  AND deleted_at IS NULL
+		`, id).Error; err != nil {
+			return err
+		}
+		result := tx.Where("id = ?", id).Delete(&model.ArsipPegawaiEntity{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			found = false
+		}
+		return nil
+	})
+	if err != nil {
+		return false, fmt.Errorf("delete arsip pegawai: %w", err)
 	}
-	return result.RowsAffected > 0, nil
+	return found, nil
 }
 
 func (r *ArsipPegawaiRepository) CreateDocument(ctx context.Context, payload model.ArsipPegawaiDocumentPayload) (model.ArsipPegawaiDocument, error) {
@@ -208,7 +230,21 @@ func (r *ArsipPegawaiRepository) CreateDocument(ctx context.Context, payload mod
 		record.StatusVerifikasi = "Lengkap"
 	}
 
-	if err := db.Create(&record).Error; err != nil {
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&record).Error; err != nil {
+			return err
+		}
+		if payload.File == nil {
+			return nil
+		}
+		file, err := createStoredFileRecord(tx, *payload.File, record.ID)
+		if err != nil {
+			return err
+		}
+		record.FileID = &file.ID
+		return tx.Table("arsip").Where("id = ?", record.ID).Update("file_id", file.ID).Error
+	})
+	if err != nil {
 		return model.ArsipPegawaiDocument{}, fmt.Errorf("create dokumen arsip pegawai: %w", err)
 	}
 
@@ -254,14 +290,28 @@ func (r *ArsipPegawaiRepository) DeleteDocument(ctx context.Context, pegawaiID i
 		return document, found, err
 	}
 
-	result := db.Table("arsip").
-		Where("sumber_aplikasi = ? AND pegawai_id = ? AND id = ?", "arsip_pegawai", pegawaiID, id).
-		Delete(&model.PelaksanaanDocumentEntity{})
-	if result.Error != nil {
-		return model.ArsipPegawaiDocument{}, false, fmt.Errorf("delete dokumen arsip pegawai: %w", result.Error)
-	}
-	if result.RowsAffected == 0 {
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if document.FileID != nil {
+			if err := softDeleteStoredFileRecord(tx, *document.FileID); err != nil {
+				return err
+			}
+		}
+		result := tx.Table("arsip").
+			Where("sumber_aplikasi = ? AND pegawai_id = ? AND id = ?", "arsip_pegawai", pegawaiID, id).
+			Delete(&model.PelaksanaanDocumentEntity{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
+	})
+	if err == gorm.ErrRecordNotFound {
 		return model.ArsipPegawaiDocument{}, false, nil
+	}
+	if err != nil {
+		return model.ArsipPegawaiDocument{}, false, fmt.Errorf("delete dokumen arsip pegawai: %w", err)
 	}
 
 	return document, true, nil
@@ -325,11 +375,29 @@ func arsipPegawaiDocumentSelect() string {
 		kategori AS category,
 		nomor_dokumen AS number,
 		tahun_dokumen AS year,
-		mime_type,
-		size AS file_size,
+		file_id,
+		COALESCE(
+		  (SELECT f.mime_type FROM stored_files f WHERE f.id = file_id AND f.deleted_at IS NULL),
+		  mime_type
+		) AS mime_type,
+		COALESCE(
+		  (SELECT f.file_size FROM stored_files f WHERE f.id = file_id AND f.deleted_at IS NULL),
+		  size
+		) AS file_size,
+		COALESCE(
+		  (SELECT f.checksum_sha256 FROM stored_files f WHERE f.id = file_id AND f.deleted_at IS NULL),
+		  ''
+		) AS checksum_sha256,
 		status_verifikasi AS status,
-		COALESCE(original_name, '') AS stored_file_name,
-		url AS storage_url,
+		COALESCE(
+		  (SELECT f.original_filename FROM stored_files f WHERE f.id = file_id AND f.deleted_at IS NULL),
+		  original_name,
+		  ''
+		) AS stored_file_name,
+		COALESCE(
+		  (SELECT f.storage_key FROM stored_files f WHERE f.id = file_id AND f.deleted_at IS NULL),
+		  url
+		) AS storage_url,
 		created_at AS uploaded_at
 	`
 }
@@ -345,7 +413,13 @@ func finalizeArsipPegawaiDocument(record model.ArsipPegawaiDocument) model.Arsip
 		typeSource = storedName
 	}
 	record.FileType = strings.ToUpper(pelaksanaanDocumentFileType(typeSource, record.MimeType))
-	record.DownloadURL = fmt.Sprintf("/api/v1/arsip-pegawai/%d/documents/%d/download", record.PegawaiID, record.ID)
+	if record.FileID != nil && *record.FileID > 0 {
+		record.DownloadURL = fmt.Sprintf("/api/backend/files/%d/download", *record.FileID)
+		record.PreviewURL = fmt.Sprintf("/api/backend/files/%d/preview", *record.FileID)
+	} else {
+		record.DownloadURL = fmt.Sprintf("/api/backend/arsip-pegawai/%d/documents/%d/download", record.PegawaiID, record.ID)
+		record.PreviewURL = fmt.Sprintf("/api/backend/arsip-pegawai/%d/documents/%d/download?disposition=inline", record.PegawaiID, record.ID)
+	}
 	return record
 }
 

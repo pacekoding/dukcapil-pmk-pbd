@@ -18,9 +18,12 @@ export type PegawaiDocument = {
   fileType: string;
   mimeType: string;
   fileSize: number;
+  fileId?: number;
+  checksumSha256?: string;
   status: "Lengkap" | "Perlu Verifikasi";
   storedFileName: string;
   downloadUrl: string;
+  previewUrl?: string;
   uploadedAt: string;
 };
 

@@ -2,17 +2,19 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
+	"dukcapil-pbd-be/internal/fileasset"
+	authmiddleware "dukcapil-pbd-be/internal/middleware"
 	"dukcapil-pbd-be/internal/model"
 
 	"github.com/labstack/echo"
 )
+
+var arsipPegawaiDocumentYearPattern = regexp.MustCompile(`^\d{4}$`)
 
 type ArsipPegawaiStore interface {
 	List(ctx context.Context, params model.ArsipPegawaiListParams) ([]model.ArsipPegawaiItem, error)
@@ -27,10 +29,18 @@ type ArsipPegawaiStore interface {
 
 type ArsipPegawaiController struct {
 	pegawai ArsipPegawaiStore
+	files   *fileasset.Service
 }
 
-func NewArsipPegawaiController(pegawai ArsipPegawaiStore) *ArsipPegawaiController {
-	return &ArsipPegawaiController{pegawai: pegawai}
+func NewArsipPegawaiController(
+	pegawai ArsipPegawaiStore,
+	files ...*fileasset.Service,
+) *ArsipPegawaiController {
+	var service *fileasset.Service
+	if len(files) > 0 {
+		service = files[0]
+	}
+	return &ArsipPegawaiController{pegawai: pegawai, files: service}
 }
 
 func (a *ArsipPegawaiController) List(c echo.Context) error {
@@ -122,7 +132,7 @@ func (a *ArsipPegawaiController) Delete(c echo.Context) error {
 	}
 
 	for _, document := range record.Documents {
-		deletePelaksanaanDocumentStoredFile(c, document.StorageURL)
+		deleteManagedStoredFile(c, a.files, document.StorageURL)
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -150,49 +160,59 @@ func (a *ArsipPegawaiController) UploadDocument(c echo.Context) error {
 		return err
 	}
 
-	file, err := saveArsipPegawaiDocumentUpload(c, tahunAnggaran, bidang, pegawaiID)
-	if err != nil {
-		return err
-	}
-
-	title := strings.TrimSpace(c.FormValue("title"))
-	if title == "" {
-		title = strings.TrimSpace(c.FormValue("nama"))
-	}
-	if title == "" {
-		title = file.OriginalName
-	}
-
 	payload := model.ArsipPegawaiDocumentPayload{
 		PegawaiID:     pegawaiID,
 		TahunAnggaran: tahunAnggaran,
 		Bidang:        bidang,
-		Title:         title,
+		Title:         strings.TrimSpace(c.FormValue("title")),
 		Category:      strings.TrimSpace(c.FormValue("category")),
 		Number:        strings.TrimSpace(c.FormValue("number")),
 		Year:          strings.TrimSpace(c.FormValue("year")),
 		Status:        strings.TrimSpace(c.FormValue("status")),
-		OriginalName:  file.OriginalName,
-		MimeType:      file.MimeType,
-		Size:          file.Size,
-		URL:           file.URL,
 	}
-	if payload.Category == "" {
-		payload.Category = string(model.ArsipPegawaiDocumentLainnya)
+	if payload.Title == "" {
+		payload.Title = strings.TrimSpace(c.FormValue("nama"))
 	}
-	if payload.Status == "" {
-		payload.Status = "Lengkap"
+	if err := validateArsipPegawaiDocumentPayload(&payload); err != nil {
+		return err
 	}
+
+	claims, ok := authmiddleware.ClaimsFromContext(c)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "session login tidak valid")
+	}
+	file, err := saveArsipPegawaiDocumentUpload(c, a.files, tahunAnggaran, bidang, claims.UserID)
+	if err != nil {
+		return err
+	}
+
+	if payload.Title == "" {
+		payload.Title = file.OriginalFilename
+	}
+
+	payload.File = &file
+	payload.OriginalName = file.OriginalFilename
+	payload.MimeType = file.MimeType
+	payload.Size = file.FileSize
+	payload.URL = file.StorageKey
 
 	document, err := a.pegawai.CreateDocument(c.Request().Context(), payload)
 	if err != nil {
-		deletePelaksanaanDocumentStoredFile(c, file.URL)
+		deleteManagedStoredFile(c, a.files, file.StorageKey)
 		return echo.NewHTTPError(http.StatusInternalServerError, "dokumen arsip pegawai gagal disimpan")
 	}
 	return jsonData(c, http.StatusCreated, document)
 }
 
 func (a *ArsipPegawaiController) DownloadDocument(c echo.Context) error {
+	return a.serveDocument(c, "attachment")
+}
+
+func (a *ArsipPegawaiController) PreviewDocument(c echo.Context) error {
+	return a.serveDocument(c, "inline")
+}
+
+func (a *ArsipPegawaiController) serveDocument(c echo.Context, disposition string) error {
 	pegawaiID, err := arsipPegawaiID(c)
 	if err != nil {
 		return err
@@ -210,21 +230,15 @@ func (a *ArsipPegawaiController) DownloadDocument(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "dokumen arsip pegawai tidak ditemukan")
 	}
 
-	filePath, err := pelaksanaanDocumentStoragePath(document.StorageURL)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "file dokumen tidak ditemukan")
-	}
-	if _, err := os.Stat(filePath); err != nil {
-		return echo.NewHTTPError(http.StatusNotFound, "file dokumen tidak ditemukan")
-	}
-
-	c.Response().Header().Set(echo.HeaderContentDisposition, documentContentDisposition("attachment", document.Title))
-	if document.MimeType != "" {
-		c.Response().Header().Set(echo.HeaderContentType, document.MimeType)
-	}
-
-	http.ServeFile(c.Response(), c.Request(), filePath)
-	return nil
+	return serveManagedStoredFile(
+		c,
+		a.files,
+		document.StorageURL,
+		document.MimeType,
+		document.StoredFileName,
+		documentRequestDisposition(c, disposition),
+		false,
+	)
 }
 
 func (a *ArsipPegawaiController) DeleteDocument(c echo.Context) error {
@@ -245,7 +259,7 @@ func (a *ArsipPegawaiController) DeleteDocument(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "dokumen arsip pegawai tidak ditemukan")
 	}
 
-	deletePelaksanaanDocumentStoredFile(c, document.StorageURL)
+	deleteManagedStoredFile(c, a.files, document.StorageURL)
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -280,43 +294,65 @@ func validateArsipPegawaiPayload(request *model.ArsipPegawaiPayload) error {
 	return nil
 }
 
-func saveArsipPegawaiDocumentUpload(c echo.Context, tahunAnggaran string, bidang string, pegawaiID int64) (model.PelaksanaanDocumentPayload, error) {
+func validateArsipPegawaiDocumentPayload(payload *model.ArsipPegawaiDocumentPayload) error {
+	if payload.Category == "" {
+		payload.Category = string(model.ArsipPegawaiDocumentLainnya)
+	}
+	switch model.ArsipPegawaiDocumentCategory(payload.Category) {
+	case model.ArsipPegawaiDocumentIjazah,
+		model.ArsipPegawaiDocumentSK,
+		model.ArsipPegawaiDocumentSPMT,
+		model.ArsipPegawaiDocumentSertifikat,
+		model.ArsipPegawaiDocumentLainnya:
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "kategori dokumen tidak valid")
+	}
+
+	if payload.Year != "" && !arsipPegawaiDocumentYearPattern.MatchString(payload.Year) {
+		return echo.NewHTTPError(http.StatusBadRequest, "tahun dokumen tidak valid")
+	}
+	if payload.Status == "" {
+		payload.Status = "Lengkap"
+	}
+	switch payload.Status {
+	case "Lengkap", "Perlu Verifikasi":
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "status dokumen tidak valid")
+	}
+	return nil
+}
+
+func saveArsipPegawaiDocumentUpload(
+	c echo.Context,
+	files *fileasset.Service,
+	tahunAnggaran string,
+	bidang string,
+	uploadedBy int64,
+) (model.StoredFileInput, error) {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		return model.PelaksanaanDocumentPayload{}, echo.NewHTTPError(http.StatusBadRequest, "file dokumen wajib diupload")
+		return model.StoredFileInput{}, echo.NewHTTPError(http.StatusBadRequest, "file dokumen wajib diunggah")
 	}
-	if fileHeader.Size > maxPelaksanaanDocumentUploadSize {
-		return model.PelaksanaanDocumentPayload{}, echo.NewHTTPError(http.StatusBadRequest, "ukuran file maksimal 15MB")
+	if files == nil {
+		return model.StoredFileInput{}, echo.NewHTTPError(http.StatusInternalServerError, "storage file belum dikonfigurasi")
 	}
-	if err := validatePelaksanaanDocumentUploadType(fileHeader); err != nil {
-		return model.PelaksanaanDocumentPayload{}, err
+	category := strings.ToLower(strings.TrimSpace("pegawai-" + bidang))
+	category = strings.ReplaceAll(category, "_", "-")
+	file, err := files.Save(c.Request().Context(), fileasset.SaveRequest{
+		Header:          fileHeader,
+		Kind:            fileasset.KindAny,
+		Visibility:      model.FileVisibilityPrivate,
+		Module:          "arsip",
+		RelatedType:     "arsip_pegawai_document",
+		Category:        "arsip-pegawai",
+		StorageCategory: category,
+		Year:            tahunAnggaran,
+		UploadedBy:      &uploadedBy,
+	})
+	if err != nil {
+		return model.StoredFileInput{}, managedUploadHTTPError(err)
 	}
-
-	baseDir := filepath.Join(
-		"uploads",
-		"arsip",
-		strings.TrimSpace(tahunAnggaran),
-		"arsip_pegawai",
-		strings.ToLower(strings.TrimSpace(bidang)),
-		strconv.FormatInt(pegawaiID, 10),
-	)
-	if err := os.MkdirAll(baseDir, 0o755); err != nil {
-		return model.PelaksanaanDocumentPayload{}, echo.NewHTTPError(http.StatusInternalServerError, "folder upload gagal dibuat")
-	}
-
-	extension := strings.ToLower(filepath.Ext(fileHeader.Filename))
-	fileName := fmt.Sprintf("%s%s", randomDocumentHex(16), extension)
-	targetPath := filepath.Join(baseDir, fileName)
-	if err := copyUploadedDocumentFile(fileHeader, targetPath); err != nil {
-		return model.PelaksanaanDocumentPayload{}, echo.NewHTTPError(http.StatusInternalServerError, "file gagal disimpan")
-	}
-
-	return model.PelaksanaanDocumentPayload{
-		OriginalName: fileHeader.Filename,
-		MimeType:     fileHeader.Header.Get("Content-Type"),
-		Size:         fileHeader.Size,
-		URL:          "/" + filepath.ToSlash(targetPath),
-	}, nil
+	return file, nil
 }
 
 func arsipPegawaiID(c echo.Context) (int64, error) {

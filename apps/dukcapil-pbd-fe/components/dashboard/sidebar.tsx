@@ -39,6 +39,7 @@ import {
   arsipPegawaiMenus,
   aspirasikuMenus,
   dashboardMenus,
+  macekuPkkMenus,
   optimaInfoMenus,
   settingsMenus,
   sidakMenus,
@@ -99,6 +100,9 @@ function isMenuGroup(item: DashboardMenuItem): item is DashboardMenuGroup {
 }
 
 function systemAccessForHref(href: string) {
+  if (href.startsWith("/maceku-pkk")) {
+    return "maceku_pkk";
+  }
   if (href.startsWith("/sibum")) {
     return "sibum";
   }
@@ -178,6 +182,10 @@ function getSidebarMenus(pathname: string) {
     return sibumMenus;
   }
 
+  if (pathname.startsWith("/maceku-pkk")) {
+    return macekuPkkMenus;
+  }
+
   if (pathname.startsWith("/sikampung")) {
     return sikampungMenus;
   }
@@ -230,6 +238,13 @@ function getSidebarBrand(pathname: string) {
     return {
       title: "SIBUM Kampung",
       subtitle: "Data BUMKam",
+    };
+  }
+
+  if (pathname.startsWith("/maceku-pkk")) {
+    return {
+      title: "MACEKU PKK",
+      subtitle: "Profil & Arsip PKK",
     };
   }
 

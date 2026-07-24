@@ -27,7 +27,7 @@ type defaultAdminUser struct {
 	SystemAccess []string
 }
 
-var allSystemAccess = []string{"sibum", "sikampung", "sitekad", "aspirasiku", "sidoka", "sidak", "siber", "sisurat", "simonev", "optima_info", "arsip_pegawai"}
+var allSystemAccess = []string{"sibum", "sikampung", "sitekad", "aspirasiku", "sidoka", "sidak", "siber", "sisurat", "simonev", "optima_info", "arsip_pegawai", "maceku_pkk"}
 
 var defaultAdminUsers = []defaultAdminUser{
 	{
@@ -171,12 +171,15 @@ func (r *UserRepository) Create(ctx context.Context, request model.CreateAdminUs
 	}
 
 	record := model.AdminUserEntity{
-		Username:     strings.TrimSpace(request.Username),
-		FullName:     strings.TrimSpace(request.Name),
-		Role:         request.Role,
-		SystemAccess: normalizeSystemAccess(request.SystemAccess),
-		PasswordHash: string(passwordHash),
-		IsActive:     request.IsActive,
+		Username:      strings.TrimSpace(request.Username),
+		FullName:      strings.TrimSpace(request.Name),
+		Role:          request.Role,
+		SystemAccess:  normalizeSystemAccess(request.SystemAccess),
+		KabupatenKota: strings.TrimSpace(request.RegionScope.KabupatenKota),
+		Distrik:       strings.TrimSpace(request.RegionScope.Distrik),
+		Kampung:       strings.TrimSpace(request.RegionScope.Kampung),
+		PasswordHash:  string(passwordHash),
+		IsActive:      request.IsActive,
 	}
 	if err := db.Create(&record).Error; err != nil {
 		return model.AdminUser{}, fmt.Errorf("create admin user: %w", normalizeWriteError(err))
@@ -196,12 +199,15 @@ func (r *UserRepository) Update(ctx context.Context, id int64, request model.Upd
 		result := tx.Model(&model.AdminUserEntity{}).
 			Where("id = ?", id).
 			Updates(map[string]any{
-				"username":      strings.TrimSpace(request.Username),
-				"full_name":     strings.TrimSpace(request.Name),
-				"role":          request.Role,
-				"system_access": normalizeSystemAccess(request.SystemAccess),
-				"is_active":     request.IsActive,
-				"updated_at":    gorm.Expr("NOW()"),
+				"username":               strings.TrimSpace(request.Username),
+				"full_name":              strings.TrimSpace(request.Name),
+				"role":                   request.Role,
+				"system_access":          normalizeSystemAccess(request.SystemAccess),
+				"wilayah_kabupaten_kota": strings.TrimSpace(request.RegionScope.KabupatenKota),
+				"wilayah_distrik":        strings.TrimSpace(request.RegionScope.Distrik),
+				"wilayah_kampung":        strings.TrimSpace(request.RegionScope.Kampung),
+				"is_active":              request.IsActive,
+				"updated_at":             gorm.Expr("NOW()"),
 			})
 		if result.Error != nil {
 			return normalizeWriteError(result.Error)

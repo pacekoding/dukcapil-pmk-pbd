@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   BadgeCheck,
   Download,
+  Eye,
   FileText,
   GraduationCap,
   IdCard,
@@ -50,6 +51,11 @@ import {
   uploadPegawaiDocument,
 } from "@/lib/api/arsip-pegawai";
 import { apiEndpoints } from "@/lib/api/endpoints";
+import { withInlineBackendAssetDisposition } from "@/lib/api/assets";
+import {
+  ARCHIVE_FILE_ACCEPT,
+  validateClientUpload,
+} from "@/lib/api/file-policy";
 import { cn } from "@/lib/utils";
 import type {
   ArsipBidang,
@@ -58,19 +64,6 @@ import type {
   PegawaiDocumentCategory,
 } from "@/types/arsip-pegawai";
 
-const DOCUMENT_ACCEPT =
-  "application/pdf,.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/png,image/jpeg";
-const ALLOWED_EXTENSIONS = [
-  ".pdf",
-  ".doc",
-  ".docx",
-  ".xls",
-  ".xlsx",
-  ".png",
-  ".jpg",
-  ".jpeg",
-];
-const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
 const documentCategories: PegawaiDocumentCategory[] = [
   "Ijazah",
   "SK",
@@ -175,11 +168,14 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
       title: current.title || file.name.replace(/\.[^/.]+$/, ""),
     }));
 
-    const extension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-    if (!ALLOWED_EXTENSIONS.includes(extension)) {
-      setFileError("Format file tidak didukung.");
-    } else if (file.size > MAX_UPLOAD_SIZE) {
-      setFileError("Ukuran file maksimal 15MB.");
+    try {
+      validateClientUpload(file, "archive");
+    } catch (validationError) {
+      setFileError(
+        validationError instanceof Error
+          ? validationError.message
+          : "File tidak valid.",
+      );
     }
   };
 
@@ -396,7 +392,7 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
                   ref={fileInputRef}
                   id="arsipku-file"
                   type="file"
-                  accept={DOCUMENT_ACCEPT}
+                  accept={ARCHIVE_FILE_ACCEPT}
                   disabled={uploading}
                   onChange={(event) =>
                     handleFileChange(event.target.files?.[0] ?? null)
@@ -616,6 +612,22 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button asChild type="button" variant="outline" size="sm">
+                        <a
+                          href={withInlineBackendAssetDisposition(
+                            document.previewUrl ??
+                              apiEndpoints.arsipPegawaiDocumentDownload(
+                                pegawai.id,
+                                document.id,
+                              ),
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <Eye className="h-4 w-4" />
+                          Lihat
+                        </a>
+                      </Button>
                       <Button asChild type="button" variant="outline" size="sm">
                         <a
                           href={apiEndpoints.arsipPegawaiDocumentDownload(

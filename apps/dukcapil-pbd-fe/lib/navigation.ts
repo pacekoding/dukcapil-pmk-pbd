@@ -51,6 +51,10 @@ export const publicMenus: PublicMenuItem[] = [
     href: "/data-wilayah",
   },
   {
+    label: "Informasi",
+    href: "/informasi",
+  },
+  {
     label: "Layanan",
     href: "/#layanan",
   },
@@ -65,6 +69,11 @@ export const dashboardMenus: DashboardMenuItem[] = [
     title: "Portal Aplikasi",
     href: "/portal",
     icon: "home",
+  },
+  {
+    title: "MACEKU PKK",
+    href: "/maceku-pkk/dashboard",
+    icon: "users",
   },
   {
     title: "SIBUM Kampung",
@@ -132,6 +141,19 @@ export const sibumMenus: DashboardMenuItem[] = [
   {
     title: "Data BUMKam",
     href: "/sibum/data",
+    icon: "database",
+  },
+];
+
+export const macekuPkkMenus: DashboardMenuItem[] = [
+  {
+    title: "Dashboard",
+    href: "/maceku-pkk/dashboard",
+    icon: "home",
+  },
+  {
+    title: "Profil PKK",
+    href: "/maceku-pkk/data",
     icon: "database",
   },
 ];
@@ -260,6 +282,11 @@ export const optimaInfoMenus: DashboardMenuItem[] = [
     title: "Dashboard",
     href: "/optima-info/dashboard",
     icon: "home",
+  },
+  {
+    title: "Tambah Informasi",
+    href: "/optima-info/create",
+    icon: "fileText",
   },
 ];
 

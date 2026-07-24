@@ -40,6 +40,11 @@ export default function proxy(
       "/sibum"
     );
 
+  const isMacekuPkk =
+    pathname.startsWith(
+      "/maceku-pkk"
+    );
+
   const isSidoka =
     pathname.startsWith(
       "/sidoka"
@@ -124,6 +129,7 @@ export default function proxy(
       isDashboard ||
       isDashboardSubpath ||
       isSibum ||
+      isMacekuPkk ||
       isSidoka ||
       isSidak ||
       isSiber ||
@@ -200,6 +206,7 @@ export const config = {
     "/dashboard",
     "/dashboard/:path*",
     "/sibum/:path*",
+    "/maceku-pkk/:path*",
     "/sidoka/:path*",
     "/sidak/:path*",
     "/siber/:path*",

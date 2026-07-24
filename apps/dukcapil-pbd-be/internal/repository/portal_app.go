@@ -22,6 +22,7 @@ var defaultPortalAppStatuses = []model.PortalAppStatusUpdateItem{
 	{AccessKey: "simonev", Status: model.PortalAppStatusActive},
 	{AccessKey: "optima_info", Status: model.PortalAppStatusActive},
 	{AccessKey: "arsip_pegawai", Status: model.PortalAppStatusMaintenance},
+	{AccessKey: "maceku_pkk", Status: model.PortalAppStatusActive},
 }
 
 type PortalAppRepository struct {

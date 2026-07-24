@@ -33,6 +33,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# persistent user uploads
+/storage/uploads/
+/uploads/
+/apps/dukcapil-pbd-be/storage/uploads/
+/apps/dukcapil-pbd-be/uploads/
 
 # editor settings
 .vscode/
