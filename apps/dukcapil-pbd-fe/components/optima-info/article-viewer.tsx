@@ -7,10 +7,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
-  Download,
-  ExternalLink,
   FileText,
-  Newspaper,
   Sparkles,
 } from "lucide-react";
 
@@ -36,22 +33,12 @@ export function ArticleViewer({
   backLabel,
   mode = "public",
 }: ArticleViewerProps) {
-  const [pdfAvailability, setPdfAvailability] = useState<
-    "checking" | "ready" | "unavailable"
-  >("checking");
   const thumbnailUrl = resolveOptimaInfoMediaUrl(article, "thumbnail", mode);
   const attachmentDownloadUrl = resolveOptimaInfoMediaUrl(article, "attachment", mode);
   const attachmentPreviewUrl = withInlineBackendAssetDisposition(attachmentDownloadUrl);
   const hasAttachment = Boolean(attachmentDownloadUrl);
   const isPdf = isPdfAttachment(article);
-  const isImage = isImageAttachment(article);
-  const contentImages = (article.contentImages ?? []).map((image) => ({
-    ...image,
-    resolvedUrl:
-      mode === "public"
-        ? image.publicPreviewUrl || image.previewUrl
-        : image.previewUrl,
-  }));
+  const showPdfBody = hasAttachment && isPdf;
 
   return (
     <div className="bg-slate-50">
@@ -81,18 +68,26 @@ export function ArticleViewer({
         </div>
       ) : null}
 
-      <ContentContainer className="py-8 sm:py-10 lg:py-12">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <article className="min-w-0 space-y-6 rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_46px_rgba(15,35,80,0.07)] sm:p-8">
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge className="h-8 rounded-full bg-sky-50 px-4 text-sm font-bold text-sky-700">
-                {article.category || "Informasi"}
-              </Badge>
-              {article.isFeatured ? (
-                <Badge className="h-8 rounded-full bg-emerald-50 px-4 text-sm font-bold text-emerald-700">
-                  Unggulan
+      <ContentContainer className="max-w-5xl py-8 sm:py-10 lg:py-12">
+        <article className="space-y-8">
+          <header className="space-y-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge className="h-8 rounded-full bg-sky-50 px-4 text-sm font-bold text-sky-700">
+                  {article.category || "Informasi"}
                 </Badge>
-              ) : null}
+                {article.isFeatured ? (
+                  <Badge className="h-8 rounded-full bg-emerald-50 px-4 text-sm font-bold text-emerald-700">
+                    Unggulan
+                  </Badge>
+                ) : null}
+              </div>
+              <Button asChild variant="outline" className="h-10 w-full rounded-lg sm:w-auto">
+                <Link href={backHref}>
+                  <ArrowLeft className="h-4 w-4" />
+                  {backLabel}
+                </Link>
+              </Button>
             </div>
 
             <div>
@@ -112,190 +107,48 @@ export function ArticleViewer({
                 ) : null}
               </div>
             </div>
+          </header>
 
-            {article.summary ? (
-              <p className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-base leading-8 text-slate-600">
-                {article.summary}
-              </p>
-            ) : null}
-
-            {thumbnailUrl ? (
+          {thumbnailUrl ? (
+            <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <SafeImage
                 src={thumbnailUrl}
                 alt={article.title || "Thumbnail informasi"}
-                className="h-auto max-h-[460px] w-full rounded-[24px] border border-slate-200 object-cover"
+                className="max-h-[520px] w-full object-cover"
               />
-            ) : null}
+            </section>
+          ) : null}
 
-            <div
-              className="prose prose-slate max-w-none prose-headings:text-pbd-navy prose-a:text-pbd-blue prose-strong:text-pbd-navy"
-              dangerouslySetInnerHTML={{ __html: article.content || "<p>-</p>" }}
-            />
-
-            {contentImages.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {contentImages.map((image) => (
-                  <figure
-                    key={image.id}
-                    className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
-                  >
-                    <SafeImage
-                      src={normalizeBackendAssetUrl(image.resolvedUrl)}
-                      alt={image.originalFilename}
-                      className="aspect-[16/10] w-full object-cover"
-                    />
-                    <figcaption className="truncate px-3 py-2 text-xs text-slate-500">
-                      {image.originalFilename}
-                    </figcaption>
-                  </figure>
-                ))}
-              </div>
-            ) : null}
-
-            {article.externalUrl ? (
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4">
-                <p className="text-sm font-semibold text-pbd-navy">Tautan eksternal</p>
-                <Button asChild variant="link" className="mt-1 h-auto p-0 text-pbd-blue">
-                  <a href={article.externalUrl} target="_blank" rel="noreferrer">
-                    Buka sumber terkait
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            ) : null}
-          </article>
-
-          <aside className="space-y-6">
-            <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_46px_rgba(15,35,80,0.07)]">
-              <h2 className="text-lg font-bold text-pbd-navy">Informasi File</h2>
-              <dl className="mt-4 space-y-3 text-sm">
-                <MetaRow label="Status" value={article.status} />
-                <MetaRow label="Dibuat" value={formatOptimaInfoDate(article.createdAt)} />
-                <MetaRow label="Diperbarui" value={formatOptimaInfoDate(article.updatedAt)} />
-              </dl>
-            </div>
-
-            {hasAttachment ? (
-              <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_46px_rgba(15,35,80,0.07)]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-pbd-navy">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="font-bold text-pbd-navy">Lampiran</h2>
-                    <p className="text-sm text-slate-500">
-                      {article.attachmentOriginalName || "File pendukung informasi"}
-                    </p>
-                  </div>
-                </div>
-                {isPdf && pdfAvailability !== "ready" ? (
-                  <Button
-                    type="button"
-                    disabled
-                    className="mt-4 h-11 w-full rounded-xl bg-pbd-navy text-white"
-                  >
-                    <Download className="h-4 w-4" />
-                    {pdfAvailability === "checking"
-                      ? "Memeriksa Lampiran"
-                      : "File Tidak Tersedia"}
-                  </Button>
-                ) : (
-                  <Button
-                    asChild
-                    className="mt-4 h-11 w-full rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-                  >
-                    <a href={attachmentDownloadUrl} target="_blank" rel="noreferrer">
-                      <Download className="h-4 w-4" />
-                      Unduh Lampiran
-                    </a>
-                  </Button>
-                )}
-                {isPdf ? (
-                  <PdfAttachmentPreview
-                    src={attachmentPreviewUrl}
-                    title={article.attachmentOriginalName || article.title}
-                    onStateChange={setPdfAvailability}
-                  />
-                ) : null}
-                {isImage ? (
-                  <SafeImage
-                    src={attachmentDownloadUrl}
-                    alt={article.attachmentOriginalName || article.title}
-                    className="mt-4 h-auto max-h-[420px] w-full rounded-2xl border border-slate-200 object-cover"
-                  />
-                ) : null}
-              </div>
-            ) : null}
-
-            <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_18px_46px_rgba(15,35,80,0.07)]">
-              <Button asChild variant="outline" className="h-11 w-full rounded-xl">
-                <Link href={backHref}>
-                  <ArrowLeft className="h-4 w-4" />
-                  {backLabel}
-                </Link>
-              </Button>
-            </div>
-          </aside>
-        </div>
-
-        {article.related.length > 0 ? (
-          <section className="mt-10">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-700 ring-1 ring-sky-100">
-                <Newspaper className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-pbd-navy">Informasi Terkait</h2>
-                <p className="text-sm text-slate-500">
-                  Informasi lain yang masih relevan dengan topik ini.
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {article.related.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/informasi/${item.slug}`}
-                  className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,35,80,0.06)] transition hover:-translate-y-0.5 hover:border-sky-200"
-                >
-                  {item.thumbnailUrl ? (
-                    <SafeImage
-                      src={normalizeBackendAssetUrl(item.thumbnailUrl)}
-                      alt={item.title}
-                      className="h-44 w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-44 items-center justify-center bg-slate-100 text-slate-400">
-                      <Newspaper className="h-8 w-8" />
-                    </div>
-                  )}
-                  <div className="space-y-3 p-5">
-                    <Badge className="bg-sky-50 text-sky-700">{item.category || "Informasi"}</Badge>
-                    <h3 className="line-clamp-2 text-lg font-bold text-pbd-navy">
-                      {item.title}
-                    </h3>
-                    <p className="line-clamp-3 text-sm leading-6 text-slate-600">
-                      {item.summary}
-                    </p>
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                      {formatOptimaInfoDate(item.publishedAt)}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <h2 className="text-xl font-bold text-pbd-navy">Deskripsi</h2>
+            <p className="mt-3 text-base leading-8 text-slate-600">
+              {article.summary || "Tidak ada deskripsi."}
+            </p>
           </section>
-        ) : null}
-      </ContentContainer>
-    </div>
-  );
-}
 
-function MetaRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-      <dt className="font-medium text-slate-500">{label}</dt>
-      <dd className="text-right font-semibold text-pbd-navy">{value || "-"}</dd>
+          {showPdfBody ? (
+            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-pbd-navy">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-bold text-pbd-navy">Body</h2>
+                  <p className="truncate text-sm text-slate-500">
+                    {article.attachmentOriginalName || "PDF informasi"}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 p-2">
+                <PdfAttachmentPreview
+                  src={attachmentPreviewUrl}
+                  title={article.attachmentOriginalName || article.title}
+                />
+              </div>
+            </section>
+          ) : null}
+        </article>
+      </ContentContainer>
     </div>
   );
 }
@@ -303,11 +156,9 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 function PdfAttachmentPreview({
   src,
   title,
-  onStateChange,
 }: {
   src: string;
   title: string;
-  onStateChange: (state: "checking" | "ready" | "unavailable") => void;
 }) {
   const [result, setResult] = useState<{
     src: string;
@@ -321,12 +172,10 @@ function PdfAttachmentPreview({
 
   useEffect(() => {
     if (!src) {
-      onStateChange("unavailable");
       return;
     }
 
     let mounted = true;
-    onStateChange("checking");
 
     const verify = async () => {
       try {
@@ -346,13 +195,11 @@ function PdfAttachmentPreview({
             src,
             state: nextState,
           });
-          onStateChange(nextState);
         }
       } catch (error) {
         console.error(error);
         if (mounted) {
           setResult({ src, state: "unavailable" });
-          onStateChange("unavailable");
         }
       }
     };
@@ -362,17 +209,17 @@ function PdfAttachmentPreview({
     return () => {
       mounted = false;
     };
-  }, [onStateChange, src]);
+  }, [src]);
 
   if (state === "checking") {
     return (
-      <div className="mt-4 h-[420px] w-full animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
+      <div className="h-[70vh] min-h-[520px] w-full animate-pulse rounded-md bg-slate-200" />
     );
   }
 
   if (state === "unavailable") {
     return (
-      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+      <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
         File lampiran tidak ditemukan di penyimpanan. Unggah ulang PDF dari editor.
       </div>
     );
@@ -382,7 +229,7 @@ function PdfAttachmentPreview({
     <iframe
       src={src}
       title={title}
-      className="mt-4 h-[420px] w-full rounded-2xl border border-slate-200 bg-white"
+      className="h-[70vh] min-h-[520px] w-full rounded-md border-0 bg-white"
     />
   );
 }
@@ -455,18 +302,6 @@ function isPdfAttachment(article: OptimaInfoDetail) {
   return (
     article.attachmentMimeType.toLowerCase() === "application/pdf" ||
     article.attachmentOriginalName.toLowerCase().endsWith(".pdf")
-  );
-}
-
-function isImageAttachment(article: OptimaInfoDetail) {
-  const mimeType = article.attachmentMimeType.toLowerCase();
-  const originalName = article.attachmentOriginalName.toLowerCase();
-  return (
-    mimeType.startsWith("image/") ||
-    originalName.endsWith(".png") ||
-    originalName.endsWith(".jpg") ||
-    originalName.endsWith(".jpeg") ||
-    originalName.endsWith(".webp")
   );
 }
 

@@ -26,7 +26,7 @@ export function withInlineBackendAssetDisposition(value: string) {
   if (!normalized) {
     return "";
   }
-  return withBackendAssetDisposition(normalized, "inline");
+  return withBackendAssetDisposition(withBackendFilePreviewPath(normalized), "inline");
 }
 
 export function withBackendAssetDisposition(
@@ -38,4 +38,14 @@ export function withBackendAssetDisposition(
     return normalized;
   }
   return `${normalized}${normalized.includes("?") ? "&" : "?"}disposition=${disposition}`;
+}
+
+function withBackendFilePreviewPath(value: string) {
+  const [path, query = ""] = value.split("?", 2);
+  const previewPath = path.replace(
+    /^\/api\/backend\/((?:website\/)?files\/\d+)\/download$/,
+    "/api/backend/$1/preview",
+  );
+
+  return query ? `${previewPath}?${query}` : previewPath;
 }
