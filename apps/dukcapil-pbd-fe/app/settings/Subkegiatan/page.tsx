@@ -65,6 +65,7 @@ import {
 import { ApiError } from "@/lib/api/http";
 import { getSSD } from "@/lib/api/ssd";
 import { cn } from "@/lib/utils";
+import { downloadXlsx } from "@/lib/xlsx";
 import type { SSD } from "@/types/ssd";
 import type {
   Subkegiatan,
@@ -425,6 +426,47 @@ export default function DashboardSubkegiatanPage() {
     }
   };
 
+  const handleDownloadAll = () => {
+    downloadXlsx({
+      fileName: `data-subkegiatan-${tahunAnggaran}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: "Data Subkegiatan",
+      columns: [
+        { width: 8 },
+        { width: 26 },
+        { width: 64 },
+        { width: 18 },
+        { width: 14 },
+        { width: 40 },
+        { width: 64 },
+        { width: 18 },
+      ],
+      rows: [
+        [
+          "No",
+          "Kode Subkegiatan",
+          "Nama Subkegiatan",
+          "Bidang",
+          "Jumlah SSD",
+          "Kode DSSD Terkait",
+          "Uraian DSSD Terkait",
+          "Tahun Anggaran",
+        ],
+        ...items.map((item, index) => [
+          index + 1,
+          item.kode,
+          item.nama,
+          bidangLabel(item.bidang),
+          item.ssdItems.length,
+          item.ssdItems.map((ssd) => ssd.kode).join(", "),
+          item.ssdItems
+            .map((ssd) => `${ssd.kode} - ${ssd.uraian}`)
+            .join("\n"),
+          item.tahunAnggaran,
+        ]),
+      ],
+    });
+  };
+
   return (
     <div className="space-y-6">
       <PageHero
@@ -676,7 +718,17 @@ export default function DashboardSubkegiatanPage() {
                 {filteredItems.length} dari {items.length} data ditampilkan.
               </p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDownloadAll}
+                disabled={loading || items.length === 0}
+                className="h-11 rounded-lg"
+              >
+                <Download className="h-4 w-4" />
+                Download Semua Data
+              </Button>
               <SearchInput
                 value={query}
                 onChange={(value) => {

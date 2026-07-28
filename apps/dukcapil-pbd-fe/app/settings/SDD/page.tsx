@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { createSSD, getSSD, importSSD, setSSDStatus } from "@/lib/api/ssd";
+import { downloadXlsx } from "@/lib/xlsx";
 import type { SSD, SSDPayload } from "@/types/ssd";
 
 const PAGE_SIZE = 12;
@@ -286,6 +287,42 @@ export default function DashboardSSDPage() {
     }
   };
 
+  const handleDownloadAll = () => {
+    downloadXlsx({
+      fileName: `data-sdd-${tahunAnggaran}-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: "Data SDD",
+      columns: [
+        { width: 8 },
+        { width: 24 },
+        { width: 56 },
+        { width: 20 },
+        { width: 56 },
+        { width: 18 },
+        { width: 18 },
+      ],
+      rows: [
+        [
+          "No",
+          "Kode DSSD",
+          "Uraian DSSD",
+          "Satuan",
+          "Definisi Operasional",
+          "Status",
+          "Tahun Anggaran",
+        ],
+        ...items.map((item, index) => [
+          index + 1,
+          item.kode,
+          item.uraian,
+          item.satuan,
+          item.definisiOperasional,
+          item.isActive ? "Aktif" : "Nonaktif",
+          item.tahunAnggaran,
+        ]),
+      ],
+    });
+  };
+
   return (
     <main className="space-y-6">
       <PageHero
@@ -461,7 +498,17 @@ export default function DashboardSSDPage() {
                 {filteredItems.length} dari {items.length} data ditampilkan. {activeCount} aktif.
               </p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDownloadAll}
+                disabled={loading || items.length === 0}
+                className="h-10 rounded-md"
+              >
+                <Download className="h-4 w-4" />
+                Download Semua Data
+              </Button>
               <SearchInput
                 value={query}
                 onChange={(value) => {
@@ -469,7 +516,7 @@ export default function DashboardSSDPage() {
                   setPage(1);
                 }}
                 placeholder="Cari kode, uraian, atau satuan..."
-                className="sm:w-96"
+                className="sm:w-72 xl:w-96"
               />
               <Select
                 value={statusFilter}
