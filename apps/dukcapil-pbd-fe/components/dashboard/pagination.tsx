@@ -26,24 +26,26 @@ export function Pagination({
       <p className="font-medium">
         Menampilkan {start}-{end} dari {total} data
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
         <Button
           type="button"
           variant="outline"
           size="sm"
+          className="min-w-0 flex-1 sm:flex-none"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
         >
           <ChevronLeft className="h-4 w-4" />
           Sebelumnya
         </Button>
-        <span className="min-w-20 text-center font-medium text-slate-700">
+        <span className="min-w-14 shrink-0 text-center font-medium text-slate-700 sm:min-w-20">
           {page}/{totalPages}
         </span>
         <Button
           type="button"
           variant="outline"
           size="sm"
+          className="min-w-0 flex-1 sm:flex-none"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
         >

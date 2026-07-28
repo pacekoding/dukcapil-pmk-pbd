@@ -490,150 +490,123 @@ export default function MacekuPkkDataPage() {
       <SectionCard
         title="Daftar Profil PKK"
         description="Gunakan pencarian dan filter bertingkat untuk menemukan profil PKK yang tepat."
-        action={
-          <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-6">
-            <div className="relative xl:col-span-2">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={filters.search ?? ""}
-                onChange={(event) =>
-                  setFilters((current) => ({
-                    ...current,
-                    search: event.target.value,
-                    page: 1,
-                  }))
-                }
-                className="pl-9"
-                placeholder="Cari nama PKK..."
-              />
-            </div>
-            <select
-              value={filters.level ?? ""}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  level: event.target.value,
-                  page: 1,
-                }))
-              }
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Semua tingkat</option>
-              {levelOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filters.kabupatenKota ?? ""}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  kabupatenKota: event.target.value,
-                  distrik: "",
-                  kampung: "",
-                  page: 1,
-                }))
-              }
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Semua kabupaten</option>
-              {options.kabupatenKota.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filters.distrik ?? ""}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  distrik: event.target.value,
-                  kampung: "",
-                  page: 1,
-                }))
-              }
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              disabled={!filters.kabupatenKota}
-            >
-              <option value="">Semua distrik</option>
-              {filterDistrikOptions.map((option) => (
-                <option key={`${option.kabupatenKota}-${option.distrik}`} value={option.distrik}>
-                  {option.distrik}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filters.kampung ?? ""}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  kampung: event.target.value,
-                  page: 1,
-                }))
-              }
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              disabled={!filters.distrik}
-            >
-              <option value="">Semua kampung</option>
-              {filterKampungOptions.map((option) => (
-                <option
-                  key={`${option.kabupatenKota}-${option.distrik}-${option.kampung}`}
-                  value={option.kampung}
-                >
-                  {option.kampung}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filters.status ?? ""}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  status: event.target.value,
-                  page: 1,
-                }))
-              }
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="">Semua status</option>
-              <option value="aktif">Aktif</option>
-              <option value="nonaktif">Nonaktif</option>
-            </select>
-          </div>
-        }
         contentClassName="p-0"
       >
+        <div className="grid gap-3 border-b border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+          <div className="relative sm:col-span-2 lg:col-span-3 2xl:col-span-2">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={filters.search ?? ""}
+              onChange={(event) =>
+                setFilters((current) => ({
+                  ...current,
+                  search: event.target.value,
+                  page: 1,
+                }))
+              }
+              className="pl-9"
+              placeholder="Cari nama PKK..."
+            />
+          </div>
+          <FilterSelect
+            value={filters.level ?? ""}
+            onChange={(value) =>
+              setFilters((current) => ({
+                ...current,
+                level: value,
+                page: 1,
+              }))
+            }
+            options={levelOptions}
+            placeholder="Semua tingkat"
+          />
+          <FilterSelect
+            value={filters.kabupatenKota ?? ""}
+            onChange={(value) =>
+              setFilters((current) => ({
+                ...current,
+                kabupatenKota: value,
+                distrik: "",
+                kampung: "",
+                page: 1,
+              }))
+            }
+            options={options.kabupatenKota}
+            placeholder="Semua kabupaten"
+          />
+          <FilterSelect
+            value={filters.distrik ?? ""}
+            onChange={(value) =>
+              setFilters((current) => ({
+                ...current,
+                distrik: value,
+                kampung: "",
+                page: 1,
+              }))
+            }
+            options={filterDistrikOptions.map((option) => option.distrik)}
+            placeholder="Semua distrik"
+            disabled={!filters.kabupatenKota}
+          />
+          <FilterSelect
+            value={filters.kampung ?? ""}
+            onChange={(value) =>
+              setFilters((current) => ({
+                ...current,
+                kampung: value,
+                page: 1,
+              }))
+            }
+            options={filterKampungOptions.map((option) => option.kampung)}
+            placeholder="Semua kampung"
+            disabled={!filters.distrik}
+          />
+          <FilterSelect
+            value={filters.status ?? ""}
+            onChange={(value) =>
+              setFilters((current) => ({
+                ...current,
+                status: value,
+                page: 1,
+              }))
+            }
+            options={["Aktif", "Nonaktif"]}
+            optionValues={["aktif", "nonaktif"]}
+            placeholder="Semua status"
+          />
+        </div>
         {loading ? (
           <div className="p-5">
             <LoadingState message="Memuat daftar profil PKK..." />
           </div>
         ) : items.length > 0 ? (
           <>
-            <Table>
+            <Table className="min-w-[1120px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nama PKK</TableHead>
-                  <TableHead>Tingkat</TableHead>
-                  <TableHead>Wilayah</TableHead>
-                  <TableHead>Ketua</TableHead>
-                  <TableHead>Periode</TableHead>
-                  <TableHead>Arsip</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
+                  <TableHead className="w-[240px]">Nama PKK</TableHead>
+                  <TableHead className="w-[190px]">Tingkat</TableHead>
+                  <TableHead className="w-[260px]">Wilayah</TableHead>
+                  <TableHead className="w-[180px]">Ketua</TableHead>
+                  <TableHead className="w-[120px]">Periode</TableHead>
+                  <TableHead className="w-[80px]">Arsip</TableHead>
+                  <TableHead className="w-[110px]">Status</TableHead>
+                  <TableHead className="w-[88px] text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell className="font-bold text-pbd-navy">{item.name}</TableCell>
+                    <TableCell className="whitespace-normal font-bold leading-5 text-pbd-navy">
+                      {item.name}
+                    </TableCell>
                     <TableCell>{item.level}</TableCell>
-                    <TableCell className="whitespace-normal">
+                    <TableCell className="whitespace-normal leading-5">
                       {formatRegion(item.kabupatenKota, item.distrik, item.kampung)}
                     </TableCell>
-                    <TableCell>{item.chairperson || "-"}</TableCell>
+                    <TableCell className="whitespace-normal leading-5">
+                      {item.chairperson || "-"}
+                    </TableCell>
                     <TableCell>{item.managementPeriod || "-"}</TableCell>
                     <TableCell>{item.documentCount}</TableCell>
                     <TableCell>
@@ -784,6 +757,41 @@ function SelectField({
         ))}
       </select>
     </label>
+  );
+}
+
+function FilterSelect({
+  value,
+  onChange,
+  options,
+  optionValues,
+  placeholder,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  optionValues?: readonly string[];
+  placeholder: string;
+  disabled?: boolean;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="h-10 min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+      disabled={disabled}
+    >
+      <option value="">{placeholder}</option>
+      {Array.from(new Set(options)).map((option, index) => (
+        <option
+          key={`${optionValues?.[index] ?? option}-${option}`}
+          value={optionValues?.[index] ?? option}
+        >
+          {option}
+        </option>
+      ))}
+    </select>
   );
 }
 

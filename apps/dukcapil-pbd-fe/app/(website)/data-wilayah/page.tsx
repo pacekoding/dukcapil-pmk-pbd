@@ -91,13 +91,22 @@ const formatLastUpdated = (updatedAt: string | null) => {
 const mapPalette = {
   ocean: "#E0F2FE",
   grid: "#93C5FD",
-  land: "#C5D4C0",
-  landStroke: "#67825F",
+  land: "#E5E7EB",
+  landStroke: "#94A3B8",
   navy: "#173A63",
   navyDark: "#102B4E",
   blue: "#2563EB",
   muted: "#64748B",
 };
+
+const MAP_VIEWBOX_WIDTH = 640;
+const MAP_VIEWBOX_HEIGHT = 430;
+const MAP_TOOLTIP_WIDTH = 178;
+const MAP_TOOLTIP_HEIGHT = 70;
+const MAP_TOOLTIP_PADDING = 14;
+const MAP_MIN_ZOOM = 0.92;
+const MAP_MAX_ZOOM = 1.2;
+const MAP_ZOOM_STEP = 0.06;
 
 const regionMapFills: Record<string, string> = {
   "kabupaten-sorong": "#7DD3FC",
@@ -697,7 +706,7 @@ function RegionMapWorkspace({
   onHover: (regionId: string | null) => void;
   onSelect: (regionId: string | null) => void;
 }) {
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(MAP_MAX_ZOOM);
   const [showLegend, setShowLegend] = useState(false);
 
   const filteredRegions = useMemo(() => {
@@ -710,8 +719,42 @@ function RegionMapWorkspace({
     );
   }, [regions, searchQuery]);
 
+  const hoveredShape = hoveredRegion
+    ? (regionMapShapes.find((shape) => shape.id === hoveredRegion.id) ?? null)
+    : null;
+  const visibleMapLeft = Math.max(
+    0,
+    (MAP_VIEWBOX_WIDTH - MAP_VIEWBOX_WIDTH / zoom) / 2,
+  );
+  const visibleMapTop = Math.max(
+    0,
+    (MAP_VIEWBOX_HEIGHT - MAP_VIEWBOX_HEIGHT / zoom) / 2,
+  );
+  const visibleMapRight = MAP_VIEWBOX_WIDTH - visibleMapLeft;
+  const visibleMapBottom = MAP_VIEWBOX_HEIGHT - visibleMapTop;
+  const tooltipX = hoveredShape
+    ? Math.min(
+        Math.max(
+          hoveredShape.labelX + MAP_TOOLTIP_PADDING,
+          visibleMapLeft + MAP_TOOLTIP_PADDING,
+        ),
+        visibleMapRight - MAP_TOOLTIP_WIDTH - MAP_TOOLTIP_PADDING,
+      )
+    : 0;
+  const tooltipY = hoveredShape
+    ? Math.min(
+        Math.max(
+          hoveredShape.labelY - MAP_TOOLTIP_HEIGHT - 2,
+          visibleMapTop + MAP_TOOLTIP_PADDING,
+        ),
+        visibleMapBottom - MAP_TOOLTIP_HEIGHT - MAP_TOOLTIP_PADDING,
+      )
+    : 0;
+  const isZoomInDisabled = zoom >= MAP_MAX_ZOOM;
+  const isZoomOutDisabled = zoom <= MAP_MIN_ZOOM;
+
   const resetMap = () => {
-    setZoom(1);
+    setZoom(MAP_MAX_ZOOM);
     onSelect(null);
     onHover(null);
     onSearchQueryChange("");
@@ -812,7 +855,7 @@ function RegionMapWorkspace({
             </span>
             <span className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-sm bg-slate-300" />
-              Wilayah lain
+              Area nonaktif
             </span>
             <span className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-sm border-2 border-amber-400 bg-white" />
@@ -825,8 +868,14 @@ function RegionMapWorkspace({
       <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_220px]">
         <div className="relative min-h-[360px] overflow-hidden bg-sky-50 sm:min-h-[480px] xl:min-h-[620px]">
           <MapControls
-            onZoomIn={() => setZoom((current) => Math.min(1.2, current + 0.06))}
-            onZoomOut={() => setZoom((current) => Math.max(0.92, current - 0.06))}
+            canZoomIn={!isZoomInDisabled}
+            canZoomOut={!isZoomOutDisabled}
+            onZoomIn={() =>
+              setZoom((current) => Math.min(MAP_MAX_ZOOM, current + MAP_ZOOM_STEP))
+            }
+            onZoomOut={() =>
+              setZoom((current) => Math.max(MAP_MIN_ZOOM, current - MAP_ZOOM_STEP))
+            }
             onReset={resetMap}
           />
 
@@ -840,7 +889,7 @@ function RegionMapWorkspace({
           </div>
 
           <svg
-            viewBox="0 0 640 430"
+            viewBox={`0 0 ${MAP_VIEWBOX_WIDTH} ${MAP_VIEWBOX_HEIGHT}`}
             role="img"
             aria-label="Peta interaktif wilayah Papua Barat Daya"
             className="absolute inset-x-0 top-7 h-auto w-full origin-center transition-transform duration-300 motion-reduce:transition-none sm:top-8 lg:top-14"
@@ -896,7 +945,7 @@ function RegionMapWorkspace({
               opacity="0.4"
             />
 
-            <g aria-hidden="true">
+            <g aria-hidden="true" pointerEvents="none">
               {regionMapBackgroundShapes.map((shape) => (
                 <path
                   key={shape.id}
@@ -906,7 +955,7 @@ function RegionMapWorkspace({
                   clipRule="evenodd"
                   stroke={mapPalette.landStroke}
                   strokeWidth="1.1"
-                  opacity="0.58"
+                  opacity="0.86"
                 />
               ))}
             </g>
@@ -953,64 +1002,55 @@ function RegionMapWorkspace({
                     }}
                     transition={{ duration: 0.2 }}
                   />
-                  <text
-                    x={shape.labelX}
-                    y={shape.labelY}
-                    textAnchor="middle"
-                    className="pointer-events-none select-none fill-slate-900 text-[12px] font-bold"
-                    paintOrder="stroke"
-                    stroke="#FFFFFF"
-                    strokeWidth="4"
-                    opacity={dimmed ? 0.55 : 0.92}
-                  >
-                    {region.mapLabel}
-                  </text>
-                  <AnimatePresence>
-                    {hovered ? (
-                      <motion.g
-                        key={`${shape.id}-tooltip`}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 5 }}
-                        transition={{ duration: 0.14 }}
-                        pointerEvents="none"
-                      >
-                        <rect
-                          x={Math.min(shape.labelX + 14, 440)}
-                          y={Math.max(shape.labelY - 72, 14)}
-                          width="178"
-                          height="70"
-                          rx="8"
-                          fill="#FFFFFF"
-                          stroke="#D8E0EA"
-                        />
-                        <text
-                          x={Math.min(shape.labelX + 26, 452)}
-                          y={Math.max(shape.labelY - 48, 38)}
-                          className="fill-slate-900 text-[12px] font-bold"
-                        >
-                          {region.shortName}
-                        </text>
-                        <text
-                          x={Math.min(shape.labelX + 26, 452)}
-                          y={Math.max(shape.labelY - 31, 55)}
-                          className="fill-slate-500 text-[11px]"
-                        >
-                          {region.type} · {formatNumber(region.oap.jumlahJiwa)} jiwa
-                        </text>
-                        <text
-                          x={Math.min(shape.labelX + 26, 452)}
-                          y={Math.max(shape.labelY - 14, 72)}
-                          className="fill-blue-700 text-[11px] font-semibold"
-                        >
-                          Klik untuk melihat detail.
-                        </text>
-                      </motion.g>
-                    ) : null}
-                  </AnimatePresence>
                 </g>
               );
             })}
+
+            <AnimatePresence>
+              {hoveredRegion && hoveredShape ? (
+                <motion.g
+                  key={`${hoveredShape.id}-tooltip`}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 5 }}
+                  transition={{ duration: 0.14 }}
+                  pointerEvents="none"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x={tooltipX}
+                    y={tooltipY}
+                    width={MAP_TOOLTIP_WIDTH}
+                    height={MAP_TOOLTIP_HEIGHT}
+                    rx="8"
+                    fill="#FFFFFF"
+                    stroke="#D8E0EA"
+                  />
+                  <text
+                    x={tooltipX + 12}
+                    y={tooltipY + 24}
+                    className="fill-slate-900 text-[12px] font-bold"
+                  >
+                    {hoveredRegion.shortName}
+                  </text>
+                  <text
+                    x={tooltipX + 12}
+                    y={tooltipY + 41}
+                    className="fill-slate-500 text-[11px]"
+                  >
+                    {hoveredRegion.type} ·{" "}
+                    {formatNumber(hoveredRegion.oap.jumlahJiwa)} jiwa
+                  </text>
+                  <text
+                    x={tooltipX + 12}
+                    y={tooltipY + 58}
+                    className="fill-blue-700 text-[11px] font-semibold"
+                  >
+                    Klik untuk melihat detail.
+                  </text>
+                </motion.g>
+              ) : null}
+            </AnimatePresence>
           </svg>
         </div>
 
@@ -1025,19 +1065,33 @@ function RegionMapWorkspace({
 }
 
 function MapControls({
+  canZoomIn,
+  canZoomOut,
   onZoomIn,
   onZoomOut,
   onReset,
 }: {
+  canZoomIn: boolean;
+  canZoomOut: boolean;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onReset: () => void;
 }) {
   return (
     <div className="absolute left-4 top-4 z-20 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-      <IconButton icon={ZoomIn} label="Perbesar peta" onClick={onZoomIn} />
+      <IconButton
+        icon={ZoomIn}
+        label="Perbesar peta"
+        onClick={onZoomIn}
+        disabled={!canZoomIn}
+      />
       <div className="h-px bg-slate-200" />
-      <IconButton icon={Minus} label="Perkecil peta" onClick={onZoomOut} />
+      <IconButton
+        icon={Minus}
+        label="Perkecil peta"
+        onClick={onZoomOut}
+        disabled={!canZoomOut}
+      />
       <div className="h-px bg-slate-200" />
       <IconButton icon={ListRestart} label="Reset tampilan peta" onClick={onReset} />
     </div>
@@ -1617,11 +1671,13 @@ function IconButton({
   icon: Icon,
   label,
   className,
+  disabled = false,
   onClick,
 }: {
   icon: ElementType;
   label: string;
   className?: string;
+  disabled?: boolean;
   onClick?: () => void;
 }) {
   return (
@@ -1631,7 +1687,11 @@ function IconButton({
       size="icon"
       aria-label={label}
       title={label}
-      className={cn("h-11 w-11 rounded-none text-[#173A63]", className)}
+      disabled={disabled}
+      className={cn(
+        "h-11 w-11 rounded-none text-[#173A63] disabled:pointer-events-none disabled:text-slate-300",
+        className,
+      )}
       onClick={onClick}
     >
       <Icon className="h-5 w-5" />

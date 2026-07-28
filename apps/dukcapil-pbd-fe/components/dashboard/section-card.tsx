@@ -30,8 +30,8 @@ export function SectionCard({
       {...props}
     >
       {hasHeader ? (
-        <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/45 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
+        <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/45 px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 lg:flex-1">
             {title ? (
               <h2 className="font-bold text-pbd-navy">{title}</h2>
             ) : null}
@@ -41,7 +41,9 @@ export function SectionCard({
               </p>
             ) : null}
           </div>
-          {action ? <div className="shrink-0">{action}</div> : null}
+          {action ? (
+            <div className="w-full min-w-0 lg:w-auto lg:flex-1">{action}</div>
+          ) : null}
         </div>
       ) : null}
       <div className={cn("p-5", contentClassName)}>{children}</div>
