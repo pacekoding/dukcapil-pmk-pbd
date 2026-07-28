@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Eye, Printer, Save } from "lucide-react";
+import { ArrowLeft, Eye, FileCheck2, Save } from "lucide-react";
 
 import { SectionCard } from "@/components/dashboard/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -17,299 +18,581 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  defaultPdfPreviewSettings,
   klasifikasiSuratLabels,
-  mockRadiogramSorong,
 } from "@/lib/sisurat/mock-surat";
+import {
+  formatRadiogramAAA,
+  formatRadiogramBlock,
+  normalizeRadiogramText,
+} from "@/lib/sisurat/radiogram-format";
+import { createRadiogramDraft } from "@/lib/sisurat/radiogram-template";
+import {
+  isNomorSuratDuplicate,
+  upsertSuratKeluar,
+} from "@/lib/sisurat/surat-store";
 import type {
   KlasifikasiSurat,
-  RadiogramBlock,
+  RadiogramSectionAAA,
   RadiogramSurat,
+  RadiogramTextMode,
 } from "@/types/surat";
+
+import { RadiogramDocumentPreview } from "./radiogram-document-preview";
 
 type RadiogramFormProps = {
   initialData?: RadiogramSurat;
 };
 
-const staticRadiogram = {
-  dari: "GUBERNUR PROVINSI PAPUA BARAT DAYA",
-  untuk:
-    "1. BUPATI / WALIKOTA SE-PAPUA BARAT DAYA\n2. KETUA DPRD PROVINSI PAPUA BARAT DAYA\n3. KETUA DPRD KAB / KOTA SE-PAPUA BARAT DAYA\n4. KETUA MRP PROVINSI PAPUA BARAT DAYA",
-  tembusan: "PJ SEKRETARIS DAERAH PROVINSI PAPUA BARAT DAYA",
-  pengirim: "An. GUBERNUR PAPUA BARAT DAYA",
-  nama: "Drs. YAKOB KARET, M.Si",
-  jabatan: "PJ. SEKRETARIS DAERAH",
-  nip: "196708041988101001",
-};
+type ValidationErrors = Record<string, string>;
 
-const defaultAmanat =
-  "AMANAT UNDANG UNDANG NOMER 2 TAHUN 2021 TENTANG OTONOMI KHUSUS PAPUA SEBAGAI DASAR PEMBAGIAN DAN PENERIMAAN KHUSUS DALAM RANGKA PELAKSAAN OTSUS ANTAR PROVINSI DAN KABUPATEN GARING KOTA DI WILAYAH PAPUA MEMPERHATIKAN JUMLAH ORANG ASLI PAPUA SERTA PERATURAN MENTERI KEUANGAN NO.33 TAHUN 2024 TENTANG PENGELOLAAN TRANSFER KE DAERAH DALAM RANGKA OTONOMI KHUSUS UNTUK MENGISYARATKAN SISTEM INFORMASI KHUSUS YANG TERINTEGRITAS MENDUKUNG KEBUTUHAN PENYEDIAN DATA DAN INFORMASI DALAM RUMUSAN KEBIJAKAN PENGELOLAAN APBN DAN TRANSFER KE DAERAH TKD UTK PENERIMAAN DALAM RANGKA OTSUS KMA DISAMPAIKAN HAL SBB :";
-
-const defaultBlocks: RadiogramBlock[] = [
-  {
-    id: "oap-aaa",
-    kode: "AAA",
-    isi: "PELAKSAAN LAUNCING DATA ORANG ASLI PAPUA TINGKAT PROVINSI PAPUA BARAT DAYA HARI/TANGGAL : SELASA, 13 JANUARI 2026 WAKTU : 09.00 WIT SAMPAI SELESAI TEMPAT : RHYLICH PANORAMA HOTEL KAMPUNG BARU KOTA SORONG",
-  },
-  {
-    id: "oap-bbb",
-    kode: "BBB",
-    isi: "MENGINGAT PENTINGNYA ACARA TSB DIHARAPKAN KPD KEPALA DINAS DUKCAPIL KABUPATEN KOTA UTK MENGIKUTI KEGIATAN LAUNCING DI MSD KOMA MENGINGAT DIHADIRI LANGSUNG OLEH DIRJEN KEPENDUDUKAN KEMENTERIAN DALAM NEGERI",
-  },
-  {
-    id: "oap-ccc",
-    kode: "CCC",
-    isi: "BIAYA PERJALANAN DINAS KAB GARING KOTA KE KOTA SORONG DITANGGUNG APBD MASINGS KAB GARING KOTA",
-  },
-  {
-    id: "oap-ddd",
-    kode: "DDD",
-    isi: "DUM KMA GUB PAPUA BARAT DAYA KRM TTK HBS",
-  },
-];
-
-export function RadiogramForm({
-  initialData = mockRadiogramSorong,
-}: RadiogramFormProps) {
+export function RadiogramForm({ initialData }: RadiogramFormProps) {
   const router = useRouter();
+  const [form, setForm] = useState<RadiogramSurat>(() =>
+    normalizeInitialData(initialData),
+  );
   const [message, setMessage] = useState("");
-  const [klasifikasi, setKlasifikasi] = useState<KlasifikasiSurat>(
-    initialData.klasifikasi || "segera",
-  );
-  const [amanat, setAmanat] = useState(initialData.amanat || defaultAmanat);
-  const [blocks, setBlocks] = useState<RadiogramBlock[]>(
-    initialData.isiBerita.length ? initialData.isiBerita : defaultBlocks,
-  );
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [dirty, setDirty] = useState(false);
 
-  const draft = useMemo(
-    () =>
-      buildRadiogramDraft({
-        initialData,
-        klasifikasi,
-        amanat,
-        blocks,
-      }),
-    [amanat, blocks, initialData, klasifikasi],
-  );
-
-  const canSubmit =
-    klasifikasi &&
-    amanat.trim() &&
-    blocks.every((block) => block.kode.trim() && block.isi.trim());
-
-  const updateBlock = (id: string, isi: string) => {
-    setMessage("");
-    setBlocks((current) =>
-      current.map((block) =>
-        block.id === id ? { ...block, isi: isi.toUpperCase() } : block,
-      ),
-    );
-  };
-
-  const goToPreview = () => {
-    if (!canSubmit) {
-      setMessage("Lengkapi klasifikasi, amanat, dan seluruh blok berita.");
+  useEffect(() => {
+    if (!dirty) {
       return;
     }
 
-    window.sessionStorage.setItem(
-      "sisurat:radiogram-draft",
-      JSON.stringify(draft),
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [dirty]);
+
+  const preview = useMemo(() => buildPreviewRadiogram(form), [form]);
+
+  const update = <K extends keyof RadiogramSurat>(
+    key: K,
+    value: RadiogramSurat[K],
+  ) => {
+    setMessage("");
+    setErrors({});
+    setDirty(true);
+    setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateAAA = <K extends keyof RadiogramSectionAAA>(
+    key: K,
+    value: RadiogramSectionAAA[K],
+  ) => {
+    setMessage("");
+    setErrors({});
+    setDirty(true);
+    setForm((current) => ({
+      ...current,
+      sectionAAA: {
+        ...current.sectionAAA!,
+        [key]: value,
+      },
+    }));
+  };
+
+  const convertToRadiogram = () => {
+    setDirty(true);
+    setForm((current) => ({
+      ...current,
+      textMode: "radiogram",
+      amanat: normalizeRadiogramText(current.amanat ?? ""),
+      sectionBBB: normalizeRadiogramText(current.sectionBBB ?? ""),
+      sectionCCC: normalizeRadiogramText(current.sectionCCC ?? ""),
+      sectionDDD: normalizeRadiogramText(current.sectionDDD ?? ""),
+      sectionAAA: {
+        ...current.sectionAAA!,
+        agenda: normalizeRadiogramText(current.sectionAAA?.agenda ?? ""),
+        hari: normalizeRadiogramText(current.sectionAAA?.hari ?? ""),
+        tanggal: normalizeRadiogramText(current.sectionAAA?.tanggal ?? ""),
+        waktuMulai: normalizeRadiogramText(current.sectionAAA?.waktuMulai ?? ""),
+        waktuSelesai: normalizeRadiogramText(
+          current.sectionAAA?.waktuSelesai ?? "",
+        ),
+        tempat: normalizeRadiogramText(current.sectionAAA?.tempat ?? ""),
+      },
+    }));
+  };
+
+  const save = (status: "draft" | "selesai") => {
+    const validation = validateRadiogram(form, status);
+    if (Object.keys(validation).length) {
+      setErrors(validation);
+      setMessage("Periksa kembali field yang ditandai sebelum menyelesaikan surat.");
+      return;
+    }
+
+    const timestamp = new Date().toISOString();
+    const next = buildPreviewRadiogram({
+      ...form,
+      status,
+      updatedAt: timestamp,
+      diubahOleh: form.diubahOleh || "Operator SISURAT",
+    });
+
+    upsertSuratKeluar(next);
+    setDirty(false);
+    setMessage(
+      status === "draft"
+        ? "Draft radiogram tersimpan."
+        : "Radiogram tersimpan sebagai Selesai.",
     );
-    router.push(`/sisurat/preview/${draft.id}`);
+    router.push("/sisurat/surat-keluar");
+  };
+
+  const saveAndPreview = () => {
+    const timestamp = new Date().toISOString();
+    const next = buildPreviewRadiogram({
+      ...form,
+      status: "draft",
+      updatedAt: timestamp,
+    });
+    upsertSuratKeluar(next);
+    setDirty(false);
+    router.push(`/sisurat/surat-keluar/${next.id}`);
   };
 
   return (
-    <form className="space-y-6">
-      {message ? (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">
-          {message}
-        </div>
-      ) : null}
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,0.96fr)_minmax(520px,1.04fr)]">
+      <form className="space-y-6">
+        {message ? (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">
+            {message}
+          </div>
+        ) : null}
 
-      <SectionCard
-        title="Data Statis Radiogram"
-        description="Data ini mengikuti format Radiogram Launching Data OAP dan tidak perlu diisi ulang oleh operator."
-      >
-        <div className="grid gap-3 lg:grid-cols-2">
-          <ReadOnlyInfo label="Dari" value={staticRadiogram.dari} />
-          <ReadOnlyInfo label="Untuk" value={staticRadiogram.untuk} />
-          <ReadOnlyInfo label="Tembusan" value={staticRadiogram.tembusan} />
-          <ReadOnlyInfo label="Pengirim" value={staticRadiogram.pengirim} />
-          <ReadOnlyInfo label="Nama" value={staticRadiogram.nama} />
-          <ReadOnlyInfo label="Jabatan" value={staticRadiogram.jabatan} />
-          <ReadOnlyInfo label="NIP" value={staticRadiogram.nip} />
-          <ReadOnlyInfo label="Nomor" value="Kosong sesuai format" />
-        </div>
-      </SectionCard>
+        <SectionCard title="1. Informasi Surat">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Jenis Surat" required>
+              <Input value="Radiogram" readOnly className="h-10 bg-slate-50" />
+            </Field>
+            <Field label="Klasifikasi" error={errors.klasifikasi} required>
+              <Select
+                value={form.klasifikasi}
+                onValueChange={(value) =>
+                  update("klasifikasi", value as KlasifikasiSurat)
+                }
+              >
+                <SelectTrigger className="h-10 w-full bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(klasifikasiSuratLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Nomor Surat" error={errors.nomorSurat}>
+              <Input
+                value={form.nomorSurat}
+                onChange={(event) => update("nomorSurat", event.target.value)}
+                placeholder="Wajib diisi saat Selesai"
+              />
+            </Field>
+            <Field label="Tanggal Surat" error={errors.tanggalSurat} required>
+              <Input
+                type="date"
+                value={form.tanggalSurat ?? form.tanggalPembuatan}
+                onChange={(event) => {
+                  update("tanggalSurat", event.target.value);
+                  update("tanggalPembuatan", event.target.value);
+                }}
+              />
+            </Field>
+            <Field label="Perihal atau Ringkasan">
+              <Input
+                value={form.perihal}
+                onChange={(event) => update("perihal", event.target.value)}
+              />
+            </Field>
+            <Field label="Register No">
+              <Input
+                value={form.registerNo ?? ""}
+                onChange={(event) => update("registerNo", event.target.value)}
+              />
+            </Field>
+          </div>
+        </SectionCard>
 
-      <SectionCard title="Data Dinamis">
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Klasifikasi">
+        <SectionCard title="2. Tujuan Surat">
+          <div className="grid gap-4">
+            <Field label="Dari" required>
+              <Input
+                value={form.dari}
+                onChange={(event) => update("dari", event.target.value)}
+              />
+            </Field>
+            <Field label="Tujuan" error={errors.tujuan} required>
+              <Textarea
+                value={form.untuk}
+                onChange={(event) => {
+                  update("untuk", event.target.value);
+                  update("tujuan", event.target.value);
+                }}
+                className="min-h-28 bg-white leading-6"
+              />
+            </Field>
+            <Field label="Tembusan">
+              <Textarea
+                value={form.tembusan.join("\n")}
+                onChange={(event) =>
+                  update(
+                    "tembusan",
+                    event.target.value
+                      .split("\n")
+                      .map((item) => item.trim())
+                      .filter(Boolean),
+                  )
+                }
+                className="min-h-20 bg-white leading-6"
+              />
+            </Field>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="3. Dasar dan Pembukaan"
+          description="Gunakan mode teks normal untuk menulis biasa, lalu konversi saat siap memfinalkan format radiogram."
+          action={
+            <Button type="button" variant="outline" onClick={convertToRadiogram}>
+              Konversi ke Format Radiogram
+            </Button>
+          }
+        >
+          <div className="mb-4 max-w-xs">
+            <Label className="mb-2 block text-sm font-bold text-pbd-navy">
+              Mode Teks
+            </Label>
             <Select
-              value={klasifikasi}
-              onValueChange={(value) => {
-                setMessage("");
-                setKlasifikasi(value as KlasifikasiSurat);
-              }}
+              value={form.textMode ?? "normal"}
+              onValueChange={(value) =>
+                update("textMode", value as RadiogramTextMode)
+              }
             >
-              <SelectTrigger className="h-10 w-full bg-white">
+              <SelectTrigger className="h-10 bg-white">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(klasifikasiSuratLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="normal">Teks Normal</SelectItem>
+                <SelectItem value="radiogram">Format Radiogram</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <Field label="Isi Pembukaan" error={errors.amanat} required>
+            <Textarea
+              value={form.amanat ?? ""}
+              onChange={(event) => update("amanat", event.target.value)}
+              className="min-h-44 bg-white leading-6"
+            />
           </Field>
-          <Field label="Nomor">
-            <Input value="" readOnly placeholder="Dikosongkan" />
+        </SectionCard>
+
+        <SectionCard title="4. Bagian AAA">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Judul atau Agenda Kegiatan" error={errors.aaa} required>
+              <Textarea
+                value={form.sectionAAA?.agenda ?? ""}
+                onChange={(event) => updateAAA("agenda", event.target.value)}
+                className="min-h-24 bg-white leading-6 md:col-span-2"
+              />
+            </Field>
+            <Field label="Hari" required>
+              <Input
+                value={form.sectionAAA?.hari ?? ""}
+                onChange={(event) => updateAAA("hari", event.target.value)}
+              />
+            </Field>
+            <Field label="Tanggal" required>
+              <Input
+                value={form.sectionAAA?.tanggal ?? ""}
+                onChange={(event) => updateAAA("tanggal", event.target.value)}
+              />
+            </Field>
+            <Field label="Waktu Mulai" required>
+              <Input
+                value={form.sectionAAA?.waktuMulai ?? ""}
+                onChange={(event) => updateAAA("waktuMulai", event.target.value)}
+              />
+            </Field>
+            <Field label="Waktu Selesai" required>
+              <Input
+                value={form.sectionAAA?.waktuSelesai ?? ""}
+                onChange={(event) => updateAAA("waktuSelesai", event.target.value)}
+              />
+            </Field>
+            <Field label="Tempat" required>
+              <Textarea
+                value={form.sectionAAA?.tempat ?? ""}
+                onChange={(event) => updateAAA("tempat", event.target.value)}
+                className="min-h-20 bg-white leading-6"
+              />
+            </Field>
+          </div>
+        </SectionCard>
+
+        <SectionCard title="5. Bagian BBB">
+          <Field label="Isi BBB" error={errors.sectionBBB} required>
+            <Textarea
+              value={form.sectionBBB ?? ""}
+              onChange={(event) => update("sectionBBB", event.target.value)}
+              className="min-h-32 bg-white leading-6"
+            />
           </Field>
-        </div>
-      </SectionCard>
+        </SectionCard>
 
-      <SectionCard
-        title="Amanat / Pembuka"
-        description="Teks pembuka sebelum blok AAA, BBB, CCC, dan DDD."
-      >
-        <Textarea
-          value={amanat}
-          onChange={(event) => {
-            setMessage("");
-            setAmanat(event.target.value.toUpperCase());
-          }}
-          className="min-h-40 rounded-lg bg-white uppercase leading-6"
-        />
-      </SectionCard>
+        <SectionCard title="6. Bagian CCC">
+          <Field label="Isi CCC" error={errors.sectionCCC} required>
+            <Textarea
+              value={form.sectionCCC ?? ""}
+              onChange={(event) => update("sectionCCC", event.target.value)}
+              className="min-h-24 bg-white leading-6"
+            />
+          </Field>
+        </SectionCard>
 
-      <SectionCard
-        title="Isi Berita Radiogram"
-        description="Kode paragraf mengikuti format referensi. Akhiran TTK akan ditampilkan pada preview."
-      >
-        <div className="space-y-4">
-          {blocks.map((block) => (
-            <div
-              key={block.id}
-              className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 lg:grid-cols-[90px_1fr]"
+        <SectionCard title="7. Bagian DDD">
+          <Field label="Isi DDD" error={errors.sectionDDD} required>
+            <Textarea
+              value={form.sectionDDD ?? ""}
+              onChange={(event) => update("sectionDDD", event.target.value)}
+              className="min-h-20 bg-white leading-6"
+            />
+          </Field>
+        </SectionCard>
+
+        <SectionCard title="8. Penandatangan">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Atas Nama">
+              <Input
+                value={form.pengirimAtasNama ?? ""}
+                onChange={(event) =>
+                  update("pengirimAtasNama", event.target.value)
+                }
+              />
+            </Field>
+            <Field label="Jabatan" error={errors.jabatanPengirim} required>
+              <Input
+                value={form.jabatanPengirim ?? ""}
+                onChange={(event) => update("jabatanPengirim", event.target.value)}
+              />
+            </Field>
+            <Field label="Nama Pejabat" error={errors.namaPenandatangan} required>
+              <Input
+                value={form.namaPenandatangan ?? ""}
+                onChange={(event) =>
+                  update("namaPenandatangan", event.target.value)
+                }
+              />
+            </Field>
+            <Field label="Pangkat">
+              <Input
+                value={form.pangkatPenandatangan ?? ""}
+                onChange={(event) =>
+                  update("pangkatPenandatangan", event.target.value)
+                }
+              />
+            </Field>
+            <Field label="NIP">
+              <Input
+                value={form.nipPenandatangan ?? ""}
+                onChange={(event) =>
+                  update("nipPenandatangan", event.target.value)
+                }
+              />
+            </Field>
+            <Field label="Kode Jabatan">
+              <Input
+                value={form.kodeJabatan ?? ""}
+                onChange={(event) => update("kodeJabatan", event.target.value)}
+              />
+            </Field>
+          </div>
+        </SectionCard>
+
+        <div className="sticky bottom-0 z-20 -mx-4 border-t border-slate-200 bg-white/95 px-4 py-4 shadow-[0_-10px_30px_rgba(15,35,80,0.08)] backdrop-blur sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6">
+          <div className="flex flex-wrap justify-end gap-3">
+            <Button asChild type="button" variant="outline">
+              <Link href="/sisurat/surat-keluar">
+                <ArrowLeft className="h-4 w-4" />
+                Batal
+              </Link>
+            </Button>
+            <Button type="button" variant="outline" onClick={() => save("draft")}>
+              <Save className="h-4 w-4" />
+              Simpan Draft
+            </Button>
+            <Button type="button" variant="outline" onClick={saveAndPreview}>
+              <Eye className="h-4 w-4" />
+              Preview
+            </Button>
+            <Button
+              type="button"
+              className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              onClick={() => save("selesai")}
             >
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Kode
-                </p>
-                <p className="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-pbd-navy">
-                  {block.kode} TTK
-                </p>
-              </div>
-              <Field label="Isi berita">
-                <Textarea
-                  value={block.isi}
-                  onChange={(event) => updateBlock(block.id, event.target.value)}
-                  className="min-h-28 rounded-lg bg-white uppercase leading-6"
-                />
-              </Field>
-            </div>
-          ))}
+              <FileCheck2 className="h-4 w-4" />
+              Simpan dan Selesaikan
+            </Button>
+          </div>
         </div>
-      </SectionCard>
+      </form>
 
-      <div className="sticky bottom-0 z-20 -mx-4 border-t border-slate-200 bg-white/95 px-4 py-4 shadow-[0_-10px_30px_rgba(15,35,80,0.08)] backdrop-blur sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap justify-end gap-3">
-          <Button asChild type="button" variant="outline">
-            <Link href="/sisurat/data">
-              <ArrowLeft className="h-4 w-4" />
-              Batal
-            </Link>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setMessage("Draft tersimpan pada sesi prototype.")}
-          >
-            <Save className="h-4 w-4" />
-            Simpan Draft
-          </Button>
-          <Button type="button" variant="outline" onClick={goToPreview}>
-            <Eye className="h-4 w-4" />
-            Generate Preview
-          </Button>
-          <Button
-            type="button"
-            className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            onClick={goToPreview}
-          >
-            <Printer className="h-4 w-4" />
-            Simpan & Cetak
-          </Button>
+      <section className="space-y-3 xl:sticky xl:top-24 xl:self-start">
+        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3">
+          <p className="text-sm font-bold text-pbd-navy">9. Preview</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Preview diperbarui langsung dari isi form.
+          </p>
         </div>
-      </div>
-    </form>
+        <RadiogramDocumentPreview
+          radiogram={preview}
+          settings={defaultPdfPreviewSettings}
+        />
+      </section>
+    </div>
   );
 }
 
-function buildRadiogramDraft({
-  initialData,
-  klasifikasi,
-  amanat,
-  blocks,
-}: {
-  initialData: RadiogramSurat;
-  klasifikasi: KlasifikasiSurat;
-  amanat: string;
-  blocks: RadiogramBlock[];
-}): RadiogramSurat {
+function normalizeInitialData(initialData?: RadiogramSurat) {
+  return createRadiogramDraft({
+    ...(initialData ?? {}),
+    sectionAAA:
+      initialData?.sectionAAA ?? createRadiogramDraft().sectionAAA,
+    sectionBBB:
+      initialData?.sectionBBB ??
+      initialData?.isiBerita.find((block) => block.kode === "BBB")?.isi,
+    sectionCCC:
+      initialData?.sectionCCC ??
+      initialData?.isiBerita.find((block) => block.kode === "CCC")?.isi,
+    sectionDDD:
+      initialData?.sectionDDD ??
+      initialData?.isiBerita.find((block) => block.kode === "DDD")?.isi,
+  });
+}
+
+function buildPreviewRadiogram(form: RadiogramSurat): RadiogramSurat {
+  const aaa = form.sectionAAA!;
+  const useRadiogramMode = form.textMode === "radiogram";
+  const text = (value?: string) =>
+    useRadiogramMode ? normalizeRadiogramText(value ?? "") : value ?? "";
+
   return {
-    ...initialData,
-    nomorSurat: initialData.nomorSurat || "RADIOGRAM/OAP/2026",
-    nomorRadiogram: "",
-    nomor: "",
-    tanggalPembuatan: initialData.tanggalPembuatan,
-    tujuan: staticRadiogram.untuk,
-    perihal: "Launching Data Orang Asli Papua",
-    klasifikasi,
-    dari: staticRadiogram.dari,
-    untuk: staticRadiogram.untuk,
-    tembusan: [staticRadiogram.tembusan],
-    amanat: amanat.toUpperCase(),
-    isiBerita: blocks.map((block) => ({
-      ...block,
-      isi: block.isi.toUpperCase(),
-    })),
-    pengirimAtasNama: staticRadiogram.pengirim,
-    jabatanPengirim: staticRadiogram.jabatan,
-    namaPenandatangan: staticRadiogram.nama,
-    nipPenandatangan: staticRadiogram.nip,
-    updatedAt: new Date().toISOString(),
+    ...form,
+    tujuan: form.untuk,
+    tanggalPembuatan: form.tanggalSurat || form.tanggalPembuatan,
+    amanat: text(form.amanat),
+    isiBerita: [
+      {
+        id: "aaa",
+        kode: "AAA",
+        isi: formatRadiogramAAA(useRadiogramMode ? normalizeAAA(aaa) : aaa),
+      },
+      {
+        id: "bbb",
+        kode: "BBB",
+        isi: formatRadiogramBlock("BBB", text(form.sectionBBB)),
+      },
+      {
+        id: "ccc",
+        kode: "CCC",
+        isi: formatRadiogramBlock("CCC", text(form.sectionCCC)),
+      },
+      {
+        id: "ddd",
+        kode: "DDD",
+        isi: formatRadiogramBlock("DDD", text(form.sectionDDD)),
+      },
+    ],
   };
+}
+
+function normalizeAAA(section: RadiogramSectionAAA): RadiogramSectionAAA {
+  return {
+    agenda: normalizeRadiogramText(section.agenda),
+    hari: normalizeRadiogramText(section.hari),
+    tanggal: normalizeRadiogramText(section.tanggal),
+    waktuMulai: normalizeRadiogramText(section.waktuMulai),
+    waktuSelesai: normalizeRadiogramText(section.waktuSelesai),
+    tempat: normalizeRadiogramText(section.tempat),
+  };
+}
+
+function validateRadiogram(form: RadiogramSurat, status: "draft" | "selesai") {
+  const errors: ValidationErrors = {};
+
+  if (status === "draft") {
+    return errors;
+  }
+  if (!form.klasifikasi) {
+    errors.klasifikasi = "Klasifikasi wajib diisi.";
+  }
+  if (!form.nomorSurat.trim()) {
+    errors.nomorSurat = "Nomor surat wajib diisi saat status Selesai.";
+  } else if (isNomorSuratDuplicate(form.nomorSurat, form.id)) {
+    errors.nomorSurat = "Nomor surat sudah digunakan.";
+  }
+  if (!form.tanggalSurat?.trim()) {
+    errors.tanggalSurat = "Tanggal surat wajib diisi.";
+  }
+  if (!form.untuk.trim()) {
+    errors.tujuan = "Tujuan wajib diisi.";
+  }
+  if (!form.amanat?.trim()) {
+    errors.amanat = "Isi pembukaan wajib diisi.";
+  }
+  if (!form.sectionAAA?.agenda.trim() || !form.sectionAAA.tempat.trim()) {
+    errors.aaa = "Agenda dan tempat wajib diisi.";
+  }
+  if (!form.sectionBBB?.trim()) {
+    errors.sectionBBB = "Bagian BBB wajib diisi.";
+  }
+  if (!form.sectionCCC?.trim()) {
+    errors.sectionCCC = "Bagian CCC wajib diisi.";
+  }
+  if (!form.sectionDDD?.trim()) {
+    errors.sectionDDD = "Bagian DDD wajib diisi.";
+  }
+  if (!form.namaPenandatangan?.trim()) {
+    errors.namaPenandatangan = "Nama penandatangan wajib diisi.";
+  }
+  if (!form.jabatanPengirim?.trim()) {
+    errors.jabatanPengirim = "Jabatan penandatangan wajib diisi.";
+  }
+
+  return errors;
 }
 
 function Field({
   label,
   children,
+  error,
+  required,
 }: {
   label: string;
   children: React.ReactNode;
+  error?: string;
+  required?: boolean;
 }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-bold text-pbd-navy">
         {label}
+        {required ? <span className="text-red-600"> *</span> : null}
       </span>
       {children}
+      {error ? (
+        <span className="mt-1 block text-xs font-semibold text-red-600">
+          {error}
+        </span>
+      ) : null}
     </label>
-  );
-}
-
-function ReadOnlyInfo({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p className="mt-2 whitespace-pre-line text-sm font-semibold leading-6 text-pbd-navy">
-        {value}
-      </p>
-    </div>
   );
 }

@@ -73,10 +73,12 @@ const appMenus: AppMenu[] = [
     accessKey: "maceku_pkk",
     icon: UsersRound,
     tone: {
-      icon: "bg-rose-50 text-rose-700 ring-rose-100",
-      subtitle: "text-rose-700",
-      button: "border-rose-600 text-rose-700",
-      hover: "group-hover:bg-rose-50 group-hover:border-rose-300",
+      icon: "bg-teal-50 text-teal-700 ring-teal-100",
+      subtitle: "text-teal-700",
+      button:
+        "border-teal-300 bg-teal-50 text-teal-700 hover:bg-teal-100 hover:border-teal-400",
+      hover:
+        "group-hover:bg-teal-50/70 group-hover:border-teal-200",
     },
     status: "Aktif",
   },
@@ -196,7 +198,7 @@ const appMenus: AppMenu[] = [
     title: "SISURAT DUKCAPIL",
     subtitle: "Surat Keluar Bidang Dukcapil",
     description:
-      "Sistem informasi untuk membuat, mengelola, dan mencetak surat keluar, termasuk prototype Radiogram.",
+      "Sistem informasi untuk membuat, mengelola, dan mencetak surat keluar Radiogram.",
     href: "/sisurat/dashboard",
     accessKey: "sisurat",
     icon: FileText,

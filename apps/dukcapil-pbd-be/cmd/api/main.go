@@ -81,6 +81,7 @@ func main() {
 	storedFileRepo := repository.NewStoredFileRepository(db)
 	kabKotaRepo := repository.NewKabKotaRepository(db)
 	portalAppRepo := repository.NewPortalAppRepository(db)
+	outgoingLetterRepo := repository.NewOutgoingLetterRepository(db)
 	tokenManager := security.NewManager(env("JWT_SECRET", "dev-secret-change-me"), 24*time.Hour)
 	authMiddleware := authmiddleware.NewAuthMiddleware(tokenManager)
 
@@ -104,6 +105,7 @@ func main() {
 		Users:           controller.NewUserController(userRepo),
 		Website:         controller.NewWebsiteController(),
 		PortalApps:      controller.NewPortalAppController(portalAppRepo),
+		OutgoingLetters: controller.NewOutgoingLetterController(outgoingLetterRepo),
 		AuthMiddleware:  authMiddleware,
 	})
 

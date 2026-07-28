@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, FileWarning } from "lucide-react";
+import { ArrowLeft, FileWarning, PenLine } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,8 @@ import {
   findSuratKeluar,
   jenisSuratLabels,
 } from "@/lib/sisurat/mock-surat";
+import { sanitizeRadiogramFilename } from "@/lib/sisurat/radiogram-format";
+import { findStoredRadiogram, findStoredSurat } from "@/lib/sisurat/surat-store";
 import type { RadiogramSurat } from "@/types/surat";
 
 import { PdfPreviewToolbar } from "./pdf-preview-toolbar";
@@ -21,13 +23,13 @@ type RadiogramPreviewPageProps = {
 };
 
 export function RadiogramPreviewPage({ suratId }: RadiogramPreviewPageProps) {
-  const surat = findSuratKeluar(suratId);
+  const surat = findStoredSurat(suratId) ?? findSuratKeluar(suratId);
   const [draftRadiogram] = useState<RadiogramSurat | undefined>(() =>
     readDraftRadiogram(suratId),
   );
   const [settings, setSettings] = useState(defaultPdfPreviewSettings);
   const [message, setMessage] = useState("");
-  const radiogram = draftRadiogram ?? findRadiogram(suratId);
+  const radiogram = draftRadiogram ?? findStoredRadiogram(suratId) ?? findRadiogram(suratId);
 
   if (!radiogram) {
     return (
@@ -39,11 +41,11 @@ export function RadiogramPreviewPage({ suratId }: RadiogramPreviewPageProps) {
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-600">
             {surat
-              ? `${jenisSuratLabels[surat.jenisSurat]} belum memiliki template preview/cetak pada prototype ini.`
-              : "Data surat tidak ditemukan pada mock data."}
+              ? `${jenisSuratLabels[surat.jenisSurat]} belum memiliki template preview/cetak.`
+              : "Data surat tidak ditemukan pada daftar surat keluar."}
           </p>
           <Button asChild className="mt-6 bg-pbd-navy text-white">
-            <Link href="/sisurat/data">
+            <Link href="/sisurat/surat-keluar">
               <ArrowLeft className="h-4 w-4" />
               Kembali ke Daftar
             </Link>
@@ -58,12 +60,20 @@ export function RadiogramPreviewPage({ suratId }: RadiogramPreviewPageProps) {
   return (
     <main className="space-y-4">
       <div className="print:hidden">
-        <Button asChild variant="outline">
-          <Link href="/sisurat/data">
-            <ArrowLeft className="h-4 w-4" />
-            Kembali ke Daftar
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button asChild variant="outline">
+            <Link href="/sisurat/surat-keluar">
+              <ArrowLeft className="h-4 w-4" />
+              Kembali ke Daftar
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={`/sisurat/surat-keluar/${radiogram.id}/edit`}>
+              <PenLine className="h-4 w-4" />
+              Edit Radiogram
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {message ? (
@@ -80,13 +90,17 @@ export function RadiogramPreviewPage({ suratId }: RadiogramPreviewPageProps) {
           onPrint={handlePrint}
           onDownload={() => {
             setMessage(
-              "Gunakan dialog cetak lalu pilih Save as PDF untuk menyimpan dokumen.",
+              `Gunakan dialog cetak lalu pilih Save as PDF. Nama file: ${sanitizeRadiogramFilename(
+                radiogram.nomorSurat,
+                radiogram.tanggalSurat ?? radiogram.tanggalPembuatan,
+              )}`,
             );
             window.print();
           }}
           onSaveTemplate={() =>
-            setMessage("Template tersimpan pada sesi prototype.")
+            setMessage("Pengaturan preview tersimpan pada sesi browser.")
           }
+          editHref={`/sisurat/surat-keluar/${radiogram.id}/edit`}
         />
       </div>
     </main>

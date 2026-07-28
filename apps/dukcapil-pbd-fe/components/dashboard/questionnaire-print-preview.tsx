@@ -139,7 +139,7 @@ function PrintActionBar({
   return (
     <div className="no-print flex flex-col gap-3 border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
       <Button asChild variant="outline" className="h-10 rounded">
-        <Link href="/dashboard/Subkegiatan">
+        <Link href="/dashboard/subkegiatan">
           <ArrowLeft className="h-4 w-4" />
           Kembali
         </Link>

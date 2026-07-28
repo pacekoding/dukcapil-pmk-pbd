@@ -8,10 +8,7 @@ export type JenisSurat =
 
 export type StatusSurat =
   | "draft"
-  | "siap_cetak"
-  | "sudah_dicetak"
-  | "terkirim"
-  | "dibatalkan";
+  | "selesai";
 
 export type KlasifikasiSurat =
   | "biasa"
@@ -26,10 +23,13 @@ export interface SuratKeluar {
   nomorSurat: string;
   jenisSurat: JenisSurat;
   tanggalPembuatan: string;
+  tanggalSurat?: string;
   tujuan: string;
   perihal: string;
   klasifikasi: KlasifikasiSurat;
   status: StatusSurat;
+  dibuatOleh?: string;
+  diubahOleh?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +39,17 @@ export interface RadiogramBlock {
   kode: "AAA" | "BBB" | "CCC" | "DDD" | "EEE" | string;
   isi: string;
 }
+
+export interface RadiogramSectionAAA {
+  agenda: string;
+  hari: string;
+  tanggal: string;
+  waktuMulai: string;
+  waktuSelesai: string;
+  tempat: string;
+}
+
+export type RadiogramTextMode = "normal" | "radiogram";
 
 export interface RadiogramSurat extends SuratKeluar {
   registerNo?: string;
@@ -51,14 +62,23 @@ export interface RadiogramSurat extends SuratKeluar {
   dari: string;
   untuk: string;
   tembusan: string[];
+  alamatTujuan?: string;
   isiBerita: RadiogramBlock[];
   amanat?: string;
+  textMode?: RadiogramTextMode;
+  sectionAAA?: RadiogramSectionAAA;
+  sectionBBB?: string;
+  sectionCCC?: string;
+  sectionDDD?: string;
   pengirimAtasNama?: string;
   jabatanPengirim?: string;
+  pangkatPenandatangan?: string;
   namaPenandatangan?: string;
   nipPenandatangan?: string;
+  kodeJabatan?: string;
   catatanTte?: string;
   qrCodeLabel?: string;
+  footer?: string;
 }
 
 export interface PdfPreviewSettings {

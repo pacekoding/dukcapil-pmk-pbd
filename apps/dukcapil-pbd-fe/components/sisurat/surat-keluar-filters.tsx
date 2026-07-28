@@ -13,6 +13,7 @@ import {
 import {
   jenisSuratLabels,
   klasifikasiSuratLabels,
+  mvpJenisSurat,
   statusSuratLabels,
 } from "@/lib/sisurat/mock-surat";
 import type { JenisSurat, KlasifikasiSurat, StatusSurat } from "@/types/surat";
@@ -66,9 +67,9 @@ export function SuratKeluarFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Semua Jenis</SelectItem>
-          {Object.entries(jenisSuratLabels).map(([key, label]) => (
-            <SelectItem key={key} value={key}>
-              {label}
+          {mvpJenisSurat.map((jenis) => (
+            <SelectItem key={jenis} value={jenis}>
+              {jenisSuratLabels[jenis]}
             </SelectItem>
           ))}
         </SelectContent>

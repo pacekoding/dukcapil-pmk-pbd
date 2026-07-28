@@ -7,10 +7,7 @@ import type { StatusSurat } from "@/types/surat";
 
 const statusClasses: Record<StatusSurat, string> = {
   draft: "border-slate-200 bg-slate-100 text-slate-700",
-  siap_cetak: "border-blue-200 bg-blue-50 text-blue-700",
-  sudah_dicetak: "border-indigo-200 bg-indigo-50 text-indigo-700",
-  terkirim: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  dibatalkan: "border-red-200 bg-red-50 text-red-700",
+  selesai: "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
 export function StatusSuratBadge({ status }: { status: StatusSurat }) {

@@ -1,4 +1,4 @@
-import { RadiogramPreviewPage } from "@/components/sisurat/radiogram-preview-page";
+import { redirect } from "next/navigation";
 
 type SisuratPreviewRouteProps = {
   params: Promise<{
@@ -10,5 +10,5 @@ export default async function SisuratPreviewRoute({
   params,
 }: SisuratPreviewRouteProps) {
   const { id } = await params;
-  return <RadiogramPreviewPage suratId={id} />;
+  redirect(`/sisurat/surat-keluar/${id}`);
 }

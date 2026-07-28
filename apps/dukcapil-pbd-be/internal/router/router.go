@@ -32,6 +32,7 @@ type Config struct {
 	Users           *controller.UserController
 	Website         *controller.WebsiteController
 	PortalApps      *controller.PortalAppController
+	OutgoingLetters *controller.OutgoingLetterController
 	AuthMiddleware  *authmiddleware.AuthMiddleware
 }
 
@@ -104,6 +105,20 @@ func New(config Config) *echo.Echo {
 	protected.GET("/aspirasiku", config.Aspirasiku.List)
 	protected.PATCH("/aspirasiku/:id/status", config.Aspirasiku.UpdateStatus)
 	protected.DELETE("/aspirasiku/:id", config.Aspirasiku.Delete)
+
+	sisurat := api.Group(
+		"/outgoing-letters",
+		config.AuthMiddleware.RequireRoles(adminRoles...),
+		config.AuthMiddleware.RequireSystemAccess("sisurat"),
+	)
+	sisurat.GET("", config.OutgoingLetters.List)
+	sisurat.GET("/:id", config.OutgoingLetters.Detail)
+	sisurat.POST("", config.OutgoingLetters.Create)
+	sisurat.PUT("/:id", config.OutgoingLetters.Update)
+	sisurat.DELETE("/:id", config.OutgoingLetters.Delete)
+	sisurat.GET("/:id/preview", config.OutgoingLetters.Preview)
+	sisurat.GET("/:id/pdf", config.OutgoingLetters.PDF)
+
 	maceku := api.Group(
 		"/maceku-pkk",
 		config.AuthMiddleware.RequireRoles(adminRoles...),

@@ -20,7 +20,7 @@ export function DeleteSuratDialog({
     <ConfirmDeleteDialog
       open={open}
       title="Hapus Surat Keluar"
-      description={`Surat ${surat?.nomorSurat ?? "ini"} akan dihapus dari daftar prototype. Tindakan ini hanya berlaku pada data mock di tampilan saat ini.`}
+      description={`Surat ${surat?.nomorSurat || "ini"} akan dihapus dari daftar surat keluar. Tindakan ini perlu dikonfirmasi sebelum diproses.`}
       confirmLabel="Hapus Surat"
       onOpenChange={onOpenChange}
       onConfirm={onConfirm}

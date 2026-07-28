@@ -20,6 +20,7 @@ type PdfPreviewToolbarProps = {
   onPrint: () => void;
   onDownload: () => void;
   onSaveTemplate: () => void;
+  editHref: string;
 };
 
 const paperSizes: PdfPreviewSettings["paperSize"][] = [
@@ -43,6 +44,7 @@ export function PdfPreviewToolbar({
   onPrint,
   onDownload,
   onSaveTemplate,
+  editHref,
 }: PdfPreviewToolbarProps) {
   const update = <K extends keyof PdfPreviewSettings>(
     key: K,
@@ -131,24 +133,9 @@ export function PdfPreviewToolbar({
               Tampilkan Elemen
             </p>
             <ToolbarSwitch
-              label="Logo"
-              checked={settings.showLogo}
-              onCheckedChange={(checked) => update("showLogo", checked)}
-            />
-            <ToolbarSwitch
               label="Garis kop"
               checked={settings.showHeaderLine}
               onCheckedChange={(checked) => update("showHeaderLine", checked)}
-            />
-            <ToolbarSwitch
-              label="QR code"
-              checked={settings.showQrCode}
-              onCheckedChange={(checked) => update("showQrCode", checked)}
-            />
-            <ToolbarSwitch
-              label="Catatan TTE"
-              checked={settings.showTteNote}
-              onCheckedChange={(checked) => update("showTteNote", checked)}
             />
             <ToolbarSwitch
               label="Area lalu lintas/paraf operator"
@@ -169,7 +156,7 @@ export function PdfPreviewToolbar({
               Cetak
             </Button>
             <Button type="button" variant="outline" asChild>
-              <a href="/sisurat/generate?edit=rad-001">
+              <a href={editHref}>
                 <RotateCcw className="h-4 w-4" />
                 Kembali Edit
               </a>

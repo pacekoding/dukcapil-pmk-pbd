@@ -27,6 +27,11 @@ export const apiEndpoints = {
   aspirasiku: `${API_PREFIX}/aspirasiku`,
   aspirasikuDetail: (id: number) => `${API_PREFIX}/aspirasiku/${id}`,
   aspirasikuStatus: (id: number) => `${API_PREFIX}/aspirasiku/${id}/status`,
+  outgoingLetters: `${API_PREFIX}/outgoing-letters`,
+  outgoingLetterDetail: (id: number) => `${API_PREFIX}/outgoing-letters/${id}`,
+  outgoingLetterPreview: (id: number) =>
+    `${API_PREFIX}/outgoing-letters/${id}/preview`,
+  outgoingLetterPdf: (id: number) => `${API_PREFIX}/outgoing-letters/${id}/pdf`,
   users: `${API_PREFIX}/users`,
   userDetail: (id: number) => `${API_PREFIX}/users/${id}`,
   userResetPassword: (id: number) => `${API_PREFIX}/users/${id}/reset-password`,

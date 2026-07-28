@@ -109,6 +109,12 @@ export default function proxy(
   const settingsRedirectPath =
     dashboardPathFromSettingsPath(pathname);
 
+  const legacySubkegiatanPath =
+    pathname === "/dashboard/Subkegiatan" ||
+    pathname.startsWith("/dashboard/Subkegiatan/")
+      ? pathname.replace("/dashboard/Subkegiatan", "/dashboard/subkegiatan")
+      : "";
+
   if (
     isPortalTypo
   ) {
@@ -171,6 +177,17 @@ export default function proxy(
     return NextResponse.redirect(
       new URL(
         settingsRedirectPath,
+        request.url
+      )
+    );
+  }
+
+  if (
+    legacySubkegiatanPath
+  ) {
+    return NextResponse.redirect(
+      new URL(
+        legacySubkegiatanPath,
         request.url
       )
     );
@@ -246,7 +263,7 @@ function dashboardPathFromSettingsPath(pathname: string) {
     pathname === "/settings/Subkegiatan" ||
     pathname.startsWith("/settings/Subkegiatan/")
   ) {
-    return pathname.replace("/settings/Subkegiatan", "/dashboard/Subkegiatan");
+    return pathname.replace("/settings/Subkegiatan", "/dashboard/subkegiatan");
   }
   return "";
 }

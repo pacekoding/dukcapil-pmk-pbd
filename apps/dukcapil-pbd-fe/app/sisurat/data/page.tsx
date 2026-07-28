@@ -1,5 +1,5 @@
-import { SuratKeluarListPage } from "@/components/sisurat/surat-keluar-list-page";
+import { redirect } from "next/navigation";
 
 export default function SisuratDataRoute() {
-  return <SuratKeluarListPage />;
+  redirect("/sisurat/surat-keluar");
 }

@@ -116,7 +116,7 @@ const menuTitles: Record<
     description: "Kelola master SSD melalui import XLSX dan pemutakhiran data",
   },
 
-  "/dashboard/Subkegiatan": {
+  "/dashboard/subkegiatan": {
     title: "Subkegiatan",
     description: "Kelola master subkegiatan berdasarkan tahun anggaran",
   },
@@ -314,8 +314,8 @@ function getPageInfo(pathname: string) {
     return menuTitles["/arsip-pegawai"];
   }
 
-  if (pathname.startsWith("/dashboard/Subkegiatan")) {
-    return menuTitles["/dashboard/Subkegiatan"];
+  if (pathname.startsWith("/dashboard/subkegiatan")) {
+    return menuTitles["/dashboard/subkegiatan"];
   }
 
   if (pathname.startsWith("/dashboard/SDD")) {

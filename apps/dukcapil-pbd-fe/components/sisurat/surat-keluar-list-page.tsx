@@ -8,7 +8,10 @@ import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { mockSuratKeluar } from "@/lib/sisurat/mock-surat";
+import {
+  deleteSuratKeluar,
+  useSuratKeluarStore,
+} from "@/lib/sisurat/surat-store";
 import type { SuratKeluar } from "@/types/surat";
 
 import { DeleteSuratDialog } from "./delete-surat-dialog";
@@ -27,7 +30,7 @@ const initialFilters: SuratKeluarFilterState = {
 };
 
 export function SuratKeluarListPage() {
-  const [surat, setSurat] = useState<SuratKeluar[]>(mockSuratKeluar);
+  const surat = useSuratKeluarStore();
   const [filters, setFilters] = useState(initialFilters);
   const [deleteTarget, setDeleteTarget] = useState<SuratKeluar>();
   const [templateMessage, setTemplateMessage] = useState("");
@@ -80,7 +83,7 @@ export function SuratKeluarListPage() {
         description="Cari, filter, edit, hapus, dan cetak surat keluar Bidang Dukcapil dari satu tabel kerja operator."
         meta={
           <Badge className="h-8 rounded-full bg-blue-50 px-4 text-sm font-bold text-pbd-blue">
-            {surat.length} data mock
+            {surat.length} surat
           </Badge>
         }
         aside={
@@ -88,7 +91,7 @@ export function SuratKeluarListPage() {
             asChild
             className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
           >
-            <Link href="/sisurat/generate">
+            <Link href="/sisurat/surat-keluar/create">
               <FilePlus2 className="h-4 w-4" />
               Buat Surat Keluar
             </Link>
@@ -137,7 +140,7 @@ export function SuratKeluarListPage() {
               Klik Buat Surat Keluar untuk membuat dokumen baru.
             </p>
             <Button asChild className="mt-5 bg-pbd-navy text-white">
-              <Link href="/sisurat/generate">
+              <Link href="/sisurat/surat-keluar/create">
                 <FilePlus2 className="h-4 w-4" />
                 Buat Surat Keluar
               </Link>
@@ -156,9 +159,7 @@ export function SuratKeluarListPage() {
         }}
         onConfirm={() => {
           if (deleteTarget) {
-            setSurat((current) =>
-              current.filter((item) => item.id !== deleteTarget.id),
-            );
+            deleteSuratKeluar(deleteTarget.id);
           }
           setDeleteTarget(undefined);
         }}

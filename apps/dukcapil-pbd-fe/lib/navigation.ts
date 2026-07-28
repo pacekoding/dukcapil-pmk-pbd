@@ -244,23 +244,8 @@ export const sisuratMenus: DashboardMenuItem[] = [
   },
   {
     title: "Daftar Surat Keluar",
-    href: "/sisurat/data",
+    href: "/sisurat/surat-keluar",
     icon: "database",
-  },
-  {
-    title: "Buat Surat Keluar",
-    href: "/sisurat/generate",
-    icon: "fileText",
-  },
-  {
-    title: "Template Surat",
-    href: "/sisurat/template",
-    icon: "folderArchive",
-  },
-  {
-    title: "Pengaturan",
-    href: "/sisurat/settings",
-    icon: "settings",
   },
 ];
 
@@ -331,7 +316,7 @@ export const settingsMenus: DashboardMenuItem[] = [
   },
   {
     title: "Subkegiatan",
-    href: "/dashboard/Subkegiatan",
+    href: "/dashboard/subkegiatan",
     icon: "listChecks",
   },
 ];

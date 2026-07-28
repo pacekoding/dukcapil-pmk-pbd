@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 import { klasifikasiSuratLabels } from "@/lib/sisurat/mock-surat";
 import type { PdfPreviewSettings, RadiogramSurat } from "@/types/surat";
 
@@ -46,18 +44,7 @@ export function RadiogramDocumentPreview({
         style={sheetStyle}
       >
         <header className="text-center">
-          <div className="grid grid-cols-[72px_1fr_72px] items-center gap-3">
-            <div className="flex justify-start">
-              {settings.showLogo ? (
-                <Image
-                  src="/logo-pbd.png"
-                  alt="Logo Papua Barat Daya"
-                  width={64}
-                  height={64}
-                  className="h-16 w-16 object-contain"
-                />
-              ) : null}
-            </div>
+          <div className="grid items-center gap-3">
             <div
               className="font-bold uppercase leading-tight"
               style={{ fontSize: `${settings.headerFontSize}px` }}
@@ -71,7 +58,6 @@ export function RadiogramDocumentPreview({
                 Sorong, Papua Barat Daya
               </p>
             </div>
-            <div />
           </div>
 
           {settings.showHeaderLine ? (
@@ -143,9 +129,10 @@ export function RadiogramDocumentPreview({
               <p className="mb-4 leading-[inherit]">{radiogram.amanat}</p>
             ) : null}
             {radiogram.isiBerita.map((block) => (
-              <p key={block.id} className="mb-3 grid grid-cols-[72px_1fr] gap-4">
-                <span className="font-bold">{block.kode} TTK</span>
-                <span>{formatRadiogramIsi(block.isi)}</span>
+              <p key={block.id} className="mb-3 whitespace-pre-line">
+                <span className="font-bold">
+                  {formatRadiogramIsi(block.kode, block.isi)}
+                </span>
               </p>
             ))}
           </div>
@@ -177,22 +164,7 @@ export function RadiogramDocumentPreview({
                 <span>{radiogram.nipPenandatangan}</span>
                 <span>Tanda Tangan</span>
                 <span>:</span>
-                <div className="mt-1 flex items-center gap-3">
-                  {settings.showLogo ? (
-                    <Image
-                      src="/logo-pbd.png"
-                      alt="Logo tanda tangan"
-                      width={56}
-                      height={56}
-                      className="h-14 w-14 border border-black object-contain p-1"
-                    />
-                  ) : null}
-                  <div className="border border-black px-4 py-3 text-center text-[10px] leading-4">
-                    <p>Ditandatangani secara elektronik oleh:</p>
-                    <p>{radiogram.namaPenandatangan}</p>
-                    <p>{radiogram.jabatanPengirim}</p>
-                  </div>
-                </div>
+                <span className="min-h-16" />
               </div>
             </div>
 
@@ -218,13 +190,6 @@ export function RadiogramDocumentPreview({
             ) : null}
           </div>
         </section>
-
-        {(settings.showQrCode || settings.showTteNote) && (
-          <footer className="mt-20 flex items-end gap-3 text-[10px] leading-4">
-            {settings.showQrCode ? <QrPlaceholder label={radiogram.qrCodeLabel} /> : null}
-            {settings.showTteNote ? <p>{radiogram.catatanTte}</p> : null}
-          </footer>
-        )}
       </article>
     </div>
   );
@@ -240,24 +205,6 @@ function MetaRow({ label, value }: { label: string; value?: string }) {
   );
 }
 
-function QrPlaceholder({ label = "QR TTE" }: { label?: string }) {
-  return (
-    <div className="grid h-14 w-14 shrink-0 grid-cols-5 grid-rows-5 gap-px border border-black bg-white p-1">
-      {Array.from({ length: 25 }).map((_, index) => (
-        <span
-          key={index}
-          className={
-            index % 2 === 0 || index === 7 || index === 18
-              ? "bg-black"
-              : "bg-white"
-          }
-          title={index === 12 ? label : undefined}
-        />
-      ))}
-    </div>
-  );
-}
-
 function formatLongDate(value: string) {
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
@@ -266,10 +213,13 @@ function formatLongDate(value: string) {
   }).format(new Date(value));
 }
 
-function formatRadiogramIsi(value: string) {
+function formatRadiogramIsi(kode: string, value: string) {
   const normalized = value.trim();
-  if (/(TTK|HBS)$/i.test(normalized)) {
+  if (normalized.toUpperCase().startsWith(`${kode} TTK`)) {
     return normalized;
   }
-  return `${normalized} TTK`;
+  if (/(TTK|HBS)$/i.test(normalized)) {
+    return `${kode} TTK ${normalized}`;
+  }
+  return `${kode} TTK ${normalized} TTK`;
 }

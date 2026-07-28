@@ -51,7 +51,7 @@ const settingsMenus: SettingsMenu[] = [
     title: "Subkegiatan",
     description:
       "Kelola master subkegiatan berdasarkan tahun anggaran dan relasi SSD.",
-    href: "/dashboard/Subkegiatan",
+    href: "/dashboard/subkegiatan",
     icon: ListChecks,
     tone: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   },

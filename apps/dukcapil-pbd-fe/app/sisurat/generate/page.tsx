@@ -1,4 +1,4 @@
-import { GenerateSuratPage } from "@/components/sisurat/generate-surat-page";
+import { redirect } from "next/navigation";
 
 type GenerateSuratRouteProps = {
   searchParams: Promise<{
@@ -10,5 +10,9 @@ export default async function GenerateSuratRoute({
   searchParams,
 }: GenerateSuratRouteProps) {
   const params = await searchParams;
-  return <GenerateSuratPage editId={params.edit} />;
+  if (params.edit) {
+    redirect(`/sisurat/surat-keluar/${params.edit}/edit`);
+  }
+
+  redirect("/sisurat/surat-keluar/create");
 }

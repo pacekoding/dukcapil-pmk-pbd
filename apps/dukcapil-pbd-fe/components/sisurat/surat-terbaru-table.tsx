@@ -42,7 +42,7 @@ export function SuratTerbaruTable({ surat }: { surat: SuratKeluar[] }) {
       description="Dokumen surat keluar terakhir yang dibuat oleh operator."
       action={
         <Button asChild variant="outline">
-          <Link href="/sisurat/data">Lihat Daftar</Link>
+          <Link href="/sisurat/surat-keluar">Lihat Daftar</Link>
         </Button>
       }
       contentClassName="p-0"
@@ -63,7 +63,7 @@ export function SuratTerbaruTable({ surat }: { surat: SuratKeluar[] }) {
           {latest.map((item) => (
             <TableRow key={item.id}>
               <TableCell className="font-bold text-pbd-navy">
-                {item.nomorSurat}
+                {item.nomorSurat || "Draft tanpa nomor"}
               </TableCell>
               <TableCell>{jenisSuratLabels[item.jenisSurat]}</TableCell>
               <TableCell className="max-w-[260px] whitespace-normal leading-5">
@@ -79,17 +79,17 @@ export function SuratTerbaruTable({ surat }: { surat: SuratKeluar[] }) {
               <TableCell>
                 <div className="flex justify-end gap-2">
                   <Button asChild size="icon-sm" variant="ghost" title="Detail">
-                    <Link href={`/sisurat/data?detail=${item.id}`}>
+                    <Link href={`/sisurat/surat-keluar/${item.id}`}>
                       <Eye className="h-4 w-4" />
                     </Link>
                   </Button>
                   <Button asChild size="icon-sm" variant="ghost" title="Edit">
-                    <Link href={`/sisurat/generate?edit=${item.id}`}>
+                    <Link href={`/sisurat/surat-keluar/${item.id}/edit`}>
                       <PenLine className="h-4 w-4" />
                     </Link>
                   </Button>
                   <Button asChild size="icon-sm" variant="ghost" title="Cetak">
-                    <Link href={`/sisurat/preview/${item.id}`}>
+                    <Link href={`/sisurat/surat-keluar/${item.id}`}>
                       <Printer className="h-4 w-4" />
                     </Link>
                   </Button>

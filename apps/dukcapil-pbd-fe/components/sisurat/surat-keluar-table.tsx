@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, PenLine, Printer, Trash2 } from "lucide-react";
+import { Download, Eye, PenLine, Printer, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,9 +46,9 @@ export function SuratKeluarTable({
           <TableHead>Jenis Surat</TableHead>
           <TableHead>Tujuan</TableHead>
           <TableHead>Perihal/Ringkasan</TableHead>
-          <TableHead>Klasifikasi</TableHead>
-          <TableHead>Tanggal Pembuatan</TableHead>
+          <TableHead>Tanggal</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Dibuat Oleh</TableHead>
           <TableHead className="text-right">Aksi</TableHead>
         </TableRow>
       </TableHeader>
@@ -59,7 +59,7 @@ export function SuratKeluarTable({
               {index + 1}
             </TableCell>
             <TableCell className="font-bold text-pbd-navy">
-              {item.nomorSurat}
+              {item.nomorSurat || "Draft tanpa nomor"}
             </TableCell>
             <TableCell>{jenisSuratLabels[item.jenisSurat]}</TableCell>
             <TableCell className="max-w-[240px] whitespace-normal leading-5">
@@ -68,22 +68,23 @@ export function SuratKeluarTable({
             <TableCell className="max-w-[260px] whitespace-normal leading-5">
               {item.perihal}
             </TableCell>
-            <TableCell>
-              <KlasifikasiBadge klasifikasi={item.klasifikasi} />
-            </TableCell>
             <TableCell>{formatDate(item.tanggalPembuatan)}</TableCell>
             <TableCell>
-              <StatusSuratBadge status={item.status} />
+              <div className="flex flex-col gap-1">
+                <StatusSuratBadge status={item.status} />
+                <KlasifikasiBadge klasifikasi={item.klasifikasi} />
+              </div>
             </TableCell>
+            <TableCell>{item.dibuatOleh ?? "Operator SISURAT"}</TableCell>
             <TableCell>
               <div className="flex justify-end gap-2">
-                <Button asChild size="icon-sm" variant="ghost" title="Detail">
-                  <Link href={`/sisurat/data?detail=${item.id}`}>
+                <Button asChild size="icon-sm" variant="ghost" title="Lihat">
+                  <Link href={`/sisurat/surat-keluar/${item.id}`}>
                     <Eye className="h-4 w-4" />
                   </Link>
                 </Button>
                 <Button asChild size="icon-sm" variant="ghost" title="Edit">
-                  <Link href={`/sisurat/generate?edit=${item.id}`}>
+                  <Link href={`/sisurat/surat-keluar/${item.id}/edit`}>
                     <PenLine className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -96,16 +97,28 @@ export function SuratKeluarTable({
                   <Trash2 className="h-4 w-4 text-red-600" />
                 </Button>
                 {item.jenisSurat === "radiogram" ? (
-                  <Button
-                    asChild
-                    size="icon-sm"
-                    variant="ghost"
-                    title="Cetak"
-                  >
-                    <Link href={`/sisurat/preview/${item.id}`}>
-                      <Printer className="h-4 w-4" />
-                    </Link>
-                  </Button>
+                  <>
+                    <Button
+                      asChild
+                      size="icon-sm"
+                      variant="ghost"
+                      title="Preview"
+                    >
+                      <Link href={`/sisurat/surat-keluar/${item.id}`}>
+                        <Printer className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button
+                      asChild
+                      size="icon-sm"
+                      variant="ghost"
+                      title="Download PDF"
+                    >
+                      <Link href={`/sisurat/surat-keluar/${item.id}`}>
+                        <Download className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </>
                 ) : (
                   <Button
                     size="icon-sm"
