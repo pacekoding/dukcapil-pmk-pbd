@@ -83,12 +83,12 @@ const menuTitles: Record<
 
   "/sikampung/dashboard": {
     title: "SIKAMPUNG",
-    description: "Sistem Informasi Kampung/Desa",
+    description: "Sistem Informasi Kampung IDM",
   },
 
   "/sikampung/data": {
-    title: "Data Kampung/Desa",
-    description: "Kelola data kampung/desa kabupaten/kota",
+    title: "Data Kampung IDM",
+    description: "Kelola IKS, IKE, IKL, nilai IDM, dan status IDM",
   },
 
   "/sitekad/dashboard": {

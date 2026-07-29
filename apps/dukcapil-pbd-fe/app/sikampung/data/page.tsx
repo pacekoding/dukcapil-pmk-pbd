@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Database,
   Download,
@@ -32,76 +32,61 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getKabKota } from "@/lib/api/kab-kota";
+import {
+  createSikampungData,
+  deleteSikampungData,
+  getSikampungData,
+  updateSikampungData,
+} from "@/lib/api/sikampung";
+import type {
+  SikampungData,
+  SikampungPayload,
+  SikampungStatusIDM,
+} from "@/types/sikampung";
+import { sikampungStatusIdmOptions } from "@/types/sikampung";
+import type { KabKota } from "@/types/kab-kota";
 
-type KampungStatus = "Aktif" | "Tidak Aktif";
-
-type KampungRecord = {
-  id: string;
-  namaKabKota: string;
-  namaDistrik: string;
-  namaKampungDesa: string;
-  kodeWilayah: string;
-  status: KampungStatus;
-  catatan: string;
+type SikampungFormState = {
+  kodeDesa: string;
+  desa: string;
+  distrik: string;
+  kabupaten: string;
+  iks: string;
+  ike: string;
+  ikl: string;
+  statusIdm: SikampungStatusIDM;
 };
 
-type KampungFormState = Omit<KampungRecord, "id">;
-
-const initialFormState: KampungFormState = {
-  namaKabKota: "",
-  namaDistrik: "",
-  namaKampungDesa: "",
-  kodeWilayah: "",
-  status: "Aktif",
-  catatan: "",
+const initialFormState: SikampungFormState = {
+  kodeDesa: "",
+  desa: "",
+  distrik: "",
+  kabupaten: "",
+  iks: "",
+  ike: "",
+  ikl: "",
+  statusIdm: "Tertinggal",
 };
-
-const initialKampungRecords: KampungRecord[] = [
-  {
-    id: "kampung-001",
-    namaKabKota: "Kab. Sorong",
-    namaDistrik: "Aimas",
-    namaKampungDesa: "Malawili",
-    kodeWilayah: "96.01.01.2001",
-    status: "Aktif",
-    catatan: "Data awal sudah sesuai.",
-  },
-  {
-    id: "kampung-002",
-    namaKabKota: "Kab. Sorong Selatan",
-    namaDistrik: "Teminabuan",
-    namaKampungDesa: "Keyen",
-    kodeWilayah: "96.02.01.2003",
-    status: "Aktif",
-    catatan: "Perlu pembaruan koordinat wilayah.",
-  },
-  {
-    id: "kampung-003",
-    namaKabKota: "Kab. Maybrat",
-    namaDistrik: "Aitinyo",
-    namaKampungDesa: "Ayata",
-    kodeWilayah: "96.05.02.2002",
-    status: "Aktif",
-    catatan: "Data administrasi lengkap.",
-  },
-  {
-    id: "kampung-004",
-    namaKabKota: "Kab. Raja Ampat",
-    namaDistrik: "Waisai Kota",
-    namaKampungDesa: "Sapordanco",
-    kodeWilayah: "96.03.01.2004",
-    status: "Tidak Aktif",
-    catatan: "Menunggu validasi status administrasi.",
-  },
-];
 
 export default function SikampungDataPage() {
-  const [records, setRecords] = useState(initialKampungRecords);
+  const [records, setRecords] = useState<SikampungData[]>([]);
+  const [kabKotaOptions, setKabKotaOptions] = useState<KabKota[]>([]);
+  const [tahunAnggaran, setTahunAnggaran] = useState("");
   const [query, setQuery] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<KampungRecord | null>(null);
-  const [form, setForm] = useState<KampungFormState>(initialFormState);
+  const [editingRecord, setEditingRecord] = useState<SikampungData | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SikampungData | null>(null);
+  const [form, setForm] = useState<SikampungFormState>(initialFormState);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  const nilaiIdm = useMemo(
+    () => calculateNilaiIdm(form.iks, form.ike, form.ikl),
+    [form.ike, form.ikl, form.iks],
+  );
 
   const filteredRecords = useMemo(() => {
     const normalizedQuery = query.toLowerCase().trim();
@@ -112,12 +97,15 @@ export default function SikampungDataPage() {
 
     return records.filter((record) =>
       [
-        record.namaKabKota,
-        record.namaDistrik,
-        record.namaKampungDesa,
-        record.kodeWilayah,
-        record.status,
-        record.catatan,
+        record.kodeDesa,
+        record.desa,
+        record.distrik,
+        record.kabupaten,
+        formatIDM(record.iks),
+        formatIDM(record.ike),
+        formatIDM(record.ikl),
+        formatIDM(record.nilaiIdm),
+        record.statusIdm,
       ]
         .join(" ")
         .toLowerCase()
@@ -125,72 +113,122 @@ export default function SikampungDataPage() {
     );
   }, [query, records]);
 
-  const editingRecord = editingId
-    ? records.find((record) => record.id === editingId)
-    : null;
+  async function loadData() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const [sikampungResponse, kabKotaResponse] = await Promise.all([
+        getSikampungData(),
+        getKabKota(),
+      ]);
+      setRecords(sikampungResponse.items);
+      setTahunAnggaran(sikampungResponse.tahunAnggaran);
+      setKabKotaOptions(kabKotaResponse);
+    } catch (loadError) {
+      console.error(loadError);
+      setError(
+        "Data SIKAMPUNG atau master Kab/Kota gagal dimuat. Periksa koneksi atau sesi login.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const openCreateForm = () => {
-    setEditingId(null);
+    setEditingRecord(null);
     setForm(initialFormState);
     setFormOpen(true);
+    setMessage("");
+    setError("");
   };
 
-  const openEditForm = (record: KampungRecord) => {
-    setEditingId(record.id);
+  const openEditForm = (record: SikampungData) => {
+    setEditingRecord(record);
     setForm({
-      namaKabKota: record.namaKabKota,
-      namaDistrik: record.namaDistrik,
-      namaKampungDesa: record.namaKampungDesa,
-      kodeWilayah: record.kodeWilayah,
-      status: record.status,
-      catatan: record.catatan,
+      kodeDesa: record.kodeDesa,
+      desa: record.desa,
+      distrik: record.distrik,
+      kabupaten: record.kabupaten,
+      iks: formatIDM(record.iks),
+      ike: formatIDM(record.ike),
+      ikl: formatIDM(record.ikl),
+      statusIdm: record.statusIdm,
     });
     setFormOpen(true);
+    setMessage("");
+    setError("");
   };
 
   const closeForm = () => {
     setFormOpen(false);
-    setEditingId(null);
+    setEditingRecord(null);
     setForm(initialFormState);
+    setError("");
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (editingId) {
-      setRecords((currentRecords) =>
-        currentRecords.map((record) =>
-          record.id === editingId ? { ...record, ...form } : record,
-        ),
-      );
-    } else {
-      setRecords((currentRecords) => [
-        {
-          id: `kampung-${Date.now()}`,
-          ...form,
-        },
-        ...currentRecords,
-      ]);
+    const payload = buildPayload(form, nilaiIdm);
+    if (!payload) {
+      setError("IKS, IKE, IKL, dan Nilai IDM harus berada pada rentang 0 sampai 1.");
+      return;
     }
 
-    setFormOpen(false);
-    setEditingId(null);
-    setForm(initialFormState);
+    setSaving(true);
+    setError("");
+    setMessage("");
+
+    try {
+      if (editingRecord) {
+        const updated = await updateSikampungData(editingRecord.id, payload);
+        setRecords((current) =>
+          current.map((record) => (record.id === updated.id ? updated : record)),
+        );
+        setMessage("Data kampung berhasil diperbarui.");
+      } else {
+        const created = await createSikampungData(payload);
+        setRecords((current) => [created, ...current]);
+        setMessage("Data kampung berhasil ditambahkan.");
+      }
+      closeForm();
+    } catch (submitError) {
+      console.error(submitError);
+      setError("Data kampung gagal disimpan. Pastikan kode desa belum digunakan.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) {
       return;
     }
 
-    setRecords((currentRecords) =>
-      currentRecords.filter((record) => record.id !== deleteTarget.id),
-    );
-    setDeleteTarget(null);
-  };
+    setError("");
+    setMessage("");
 
-  const handleDownloadXlsx = () => {
-    downloadKampungXlsx(filteredRecords);
+    try {
+      await deleteSikampungData(deleteTarget.id);
+      setRecords((current) =>
+        current.filter((record) => record.id !== deleteTarget.id),
+      );
+      setMessage("Data kampung berhasil dihapus.");
+    } catch (deleteError) {
+      console.error(deleteError);
+      setError("Data kampung gagal dihapus.");
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
   return (
@@ -198,11 +236,11 @@ export default function SikampungDataPage() {
       <PageHero
         icon={Database}
         eyebrow="SIKAMPUNG"
-        title="Data Kampung/Desa"
-        description="Kelola data kampung/desa berdasarkan kabupaten/kota, distrik, kode wilayah, status, dan catatan."
+        title="Data Kampung IDM"
+        description="Kelola data kampung berdasarkan kode desa, wilayah administrasi, indeks IKS/IKE/IKL, nilai IDM, dan status IDM."
         meta={
           <Badge className="h-8 rounded-full bg-blue-50 px-4 text-sm font-bold text-pbd-blue">
-            {records.length} data kampung/desa
+            {records.length} data kampung {tahunAnggaran ? `- ${tahunAnggaran}` : ""}
           </Badge>
         }
         aside={
@@ -212,74 +250,107 @@ export default function SikampungDataPage() {
             onClick={openCreateForm}
           >
             <Plus className="h-4 w-4" />
-            Tambah Kampung/Desa
+            Tambah Data Kampung
           </Button>
         }
       />
 
+      {error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {error}
+        </div>
+      ) : null}
+      {message ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          {message}
+        </div>
+      ) : null}
+
       {formOpen ? (
         <SectionCard
-          title={
-            editingRecord ? "Edit Data Kampung/Desa" : "Tambah Data Kampung/Desa"
-          }
-          description="Lengkapi identitas kampung/desa sesuai wilayah administrasi."
+          title={editingRecord ? "Edit Data Kampung" : "Tambah Data Kampung"}
+          description="Nilai IDM dihitung otomatis dari rata-rata IKS, IKE, dan IKL sampai 4 desimal."
         >
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
+          <form onSubmit={(event) => void handleSubmit(event)} className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <FormInput
-                label="Nama Kab/Kota"
-                value={form.namaKabKota}
+                label="Kode Desa"
+                value={form.kodeDesa}
                 onChange={(value) =>
-                  setForm((current) => ({ ...current, namaKabKota: value }))
+                  setForm((current) => ({ ...current, kodeDesa: value }))
                 }
-                placeholder="Contoh: Kab. Sorong"
+                placeholder="9201072033"
               />
               <FormInput
-                label="Nama Distrik"
-                value={form.namaDistrik}
+                label="Desa"
+                value={form.desa}
                 onChange={(value) =>
-                  setForm((current) => ({ ...current, namaDistrik: value }))
+                  setForm((current) => ({ ...current, desa: value }))
                 }
-                placeholder="Contoh: Aimas"
+                placeholder="Aimo"
               />
               <FormInput
-                label="Nama Kampung/Desa"
-                value={form.namaKampungDesa}
+                label="Distrik"
+                value={form.distrik}
                 onChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    namaKampungDesa: value,
-                  }))
+                  setForm((current) => ({ ...current, distrik: value }))
                 }
-                placeholder="Contoh: Malawili"
-              />
-              <FormInput
-                label="Kode Wilayah"
-                value={form.kodeWilayah}
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, kodeWilayah: value }))
-                }
-                placeholder="Contoh: 96.01.01.2001"
+                placeholder="Aimas"
               />
               <FormSelect
-                label="Status"
-                value={form.status}
-                options={["Aktif", "Tidak Aktif"]}
+                label="Kabupaten"
+                value={form.kabupaten}
+                options={kabKotaOptions.map((item) => item.nama)}
+                placeholder={
+                  kabKotaOptions.length
+                    ? "Pilih Kabupaten"
+                    : "Master Kab/Kota belum tersedia"
+                }
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, kabupaten: value }))
+                }
+              />
+              <NumberInput
+                label="IKS"
+                value={form.iks}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, iks: value }))
+                }
+                placeholder="0.6571"
+              />
+              <NumberInput
+                label="IKE"
+                value={form.ike}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, ike: value }))
+                }
+                placeholder="0.4667"
+              />
+              <NumberInput
+                label="IKL"
+                value={form.ikl}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, ikl: value }))
+                }
+                placeholder="0.6000"
+              />
+              <FormInput
+                label="Nilai IDM"
+                value={Number.isNaN(nilaiIdm) ? "" : formatIDM(nilaiIdm)}
+                onChange={() => undefined}
+                placeholder="0.5746"
+                readOnly
+              />
+              <FormSelect
+                label="Status IDM"
+                value={form.statusIdm}
+                options={sikampungStatusIdmOptions}
                 onChange={(value) =>
                   setForm((current) => ({
                     ...current,
-                    status: value as KampungStatus,
+                    statusIdm: value as SikampungStatusIDM,
                   }))
                 }
-              />
-              <FormInput
-                label="Catatan"
-                value={form.catatan}
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, catatan: value }))
-                }
-                placeholder="Contoh: Data sudah valid"
-                required={false}
               />
             </div>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -289,8 +360,13 @@ export default function SikampungDataPage() {
               <Button
                 type="submit"
                 className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
+                disabled={saving}
               >
-                {editingRecord ? "Simpan Perubahan" : "Tambah Data"}
+                {saving
+                  ? "Menyimpan..."
+                  : editingRecord
+                    ? "Simpan Perubahan"
+                    : "Tambah Data"}
               </Button>
             </div>
           </form>
@@ -298,8 +374,8 @@ export default function SikampungDataPage() {
       ) : null}
 
       <SectionCard
-        title="Data Kampung/Desa"
-        description="Data sementara disimpan pada state halaman dan siap diganti ke API saat backend tersedia."
+        title="Tabel Data Kampung"
+        description="Data tersimpan ke database berdasarkan tahun anggaran aktif."
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Button
@@ -307,10 +383,10 @@ export default function SikampungDataPage() {
               variant="outline"
               className="h-10 rounded-lg"
               disabled={filteredRecords.length === 0}
-              onClick={handleDownloadXlsx}
+              onClick={() => downloadKampungCsv(filteredRecords)}
             >
               <Download className="h-4 w-4" />
-              Download XLSX
+              Download CSV
             </Button>
             <div className="relative w-full sm:w-80">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -318,7 +394,7 @@ export default function SikampungDataPage() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 className="pl-9"
-                placeholder="Cari kampung/desa, distrik, kode..."
+                placeholder="Cari kode, desa, distrik, kabupaten..."
               />
             </div>
           </div>
@@ -328,37 +404,52 @@ export default function SikampungDataPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nama Kab/Kota</TableHead>
-              <TableHead>Nama Distrik</TableHead>
-              <TableHead>Nama Kampung/Desa</TableHead>
-              <TableHead>Kode Wilayah</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Catatan</TableHead>
+              <TableHead>Kode Desa</TableHead>
+              <TableHead>Desa</TableHead>
+              <TableHead>Distrik</TableHead>
+              <TableHead>Kabupaten</TableHead>
+              <TableHead className="text-right">IKS</TableHead>
+              <TableHead className="text-right">IKE</TableHead>
+              <TableHead className="text-right">IKL</TableHead>
+              <TableHead className="text-right">Nilai IDM</TableHead>
+              <TableHead>Status IDM</TableHead>
               <TableHead className="w-[96px] text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRecords.length > 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={10}
+                  className="py-10 text-center text-sm font-medium text-slate-500"
+                >
+                  Memuat data kampung...
+                </TableCell>
+              </TableRow>
+            ) : filteredRecords.length > 0 ? (
               filteredRecords.map((record) => (
                 <TableRow key={record.id}>
-                  <TableCell className="min-w-[220px] font-bold text-pbd-navy">
+                  <TableCell className="font-bold text-pbd-navy">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue">
                         <MapPinned className="h-4 w-4" />
                       </div>
-                      {record.namaKabKota}
+                      {record.kodeDesa}
                     </div>
                   </TableCell>
-                  <TableCell>{record.namaDistrik}</TableCell>
                   <TableCell className="font-semibold text-slate-800">
-                    {record.namaKampungDesa}
+                    {record.desa}
                   </TableCell>
-                  <TableCell>{record.kodeWilayah}</TableCell>
+                  <TableCell>{record.distrik}</TableCell>
+                  <TableCell>{record.kabupaten}</TableCell>
+                  <TableCell className="text-right">{formatIDM(record.iks)}</TableCell>
+                  <TableCell className="text-right">{formatIDM(record.ike)}</TableCell>
+                  <TableCell className="text-right">{formatIDM(record.ikl)}</TableCell>
+                  <TableCell className="text-right font-bold text-pbd-navy">
+                    {formatIDM(record.nilaiIdm)}
+                  </TableCell>
                   <TableCell>
-                    <StatusBadge status={record.status} />
-                  </TableCell>
-                  <TableCell className="min-w-[220px] whitespace-normal">
-                    {record.catatan || "-"}
+                    <StatusBadge status={record.statusIdm} />
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -367,7 +458,7 @@ export default function SikampungDataPage() {
                           type="button"
                           size="icon-sm"
                           variant="ghost"
-                          aria-label={`Buka aksi untuk ${record.namaKampungDesa}`}
+                          aria-label={`Buka aksi untuk ${record.desa}`}
                         >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
@@ -392,10 +483,10 @@ export default function SikampungDataPage() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={10}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
-                  Tidak ada data kampung/desa yang sesuai dengan pencarian.
+                  Belum ada data kampung yang sesuai dengan pencarian.
                 </TableCell>
               </TableRow>
             )}
@@ -405,14 +496,14 @@ export default function SikampungDataPage() {
 
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
-        title="Hapus Data Kampung/Desa?"
-        description={`Data ${deleteTarget?.namaKampungDesa ?? "kampung/desa"} akan dihapus dan tidak dapat dikembalikan.`}
+        title="Hapus Data Kampung?"
+        description={`Data ${deleteTarget?.desa ?? "kampung"} akan dihapus dari database SIKAMPUNG.`}
         onOpenChange={(open) => {
           if (!open) {
             setDeleteTarget(null);
           }
         }}
-        onConfirm={handleDelete}
+        onConfirm={() => void handleDelete()}
       />
     </main>
   );
@@ -423,13 +514,13 @@ function FormInput({
   value,
   onChange,
   placeholder,
-  required = true,
+  readOnly = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
-  required?: boolean;
+  readOnly?: boolean;
 }) {
   return (
     <label className="grid gap-2">
@@ -438,7 +529,36 @@ function FormInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        required={required}
+        readOnly={readOnly}
+        required
+      />
+    </label>
+  );
+}
+
+function NumberInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-bold text-pbd-navy">{label}</span>
+      <Input
+        type="number"
+        min={0}
+        max={1}
+        step="0.0001"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        required
       />
     </label>
   );
@@ -449,11 +569,13 @@ function FormSelect({
   value,
   options,
   onChange,
+  placeholder,
 }: {
   label: string;
   value: string;
-  options: string[];
+  options: readonly string[];
   onChange: (value: string) => void;
+  placeholder?: string;
 }) {
   return (
     <label className="grid gap-2">
@@ -464,6 +586,11 @@ function FormSelect({
         className="h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20"
         required
       >
+        {placeholder ? (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        ) : null}
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
@@ -474,265 +601,102 @@ function FormSelect({
   );
 }
 
-function StatusBadge({ status }: { status: KampungStatus }) {
-  return (
-    <Badge
-      className={
-        status === "Aktif"
-          ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
-          : "border border-slate-200 bg-slate-100 text-slate-700"
-      }
-    >
-      {status}
-    </Badge>
-  );
+function StatusBadge({ status }: { status: SikampungStatusIDM }) {
+  const className =
+    status === "Mandiri" || status === "Maju"
+      ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
+      : status === "Berkembang"
+        ? "border border-blue-100 bg-blue-50 text-blue-700"
+        : status === "Tertinggal"
+          ? "border border-amber-100 bg-amber-50 text-amber-700"
+          : "border border-red-100 bg-red-50 text-red-700";
+
+  return <Badge className={className}>{status}</Badge>;
 }
 
-function downloadKampungXlsx(records: KampungRecord[]) {
+function calculateNilaiIdm(iks: string, ike: string, ikl: string) {
+  const values = [Number(iks), Number(ike), Number(ikl)];
+
+  if (values.some((value) => Number.isNaN(value))) {
+    return Number.NaN;
+  }
+
+  return roundIDM(values.reduce((total, value) => total + value, 0) / 3);
+}
+
+function buildPayload(
+  form: SikampungFormState,
+  nilaiIdm: number,
+): SikampungPayload | null {
+  const iks = Number(form.iks);
+  const ike = Number(form.ike);
+  const ikl = Number(form.ikl);
+
+  if (
+    [iks, ike, ikl, nilaiIdm].some(
+      (value) => Number.isNaN(value) || value < 0 || value > 1,
+    )
+  ) {
+    return null;
+  }
+
+  return {
+    kodeDesa: form.kodeDesa.trim(),
+    desa: form.desa.trim(),
+    distrik: form.distrik.trim(),
+    kabupaten: form.kabupaten.trim(),
+    iks: roundIDM(iks),
+    ike: roundIDM(ike),
+    ikl: roundIDM(ikl),
+    nilaiIdm,
+    statusIdm: form.statusIdm,
+  };
+}
+
+function roundIDM(value: number) {
+  return Math.round(value * 10000) / 10000;
+}
+
+function formatIDM(value: number) {
+  return value.toFixed(4);
+}
+
+function downloadKampungCsv(records: SikampungData[]) {
   const rows = [
     [
-      "No",
-      "Nama Kab/Kota",
-      "Nama Distrik",
-      "Nama Kampung/Desa",
-      "Kode Wilayah",
-      "Status",
-      "Catatan",
+      "Kode Desa",
+      "Desa",
+      "Distrik",
+      "Kabupaten",
+      "IKS",
+      "IKE",
+      "IKL",
+      "Nilai IDM",
+      "Status IDM",
     ],
-    ...records.map((record, index) => [
-      String(index + 1),
-      record.namaKabKota,
-      record.namaDistrik,
-      record.namaKampungDesa,
-      record.kodeWilayah,
-      record.status,
-      record.catatan,
+    ...records.map((record) => [
+      record.kodeDesa,
+      record.desa,
+      record.distrik,
+      record.kabupaten,
+      formatIDM(record.iks),
+      formatIDM(record.ike),
+      formatIDM(record.ikl),
+      formatIDM(record.nilaiIdm),
+      record.statusIdm,
     ]),
   ];
-  const files = [
-    {
-      path: "[Content_Types].xml",
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-</Types>`,
-    },
-    {
-      path: "_rels/.rels",
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-</Relationships>`,
-    },
-    {
-      path: "xl/workbook.xml",
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets>
-    <sheet name="Data Kampung" sheetId="1" r:id="rId1"/>
-  </sheets>
-</workbook>`,
-    },
-    {
-      path: "xl/_rels/workbook.xml.rels",
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>`,
-    },
-    {
-      path: "xl/styles.xml",
-      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="2">
-    <font><sz val="11"/><name val="Calibri"/></font>
-    <font><b/><sz val="11"/><name val="Calibri"/></font>
-  </fonts>
-  <fills count="2">
-    <fill><patternFill patternType="none"/></fill>
-    <fill><patternFill patternType="gray125"/></fill>
-  </fills>
-  <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
-  <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="2">
-    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
-  </cellXfs>
-</styleSheet>`,
-    },
-    {
-      path: "xl/worksheets/sheet1.xml",
-      content: buildWorksheetXml(rows),
-    },
-  ];
-  const zipBytes = createZip(files);
-  const blob = new Blob([zipBytes], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
+  const csv = rows
+    .map((row) =>
+      row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","),
+    )
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const downloadUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
 
   anchor.href = downloadUrl;
-  anchor.download = `data-kampung-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  anchor.download = `data-kampung-idm-${new Date().toISOString().slice(0, 10)}.csv`;
   anchor.click();
   URL.revokeObjectURL(downloadUrl);
-}
-
-function buildWorksheetXml(rows: string[][]) {
-  const rowXml = rows
-    .map((row, rowIndex) => {
-      const rowNumber = rowIndex + 1;
-      const cells = row
-        .map((value, columnIndex) => {
-          const cellReference = `${columnName(columnIndex + 1)}${rowNumber}`;
-          const style = rowIndex === 0 ? ' s="1"' : "";
-
-          return `<c r="${cellReference}" t="inlineStr"${style}><is><t>${escapeXml(value)}</t></is></c>`;
-        })
-        .join("");
-
-      return `<row r="${rowNumber}">${cells}</row>`;
-    })
-    .join("");
-
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <cols>
-    <col min="1" max="1" width="8" customWidth="1"/>
-    <col min="2" max="2" width="24" customWidth="1"/>
-    <col min="3" max="3" width="22" customWidth="1"/>
-    <col min="4" max="4" width="28" customWidth="1"/>
-    <col min="5" max="5" width="20" customWidth="1"/>
-    <col min="6" max="6" width="16" customWidth="1"/>
-    <col min="7" max="7" width="36" customWidth="1"/>
-  </cols>
-  <sheetData>${rowXml}</sheetData>
-</worksheet>`;
-}
-
-function createZip(files: Array<{ path: string; content: string }>) {
-  const encoder = new TextEncoder();
-  const localParts: Uint8Array[] = [];
-  const centralParts: Uint8Array[] = [];
-  let offset = 0;
-
-  for (const file of files) {
-    const fileName = encoder.encode(file.path);
-    const content = encoder.encode(file.content);
-    const crc = crc32(content);
-    const localHeader = new Uint8Array(30 + fileName.length);
-    const localView = new DataView(localHeader.buffer);
-
-    localView.setUint32(0, 0x04034b50, true);
-    localView.setUint16(4, 20, true);
-    localView.setUint16(6, 0, true);
-    localView.setUint16(8, 0, true);
-    localView.setUint16(10, 0, true);
-    localView.setUint16(12, 0, true);
-    localView.setUint32(14, crc, true);
-    localView.setUint32(18, content.length, true);
-    localView.setUint32(22, content.length, true);
-    localView.setUint16(26, fileName.length, true);
-    localView.setUint16(28, 0, true);
-    localHeader.set(fileName, 30);
-    localParts.push(localHeader, content);
-
-    const centralHeader = new Uint8Array(46 + fileName.length);
-    const centralView = new DataView(centralHeader.buffer);
-
-    centralView.setUint32(0, 0x02014b50, true);
-    centralView.setUint16(4, 20, true);
-    centralView.setUint16(6, 20, true);
-    centralView.setUint16(8, 0, true);
-    centralView.setUint16(10, 0, true);
-    centralView.setUint16(12, 0, true);
-    centralView.setUint16(14, 0, true);
-    centralView.setUint32(16, crc, true);
-    centralView.setUint32(20, content.length, true);
-    centralView.setUint32(24, content.length, true);
-    centralView.setUint16(28, fileName.length, true);
-    centralView.setUint16(30, 0, true);
-    centralView.setUint16(32, 0, true);
-    centralView.setUint16(34, 0, true);
-    centralView.setUint16(36, 0, true);
-    centralView.setUint32(38, 0, true);
-    centralView.setUint32(42, offset, true);
-    centralHeader.set(fileName, 46);
-    centralParts.push(centralHeader);
-
-    offset += localHeader.length + content.length;
-  }
-
-  const centralDirectoryOffset = offset;
-  const centralDirectorySize = centralParts.reduce(
-    (total, part) => total + part.length,
-    0,
-  );
-  const endRecord = new Uint8Array(22);
-  const endView = new DataView(endRecord.buffer);
-
-  endView.setUint32(0, 0x06054b50, true);
-  endView.setUint16(4, 0, true);
-  endView.setUint16(6, 0, true);
-  endView.setUint16(8, files.length, true);
-  endView.setUint16(10, files.length, true);
-  endView.setUint32(12, centralDirectorySize, true);
-  endView.setUint32(16, centralDirectoryOffset, true);
-  endView.setUint16(20, 0, true);
-
-  return concatUint8Arrays([...localParts, ...centralParts, endRecord]);
-}
-
-function crc32(bytes: Uint8Array) {
-  let crc = 0xffffffff;
-
-  for (const byte of bytes) {
-    crc ^= byte;
-
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
-    }
-  }
-
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function concatUint8Arrays(parts: Uint8Array[]) {
-  const length = parts.reduce((total, part) => total + part.length, 0);
-  const result = new Uint8Array(length);
-  let offset = 0;
-
-  for (const part of parts) {
-    result.set(part, offset);
-    offset += part.length;
-  }
-
-  return result;
-}
-
-function columnName(index: number) {
-  let name = "";
-  let current = index;
-
-  while (current > 0) {
-    const remainder = (current - 1) % 26;
-    name = String.fromCharCode(65 + remainder) + name;
-    current = Math.floor((current - 1) / 26);
-  }
-
-  return name;
-}
-
-function escapeXml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
 }

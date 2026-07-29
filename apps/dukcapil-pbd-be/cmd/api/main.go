@@ -74,6 +74,7 @@ func main() {
 	pelaksanaanDocumentRepo := repository.NewPelaksanaanDocumentRepository(db)
 	arsipPegawaiRepo := repository.NewArsipPegawaiRepository(db)
 	bumKampungRepo := repository.NewBumKampungRepository(db)
+	sikampungRepo := repository.NewSikampungRepository(db)
 	sitekadRepo := repository.NewSitekadRepository(db)
 	aspirasikuRepo := repository.NewAspirasikuRepository(db)
 	macekuPkkRepo := repository.NewMacekuPKKRepository(db)
@@ -96,6 +97,7 @@ func main() {
 		Documents:       controller.NewPelaksanaanDocumentController(pelaksanaanDocumentRepo, fileService),
 		ArsipPegawai:    controller.NewArsipPegawaiController(arsipPegawaiRepo, fileService),
 		BumKampung:      controller.NewBumKampungController(bumKampungRepo),
+		Sikampung:       controller.NewSikampungController(sikampungRepo),
 		Sitekad:         controller.NewSitekadController(sitekadRepo),
 		Aspirasiku:      controller.NewAspirasikuController(aspirasikuRepo),
 		MacekuPKK:       controller.NewMacekuPKKController(macekuPkkRepo, fileService),

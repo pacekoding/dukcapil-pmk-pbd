@@ -10,6 +10,8 @@ export const apiEndpoints = {
   subkegiatanDetail: (id: number) => `${API_PREFIX}/subkegiatan/${id}`,
   bumKampung: `${API_PREFIX}/bum-kampung`,
   bumKampungDetail: (id: number) => `${API_PREFIX}/bum-kampung/${id}`,
+  sikampung: `${API_PREFIX}/sikampung`,
+  sikampungDetail: (id: number) => `${API_PREFIX}/sikampung/${id}`,
   macekuPkk: `${API_PREFIX}/maceku-pkk`,
   macekuPkkOptions: `${API_PREFIX}/maceku-pkk/options`,
   macekuPkkDetail: (id: number) => `${API_PREFIX}/maceku-pkk/${id}`,

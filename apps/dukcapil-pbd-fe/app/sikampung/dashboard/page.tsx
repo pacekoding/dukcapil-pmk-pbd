@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -15,42 +16,83 @@ import { SectionCard } from "@/components/dashboard/section-card";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
-const dashboardStats = [
-  {
-    label: "Kampung/Desa",
-    value: "8",
-    description: "Data awal wilayah kampung/desa",
-    icon: Database,
-    tone: "blue" as const,
-  },
-  {
-    label: "Kab/Kota",
-    value: "4",
-    description: "Sebaran data tersedia",
-    icon: MapPinned,
-    tone: "emerald" as const,
-  },
-  {
-    label: "Status Aktif",
-    value: "7",
-    description: "Kampung/desa aktif",
-    icon: Navigation,
-    tone: "indigo" as const,
-  },
-];
+import { getSikampungData } from "@/lib/api/sikampung";
+import type { SikampungData } from "@/types/sikampung";
 
 export default function SikampungDashboardPage() {
+  const [records, setRecords] = useState<SikampungData[]>([]);
+  const [tahunAnggaran, setTahunAnggaran] = useState("");
+
+  async function loadData() {
+    try {
+      const response = await getSikampungData();
+      setRecords(response.items);
+      setTahunAnggaran(response.tahunAnggaran);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadData();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const dashboardStats = useMemo(() => {
+    const kabupatenCount = new Set(records.map((record) => record.kabupaten)).size;
+    const tertinggalCount = records.filter((record) =>
+      ["Tertinggal", "Sangat Tertinggal"].includes(record.statusIdm),
+    ).length;
+    const avgNilaiIdm = records.length
+      ? records.reduce((total, record) => total + record.nilaiIdm, 0) /
+        records.length
+      : 0;
+
+    return [
+      {
+        label: "Kampung",
+        value: String(records.length),
+        description: `Data IDM ${tahunAnggaran || "aktif"}`,
+        icon: Database,
+        tone: "blue" as const,
+      },
+      {
+        label: "Kabupaten",
+        value: String(kabupatenCount),
+        description: "Sebaran administrasi",
+        icon: MapPinned,
+        tone: "emerald" as const,
+      },
+      {
+        label: "Tertinggal",
+        value: String(tertinggalCount),
+        description: "Tertinggal dan sangat tertinggal",
+        icon: Navigation,
+        tone: "indigo" as const,
+      },
+      {
+        label: "Rata-rata IDM",
+        value: avgNilaiIdm.toFixed(4),
+        description: "Rata-rata nilai kampung",
+        icon: FileText,
+        tone: "slate" as const,
+      },
+    ];
+  }, [records, tahunAnggaran]);
+
   return (
     <main className="space-y-6">
       <PageHero
         icon={MapPinned}
         eyebrow="SIKAMPUNG"
-        title="Sistem Informasi Kampung/Desa"
-        description="Dashboard untuk mengelola data kampung/desa dan wilayah administrasi pada lingkungan Dinas Dukcapil dan PMK Provinsi Papua Barat Daya."
+        title="Sistem Informasi Kampung IDM"
+        description="Dashboard untuk mengelola data kampung berdasarkan Kode Desa, IKS, IKE, IKL, Nilai IDM, dan Status IDM."
         meta={
           <Badge className="h-8 rounded-full bg-blue-50 px-4 text-sm font-bold text-pbd-blue">
-            Modul data kampung/desa
+            Data kampung IDM
           </Badge>
         }
         aside={
@@ -74,7 +116,7 @@ export default function SikampungDashboardPage() {
         }
       />
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {dashboardStats.map((item) => (
           <StatCard
             key={item.label}
@@ -89,7 +131,7 @@ export default function SikampungDashboardPage() {
 
       <SectionCard
         title="Menu SIKAMPUNG"
-        description="Gunakan menu Data untuk mengelola data kab/kota, distrik, kampung/desa, kode wilayah, status, dan catatan."
+        description="Gunakan menu Data untuk mengelola kode desa, desa, distrik, kabupaten, IKS, IKE, IKL, nilai IDM, dan status IDM."
       >
         <Link
           href="/sikampung/data"
@@ -100,10 +142,10 @@ export default function SikampungDashboardPage() {
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="font-bold text-pbd-navy">Data Kampung/Desa</h2>
+              <h2 className="font-bold text-pbd-navy">Data Kampung IDM</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Kelola data kampung/desa dengan kolom nama kab/kota, nama
-                distrik, nama kampung/desa, kode wilayah, status, dan catatan.
+                Kelola data kampung dengan kolom Kode Desa, Desa, Distrik,
+                Kabupaten, IKS, IKE, IKL, Nilai IDM, dan Status IDM.
               </p>
             </div>
           </div>

@@ -251,7 +251,7 @@ function getSidebarBrand(pathname: string) {
   if (pathname.startsWith("/sikampung")) {
     return {
       title: "SIKAMPUNG",
-      subtitle: "Data Kampung/Desa",
+      subtitle: "Data Kampung IDM",
     };
   }
 

@@ -100,9 +100,9 @@ const appMenus: AppMenu[] = [
   },
   {
     title: "SIKAMPUNG",
-    subtitle: "Sistem Informasi Kampung/Desa",
+    subtitle: "Sistem Informasi Kampung IDM",
     description:
-      "Sistem informasi untuk pendataan dan pengelolaan data kampung/desa.",
+      "Sistem informasi untuk pendataan IKS, IKE, IKL, Nilai IDM, dan Status IDM kampung.",
     href: "/sikampung/dashboard",
     accessKey: "sikampung",
     icon: MapPinned,

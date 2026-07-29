@@ -23,6 +23,7 @@ type Config struct {
 	Documents       *controller.PelaksanaanDocumentController
 	ArsipPegawai    *controller.ArsipPegawaiController
 	BumKampung      *controller.BumKampungController
+	Sikampung       *controller.SikampungController
 	Sitekad         *controller.SitekadController
 	Aspirasiku      *controller.AspirasikuController
 	MacekuPKK       *controller.MacekuPKKController
@@ -93,10 +94,22 @@ func New(config Config) *echo.Echo {
 	protected.GET("/files/:file_id/download", config.StoredFiles.Download)
 	protected.HEAD("/files/:file_id/preview", config.StoredFiles.Preview)
 	protected.HEAD("/files/:file_id/download", config.StoredFiles.Download)
+	protected.GET("/kab-kota", config.KabKota.List)
 	protected.GET("/bum-kampung", config.BumKampung.List)
 	protected.POST("/bum-kampung", config.BumKampung.Create)
 	protected.PUT("/bum-kampung/:id", config.BumKampung.Update)
 	protected.DELETE("/bum-kampung/:id", config.BumKampung.Delete)
+
+	sikampung := api.Group(
+		"/sikampung",
+		config.AuthMiddleware.RequireRoles(adminRoles...),
+		config.AuthMiddleware.RequireSystemAccess("sikampung"),
+	)
+	sikampung.GET("", config.Sikampung.List)
+	sikampung.POST("", config.Sikampung.Create)
+	sikampung.PUT("/:id", config.Sikampung.Update)
+	sikampung.DELETE("/:id", config.Sikampung.Delete)
+
 	protected.GET("/sitekad", config.Sitekad.List)
 	protected.GET("/sitekad/options", config.Sitekad.Options)
 	protected.POST("/sitekad", config.Sitekad.Create)
@@ -189,7 +202,6 @@ func New(config Config) *echo.Echo {
 	superAdmin.POST("/users/:id/reset-password", config.Users.ResetPassword)
 	superAdmin.GET("/portal-apps", config.PortalApps.AdminStatuses)
 	superAdmin.PUT("/portal-apps", config.PortalApps.UpdateAdminStatuses)
-	superAdmin.GET("/kab-kota", config.KabKota.List)
 	superAdmin.POST("/kab-kota", config.KabKota.Create)
 	superAdmin.PUT("/kab-kota/:id", config.KabKota.Update)
 	superAdmin.DELETE("/kab-kota/:id", config.KabKota.Delete)
