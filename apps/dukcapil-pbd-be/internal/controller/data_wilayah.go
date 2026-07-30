@@ -76,7 +76,21 @@ func (d *DataWilayahController) SiberList(c echo.Context) error {
 
 	response, err := d.dataWilayah.List(c.Request().Context(), tahunAnggaran)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "data wilayah SIBER gagal dimuat")
+		return echo.NewHTTPError(http.StatusInternalServerError, "data wilayah SIRBE gagal dimuat")
+	}
+
+	return jsonData(c, http.StatusOK, response)
+}
+
+func (d *DataWilayahController) DashboardList(c echo.Context) error {
+	tahunAnggaran, err := siberDataWilayahTahunAnggaran(c)
+	if err != nil {
+		return err
+	}
+
+	response, err := d.dataWilayah.List(c.Request().Context(), tahunAnggaran)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "data agregat dashboard gagal dimuat")
 	}
 
 	return jsonData(c, http.StatusOK, response)

@@ -106,7 +106,7 @@ export const dashboardMenus: DashboardMenuItem[] = [
     icon: "fileText",
   },
   {
-    title: "SIBER",
+    title: "SIRBE",
     href: "/siber/dashboard",
     icon: "database",
   },
@@ -293,30 +293,36 @@ export const settingsMenus: DashboardMenuItem[] = [
     title: "Pengguna Portal",
     href: "/dashboard/users",
     icon: "users",
+    roles: ["superadmin"],
   },
   {
     title: "Status Portal",
     href: "/dashboard/portal-apps",
     icon: "toggle",
+    roles: ["superadmin"],
   },
   {
     title: "Data Kab/Kota",
     href: "/dashboard/kab-kota",
     icon: "map",
+    roles: ["superadmin"],
   },
   {
     title: "Release Data Wilayah",
     href: "/dashboard/data-wilayah-release",
     icon: "calendarClock",
+    roles: ["superadmin"],
   },
   {
     title: "Data SSD",
     href: "/dashboard/SDD",
     icon: "database",
+    roles: ["superadmin"],
   },
   {
     title: "Subkegiatan",
     href: "/dashboard/subkegiatan",
     icon: "listChecks",
+    roles: ["superadmin"],
   },
 ];

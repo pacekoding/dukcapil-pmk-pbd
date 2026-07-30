@@ -1,6 +1,6 @@
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
-export default function SuperAdminDashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;

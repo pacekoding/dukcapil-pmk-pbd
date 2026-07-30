@@ -77,7 +77,7 @@ export default function SiberDashboardPage() {
           setError(
             loadError instanceof Error
               ? loadError.message
-              : "Dashboard SIBER gagal dimuat.",
+              : "Dashboard SIRBE gagal dimuat.",
           );
         }
       } finally {
@@ -164,7 +164,7 @@ export default function SiberDashboardPage() {
     <main className="space-y-6">
       <PageHero
         icon={Database}
-        eyebrow="SIBER"
+        eyebrow="SIRBE"
         title="Dashboard Data Dukcapil"
         description="Pantau dan kelola data kependudukan, pencatatan sipil, serta data OAP yang ditampilkan pada halaman Data Wilayah."
         meta={
@@ -237,7 +237,7 @@ export default function SiberDashboardPage() {
       ) : null}
 
       <SectionCard
-        title="Menu SIBER"
+        title="Menu SIRBE"
         description="Kelola data internal atau periksa hasilnya pada halaman publik Data Wilayah."
       >
         <div className="grid gap-4 lg:grid-cols-2">

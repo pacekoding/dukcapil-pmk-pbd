@@ -36,7 +36,7 @@ export const systemAccessOptions = [
   },
   {
     value: "siber",
-    label: "SIBER",
+    label: "SIRBE",
   },
   {
     value: "sisurat",

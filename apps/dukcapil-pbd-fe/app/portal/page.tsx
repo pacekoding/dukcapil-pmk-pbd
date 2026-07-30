@@ -179,7 +179,7 @@ const appMenus: AppMenu[] = [
     status: "Pemeliharaan",
   },
   {
-    title: "SIBER",
+    title: "SIRBE",
     subtitle: "Dashboard Data Dukcapil",
     description:
       "Kelola data kependudukan, pencatatan sipil, dan OAP yang ditampilkan pada halaman Data Wilayah.",
@@ -431,8 +431,6 @@ function PortalHeader({
   loggingOut: boolean;
   onLogout: () => void;
 }) {
-  const superAdmin = isSuperAdminRole(user.role);
-
   return (
     <header className="relative z-10 border-b border-slate-200/80 bg-white/95 px-5 py-4 shadow-[0_8px_24px_rgba(15,35,80,0.06)] backdrop-blur sm:px-8">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
@@ -470,7 +468,6 @@ function PortalHeader({
 
           <UserMenu
             user={user}
-            superAdmin={superAdmin}
             loggingOut={loggingOut}
             onLogout={onLogout}
           />
@@ -482,12 +479,10 @@ function PortalHeader({
 
 function UserMenu({
   user,
-  superAdmin,
   loggingOut,
   onLogout,
 }: {
   user: SessionUser;
-  superAdmin: boolean;
   loggingOut: boolean;
   onLogout: () => void;
 }) {
@@ -521,17 +516,13 @@ function UserMenu({
             {formatRole(user.role)}
           </span>
         </DropdownMenuLabel>
-        {superAdmin ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard" className="cursor-pointer">
-                <LayoutDashboard className="h-4 w-4 text-pbd-blue" />
-                <span>Dashboard</span>
-              </Link>
-            </DropdownMenuItem>
-          </>
-        ) : null}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard" className="cursor-pointer">
+            <LayoutDashboard className="h-4 w-4 text-pbd-blue" />
+            <span>Dashboard Data Agregat</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={onLogout}

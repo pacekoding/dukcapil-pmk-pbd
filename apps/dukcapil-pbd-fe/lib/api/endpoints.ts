@@ -41,6 +41,7 @@ export const apiEndpoints = {
   kabKota: `${API_PREFIX}/kab-kota`,
   kabKotaDetail: (id: number) => `${API_PREFIX}/kab-kota/${id}`,
   dataWilayahSettings: `${API_PREFIX}/data-wilayah/settings`,
+  dashboardDataWilayah: `${API_PREFIX}/dashboard/data-wilayah`,
   siberDataWilayah: `${API_PREFIX}/siber/data-wilayah`,
   siberDataWilayahSettings: `${API_PREFIX}/siber/data-wilayah/settings`,
   siberDataWilayahDetail: (id: string) =>

@@ -285,7 +285,7 @@ function getSidebarBrand(pathname: string) {
 
   if (pathname.startsWith("/siber")) {
     return {
-      title: "SIBER",
+      title: "SIRBE",
       subtitle: "Dashboard Data Dukcapil",
     };
   }
@@ -318,7 +318,14 @@ function getSidebarBrand(pathname: string) {
     };
   }
 
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/settings")) {
+  if (pathname === "/dashboard") {
+    return {
+      title: "Dashboard Internal",
+      subtitle: "Data Agregat Prioritas",
+    };
+  }
+
+  if (pathname.startsWith("/dashboard/") || pathname.startsWith("/settings")) {
     return {
       title: "Pengaturan",
       subtitle: "Super Admin",
@@ -422,14 +429,20 @@ function SidebarContent({
       >
         {!collapsed ? (
           <div className="flex items-start gap-4">
-            <div className="relative h-12 w-12 shrink-0">
+            <Link
+              href="/portal"
+              onClick={onClose}
+              aria-label="Kembali ke Portal Aplikasi"
+              title="Kembali ke Portal Aplikasi"
+              className="relative h-12 w-12 shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pbd-blue/30"
+            >
               <Image
                 src="/logo-pbd.png"
-                alt="Logo"
+                alt="Logo Papua Barat Daya"
                 fill
                 className="object-contain"
               />
-            </div>
+            </Link>
 
             <div>
               <h2
@@ -446,14 +459,20 @@ function SidebarContent({
             </div>
           </div>
         ) : (
-          <div className="relative h-12 w-12">
+          <Link
+            href="/portal"
+            onClick={onClose}
+            aria-label="Kembali ke Portal Aplikasi"
+            title="Kembali ke Portal Aplikasi"
+            className="relative h-12 w-12 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pbd-blue/30"
+          >
             <Image
               src="/logo-pbd.png"
-              alt="Logo"
+              alt="Logo Papua Barat Daya"
               fill
               className="object-contain"
             />
-          </div>
+          </Link>
         )}
 
         {!collapsed && (

@@ -21,6 +21,10 @@ export function getAdminDataWilayahSettings() {
   return apiRequest<DataWilayahAdminSettings>(apiEndpoints.dataWilayahSettings);
 }
 
+export function getDashboardDataWilayah() {
+  return apiRequest<DataWilayahResponse>(apiEndpoints.dashboardDataWilayah);
+}
+
 export function updateAdminDataWilayahSettings(payload: DataWilayahSettingsPayload) {
   return apiRequest<DataWilayahAdminSettings>(apiEndpoints.dataWilayahSettings, {
     method: "PUT",

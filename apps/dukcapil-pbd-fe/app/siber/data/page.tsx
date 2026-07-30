@@ -284,7 +284,7 @@ export default function SiberDataPage() {
     <main className="space-y-6">
       <PageHero
         icon={Database}
-        eyebrow="SIBER"
+        eyebrow="SIRBE"
         title="Kelola Data Dukcapil"
         description="Perbarui data pendaftaran penduduk, pencatatan sipil, dan OAP per kabupaten/kota. Total penduduk dihitung otomatis dari OAP dan Non-OAP."
         meta={

@@ -158,8 +158,7 @@ export default function proxy(
   }
 
   if (
-    (isDashboard ||
-      isDashboardSubpath ||
+    (isDashboardSubpath ||
       isSettings) &&
     !isSuperAdmin
   ) {

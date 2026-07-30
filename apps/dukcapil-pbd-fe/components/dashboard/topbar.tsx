@@ -52,7 +52,7 @@ const menuTitles: Record<
 
   "/dashboard": {
     title: "Dashboard",
-    description: "Pusat pengaturan super admin",
+    description: "Ringkasan data agregat prioritas Dukcapil dan PMK",
   },
 
   "/settings": {
@@ -142,7 +142,7 @@ const menuTitles: Record<
   },
 
   "/siber/dashboard": {
-    title: "SIBER",
+    title: "SIRBE",
     description: "Dashboard Data Dukcapil",
   },
 

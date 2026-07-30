@@ -124,29 +124,15 @@ export function ArticleViewer({
             <p className="mt-3 text-base leading-8 text-slate-600">
               {article.summary || "Tidak ada deskripsi."}
             </p>
-          </section>
-
-          {showPdfBody ? (
-            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-pbd-navy">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-xl font-bold text-pbd-navy">Body</h2>
-                  <p className="truncate text-sm text-slate-500">
-                    {article.attachmentOriginalName || "PDF informasi"}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 p-2">
+            {showPdfBody ? (
+            <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 p-2">
                 <PdfAttachmentPreview
                   src={attachmentPreviewUrl}
                   title={article.attachmentOriginalName || article.title}
                 />
               </div>
-            </section>
-          ) : null}
+              ) : null}
+          </section>
         </article>
       </ContentContainer>
     </div>

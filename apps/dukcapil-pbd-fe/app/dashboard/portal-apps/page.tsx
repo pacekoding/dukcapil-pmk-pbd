@@ -66,7 +66,7 @@ const portalApps = [
   },
   {
     accessKey: "siber",
-    title: "SIBER",
+    title: "SIRBE",
     subtitle: "Dashboard Data Dukcapil",
   },
   {
