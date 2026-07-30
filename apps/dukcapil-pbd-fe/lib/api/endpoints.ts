@@ -64,6 +64,8 @@ export const apiEndpoints = {
     `${API_PREFIX}/optima-info/${id}/images/${fileId}`,
   arsipPegawai: `${API_PREFIX}/arsip-pegawai`,
   arsipPegawaiDetail: (id: number) => `${API_PREFIX}/arsip-pegawai/${id}`,
+  arsipPegawaiPhoto: (id: number) =>
+    `${API_PREFIX}/arsip-pegawai/${id}/photo`,
   arsipPegawaiDocumentList: (pegawaiId: number) =>
     `${API_PREFIX}/arsip-pegawai/${pegawaiId}/documents`,
   arsipPegawaiDocumentDetail: (pegawaiId: number, documentId: number) =>

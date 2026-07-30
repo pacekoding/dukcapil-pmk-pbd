@@ -1,10 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import {
   Archive,
   ArrowRight,
+  Camera,
   Edit,
   FileCheck2,
   IdCard,
@@ -13,9 +20,12 @@ import {
   Search,
   Trash2,
   UsersRound,
+  X,
 } from "lucide-react";
 
+import { EmployeePhoto } from "@/components/arsip-pegawai/employee-photo";
 import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
+import { formatFileSize } from "@/components/dashboard/document-utils";
 import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -41,8 +51,13 @@ import {
   createArsipPegawai,
   deleteArsipPegawai,
   getArsipPegawai,
+  uploadArsipPegawaiPhoto,
   updateArsipPegawai,
 } from "@/lib/api/arsip-pegawai";
+import {
+  IMAGE_FILE_ACCEPT,
+  validateClientUpload,
+} from "@/lib/api/file-policy";
 import { cn } from "@/lib/utils";
 import type { PegawaiArchive } from "@/types/arsip-pegawai";
 
@@ -69,6 +84,7 @@ const photoColors = [
 ];
 
 export default function ArsipPegawaiPage() {
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   const [pegawaiRecords, setPegawaiRecords] = useState<PegawaiArchive[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -76,6 +92,8 @@ export default function ArsipPegawaiPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PegawaiArchive | null>(null);
   const [form, setForm] = useState<PegawaiForm>(() => createEmptyPegawaiForm());
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -154,6 +172,7 @@ export default function ArsipPegawaiPage() {
   const openCreateForm = () => {
     setEditingId(null);
     setForm(createEmptyPegawaiForm());
+    resetPhotoInput();
     setFormOpen(true);
   };
 
@@ -172,6 +191,7 @@ export default function ArsipPegawaiPage() {
       address: pegawai.address,
       status: pegawai.status,
     });
+    resetPhotoInput();
     setFormOpen(true);
   };
 
@@ -179,10 +199,43 @@ export default function ArsipPegawaiPage() {
     setFormOpen(false);
     setEditingId(null);
     setForm(createEmptyPegawaiForm());
+    resetPhotoInput();
+  };
+
+  const resetPhotoInput = () => {
+    setSelectedPhoto(null);
+    setPhotoError(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+  };
+
+  const handlePhotoChange = (photo: File | null) => {
+    setSelectedPhoto(photo);
+    setPhotoError(null);
+    if (!photo) {
+      if (photoInputRef.current) {
+        photoInputRef.current.value = "";
+      }
+      return;
+    }
+
+    try {
+      validateClientUpload(photo, "image");
+    } catch (validationError) {
+      setPhotoError(
+        validationError instanceof Error
+          ? validationError.message
+          : "Foto pegawai tidak valid.",
+      );
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (photoError) {
+      return;
+    }
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -192,7 +245,7 @@ export default function ArsipPegawaiPage() {
         const current = pegawaiRecords.find(
           (pegawai) => pegawai.id === editingId,
         );
-        const updated = await updateArsipPegawai(editingId, {
+        let updated = await updateArsipPegawai(editingId, {
           ...form,
           photoColor: current?.photoColor ?? photoColors[0],
         });
@@ -201,19 +254,57 @@ export default function ArsipPegawaiPage() {
             pegawai.id === editingId ? updated : pegawai,
           ),
         );
+        if (selectedPhoto) {
+          try {
+            updated = await uploadArsipPegawaiPhoto(editingId, selectedPhoto);
+            setPegawaiRecords((currentRecords) =>
+              currentRecords.map((pegawai) =>
+                pegawai.id === editingId ? updated : pegawai,
+              ),
+            );
+          } catch (photoUploadError) {
+            console.error(photoUploadError);
+            setMessage(`${updated.name} berhasil diperbarui tanpa foto baru.`);
+            setError(
+              photoUploadError instanceof Error
+                ? photoUploadError.message
+                : "Foto pegawai gagal diunggah.",
+            );
+            closeForm();
+            return;
+          }
+        }
         setMessage(`${updated.name} berhasil diperbarui.`);
       } else {
-        const created = await createArsipPegawai({
+        let created = await createArsipPegawai({
           ...form,
           photoColor: photoColors[pegawaiRecords.length % photoColors.length],
         });
         setPegawaiRecords((currentRecords) => [created, ...currentRecords]);
+        if (selectedPhoto) {
+          try {
+            created = await uploadArsipPegawaiPhoto(created.id, selectedPhoto);
+            setPegawaiRecords((currentRecords) =>
+              currentRecords.map((pegawai) =>
+                pegawai.id === created.id ? created : pegawai,
+              ),
+            );
+          } catch (photoUploadError) {
+            console.error(photoUploadError);
+            setMessage(`${created.name} berhasil ditambahkan tanpa foto.`);
+            setError(
+              photoUploadError instanceof Error
+                ? photoUploadError.message
+                : "Foto pegawai gagal diunggah.",
+            );
+            closeForm();
+            return;
+          }
+        }
         setMessage(`${created.name} berhasil ditambahkan.`);
       }
 
-      setFormOpen(false);
-      setEditingId(null);
-      setForm(createEmptyPegawaiForm());
+      closeForm();
     } catch (submitError) {
       console.error(submitError);
       setError(
@@ -363,7 +454,6 @@ export default function ArsipPegawaiPage() {
                 label="Email"
                 value={form.email}
                 placeholder="email@papuabaratdaya.go.id"
-                type="email"
                 onChange={(value) =>
                   setForm((current) => ({ ...current, email: value }))
                 }
@@ -410,6 +500,68 @@ export default function ArsipPegawaiPage() {
                   setForm((current) => ({ ...current, address: value }))
                 }
               />
+              <div className="grid gap-2 md:col-span-2">
+                <span className="text-sm font-bold text-pbd-navy">
+                  Foto Pegawai
+                </span>
+                <Input
+                  ref={photoInputRef}
+                  type="file"
+                  accept={IMAGE_FILE_ACCEPT}
+                  disabled={saving}
+                  onChange={(event) =>
+                    handlePhotoChange(event.target.files?.[0] ?? null)
+                  }
+                />
+                <p className="text-xs leading-5 text-slate-500">
+                  Format JPG, PNG, atau WebP. Foto baru akan menggantikan foto
+                  sebelumnya.
+                </p>
+                {selectedPhoto ? (
+                  <div
+                    className={cn(
+                      "flex items-center justify-between gap-3 rounded-lg border px-3 py-3 text-sm",
+                      photoError
+                        ? "border-red-200 bg-red-50 text-red-700"
+                        : "border-slate-200 bg-slate-50 text-slate-600",
+                    )}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Camera className="h-5 w-5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">
+                          {selectedPhoto.name}
+                        </p>
+                        <p className="text-xs">
+                          {formatFileSize(selectedPhoto.size)}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={saving}
+                      onClick={() => handlePhotoChange(null)}
+                      aria-label="Hapus foto yang dipilih"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : editingPegawai?.photoOriginalName ? (
+                  <p className="text-sm text-slate-600">
+                    Foto saat ini:{" "}
+                    <span className="font-semibold">
+                      {editingPegawai.photoOriginalName}
+                    </span>
+                  </p>
+                ) : null}
+                {photoError ? (
+                  <p className="text-sm font-medium text-red-600">
+                    {photoError}
+                  </p>
+                ) : null}
+              </div>
             </div>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button type="button" variant="outline" onClick={closeForm}>
@@ -488,14 +640,11 @@ export default function ArsipPegawaiPage() {
                       href={`/arsip-pegawai/${pegawai.id}`}
                       className="flex items-center gap-3"
                     >
-                      <div
-                        className={cn(
-                          "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg font-bold",
-                          pegawai.photoColor,
-                        )}
-                      >
-                        {getInitials(pegawai.name)}
-                      </div>
+                      <EmployeePhoto
+                        employee={pegawai}
+                        className="h-11 w-11 shrink-0 rounded-lg text-sm"
+                        sizes="44px"
+                      />
                       <div>
                         <p className="font-bold text-pbd-navy group-hover:text-pbd-blue">
                           {pegawai.name}
@@ -629,13 +778,4 @@ function createEmptyPegawaiForm(): PegawaiForm {
     address: "",
     status: "Aktif",
   };
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
-    .join("");
 }

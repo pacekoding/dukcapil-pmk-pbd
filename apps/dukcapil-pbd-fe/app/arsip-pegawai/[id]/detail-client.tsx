@@ -5,22 +5,28 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
+  Building2,
+  Camera,
   Download,
+  Edit3,
   Eye,
   FileText,
   GraduationCap,
   IdCard,
   Loader2,
   Mail,
+  MapPin,
   Phone,
   Plus,
   ShieldCheck,
   Trash2,
   Upload,
+  UserRound,
   X,
   type LucideIcon,
 } from "lucide-react";
 
+import { EmployeePhoto } from "@/components/arsip-pegawai/employee-photo";
 import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { formatFileSize } from "@/components/dashboard/document-utils";
 import { PageHero } from "@/components/dashboard/page-hero";
@@ -48,18 +54,22 @@ import {
 import {
   deletePegawaiDocument,
   getArsipPegawaiDetail,
+  updateArsipPegawai,
+  uploadArsipPegawaiPhoto,
   uploadPegawaiDocument,
 } from "@/lib/api/arsip-pegawai";
 import { apiEndpoints } from "@/lib/api/endpoints";
 import { withInlineBackendAssetDisposition } from "@/lib/api/assets";
 import {
   ARCHIVE_FILE_ACCEPT,
+  IMAGE_FILE_ACCEPT,
   validateClientUpload,
 } from "@/lib/api/file-policy";
 import { cn } from "@/lib/utils";
 import type {
   ArsipBidang,
   PegawaiArchive,
+  PegawaiArchivePayload,
   PegawaiDocument,
   PegawaiDocumentCategory,
 } from "@/types/arsip-pegawai";
@@ -89,6 +99,7 @@ type UploadForm = {
 export function ArsipPegawaiDetailClient({ id }: { id: string }) {
   const pegawaiId = Number(id);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   const [pegawai, setPegawai] = useState<PegawaiArchive | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -98,6 +109,11 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
   const [uploading, setUploading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<PegawaiDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<PegawaiArchivePayload | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -254,6 +270,100 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
     }
   };
 
+  const startEditing = () => {
+    if (!pegawai) {
+      return;
+    }
+    setEditForm(createEditForm(pegawai));
+    setSelectedPhoto(null);
+    setPhotoError(null);
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setEditForm(null);
+    setSelectedPhoto(null);
+    setPhotoError(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+  };
+
+  const handlePhotoChange = (photo: File | null) => {
+    setSelectedPhoto(photo);
+    setPhotoError(null);
+    if (!photo) {
+      if (photoInputRef.current) {
+        photoInputRef.current.value = "";
+      }
+      return;
+    }
+
+    try {
+      validateClientUpload(photo, "image");
+    } catch (validationError) {
+      setPhotoError(
+        validationError instanceof Error
+          ? validationError.message
+          : "Foto pegawai tidak valid.",
+      );
+    }
+  };
+
+  const updateEditField = <Key extends keyof PegawaiArchivePayload>(
+    key: Key,
+    value: PegawaiArchivePayload[Key],
+  ) => {
+    setEditForm((current) =>
+      current ? { ...current, [key]: value } : current,
+    );
+  };
+
+  const handleSaveEmployee = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    if (!pegawai || !editForm || photoError) {
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      let updated = await updateArsipPegawai(pegawai.id, editForm);
+      setPegawai(updated);
+      if (selectedPhoto) {
+        try {
+          updated = await uploadArsipPegawaiPhoto(pegawai.id, selectedPhoto);
+          setPegawai(updated);
+        } catch (photoUploadError) {
+          console.error(photoUploadError);
+          setMessage("Data pegawai berhasil diperbarui tanpa foto baru.");
+          setError(
+            photoUploadError instanceof Error
+              ? photoUploadError.message
+              : "Foto pegawai gagal diunggah.",
+          );
+          cancelEditing();
+          return;
+        }
+      }
+      setMessage("Data pegawai berhasil diperbarui.");
+      cancelEditing();
+    } catch (saveError) {
+      console.error(saveError);
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Data pegawai gagal diperbarui.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="space-y-6">
@@ -316,6 +426,17 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
               <Plus className="h-4 w-4" />
               Upload Dokumen
             </Button>
+            {!editing ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl"
+                onClick={startEditing}
+              >
+                <Edit3 className="h-4 w-4" />
+                Edit Data
+              </Button>
+            ) : null}
             <Button asChild variant="outline" className="h-11 rounded-xl">
               <Link href="/arsip-pegawai">
                 <ArrowLeft className="h-4 w-4" />
@@ -329,55 +450,252 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
       {message ? <SuccessState message={message} /> : null}
       {error ? <ErrorState message={error} /> : null}
 
-      <section className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <SectionCard title="Foto Pegawai" description="Identitas visual pegawai.">
-          <div className="flex flex-col items-center text-center">
-            <div
-              className={cn(
-                "flex aspect-[3/4] w-full max-w-[220px] items-center justify-center rounded-lg text-5xl font-extrabold ring-1 ring-current/10",
-                pegawai.photoColor,
-              )}
-            >
-              {getInitials(pegawai.name)}
-            </div>
-            <h2 className="mt-5 text-xl font-extrabold text-pbd-navy">
-              {pegawai.name}
-            </h2>
-            <p className="mt-1 text-sm font-semibold text-pbd-blue">
-              {pegawai.position}
-            </p>
-            <p className="mt-2 text-sm text-slate-500">{pegawai.unit}</p>
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="Biodata Singkat"
-          description="Data utama pegawai untuk kebutuhan arsip internal."
+      {editing && editForm ? (
+        <form
+          onSubmit={(event) => void handleSaveEmployee(event)}
+          className="space-y-4"
         >
-          <div className="grid gap-4 md:grid-cols-2">
-            <InfoItem label="NIP" value={pegawai.nip} icon={IdCard} />
-            <InfoItem label="NIK" value={pegawai.nik} icon={ShieldCheck} />
-            <InfoItem
-              label="Pangkat/Golongan"
-              value={pegawai.rank}
-              icon={BadgeCheck}
-            />
-            <InfoItem
-              label="No Rekening"
-              value={pegawai.bankAccount}
-              icon={IdCard}
-            />
-            <InfoItem label="Email" value={pegawai.email} icon={Mail} />
-            <InfoItem label="Telepon" value={pegawai.phone} icon={Phone} />
-            <InfoItem
-              label="Alamat"
-              value={pegawai.address}
-              icon={FileText}
-              className="md:col-span-2"
-            />
+          <section className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+            <SectionCard
+              title="Foto Pegawai"
+              description="Unggah foto JPG, PNG, atau WebP."
+            >
+              <div className="space-y-4">
+                <EmployeePhoto
+                  employee={pegawai}
+                  className="mx-auto aspect-[3/4] w-full max-w-[220px] rounded-lg text-5xl"
+                  sizes="220px"
+                />
+                <div className="grid gap-2">
+                  <Label htmlFor="pegawai-photo">Ganti Foto</Label>
+                  <Input
+                    ref={photoInputRef}
+                    id="pegawai-photo"
+                    type="file"
+                    accept={IMAGE_FILE_ACCEPT}
+                    disabled={saving}
+                    onChange={(event) =>
+                      handlePhotoChange(event.target.files?.[0] ?? null)
+                    }
+                  />
+                  {selectedPhoto ? (
+                    <div
+                      className={cn(
+                        "flex items-center justify-between gap-3 rounded-lg border px-3 py-3 text-sm",
+                        photoError
+                          ? "border-red-200 bg-red-50 text-red-700"
+                          : "border-slate-200 bg-slate-50 text-slate-600",
+                      )}
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Camera className="h-5 w-5 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold">
+                            {selectedPhoto.name}
+                          </p>
+                          <p className="text-xs">
+                            {formatFileSize(selectedPhoto.size)}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={saving}
+                        onClick={() => handlePhotoChange(null)}
+                        aria-label="Hapus foto yang dipilih"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : pegawai.photoOriginalName ? (
+                    <p className="text-sm text-slate-600">
+                      Foto saat ini:{" "}
+                      <span className="font-semibold">
+                        {pegawai.photoOriginalName}
+                      </span>
+                    </p>
+                  ) : null}
+                  {photoError ? (
+                    <p className="text-sm font-medium text-red-600">
+                      {photoError}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Edit Data Pegawai"
+              description="Semua perubahan disimpan langsung pada halaman detail."
+            >
+              <div className="grid gap-4 md:grid-cols-2">
+                <EmployeeFormInput
+                  label="NIP"
+                  value={editForm.nip}
+                  onChange={(value) => updateEditField("nip", value)}
+                />
+                <EmployeeFormInput
+                  label="NIK"
+                  value={editForm.nik}
+                  onChange={(value) => updateEditField("nik", value)}
+                />
+                <EmployeeFormInput
+                  label="Nama"
+                  value={editForm.name}
+                  onChange={(value) => updateEditField("name", value)}
+                />
+                <EmployeeFormInput
+                  label="Jabatan"
+                  value={editForm.position}
+                  onChange={(value) => updateEditField("position", value)}
+                />
+                <EmployeeFormInput
+                  label="Unit"
+                  value={editForm.unit}
+                  onChange={(value) => updateEditField("unit", value)}
+                />
+                <EmployeeFormInput
+                  label="Pangkat/Golongan"
+                  value={editForm.rank}
+                  onChange={(value) => updateEditField("rank", value)}
+                />
+                <EmployeeFormInput
+                  label="Email"
+                  value={editForm.email}
+                  onChange={(value) => updateEditField("email", value)}
+                />
+                <EmployeeFormInput
+                  label="Telepon"
+                  value={editForm.phone}
+                  onChange={(value) => updateEditField("phone", value)}
+                />
+                <EmployeeFormInput
+                  label="No Rekening"
+                  value={editForm.bankAccount}
+                  onChange={(value) => updateEditField("bankAccount", value)}
+                />
+                <label className="grid gap-2">
+                  <span className="text-sm font-bold text-pbd-navy">
+                    Status
+                  </span>
+                  <Select
+                    value={editForm.status}
+                    disabled={saving}
+                    onValueChange={(value) =>
+                      updateEditField(
+                        "status",
+                        value as PegawaiArchive["status"],
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Aktif">Aktif</SelectItem>
+                      <SelectItem value="Cuti">Cuti</SelectItem>
+                      <SelectItem value="Mutasi">Mutasi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </label>
+                <EmployeeFormInput
+                  label="Alamat"
+                  value={editForm.address}
+                  className="md:col-span-2"
+                  onChange={(value) => updateEditField("address", value)}
+                />
+              </div>
+            </SectionCard>
+          </section>
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={saving}
+              onClick={cancelEditing}
+            >
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving || Boolean(photoError)}
+              className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {saving ? "Menyimpan..." : "Simpan Perubahan"}
+            </Button>
           </div>
-        </SectionCard>
-      </section>
+        </form>
+      ) : (
+        <section className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <SectionCard
+            title="Foto Pegawai"
+            description="Identitas visual pegawai."
+          >
+            <div className="flex flex-col items-center text-center">
+              <EmployeePhoto
+                employee={pegawai}
+                className="aspect-[3/4] w-full max-w-[220px] rounded-lg text-5xl"
+                sizes="220px"
+              />
+              <h2 className="mt-5 text-xl font-extrabold text-pbd-navy">
+                {pegawai.name}
+              </h2>
+              <p className="mt-1 text-sm font-semibold text-pbd-blue">
+                {pegawai.position}
+              </p>
+              <p className="mt-2 text-sm text-slate-500">{pegawai.unit}</p>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            title="Biodata Pegawai"
+            description="Data utama pegawai untuk kebutuhan arsip internal."
+            action={
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" onClick={startEditing}>
+                  <Edit3 className="h-4 w-4" />
+                  Edit Data
+                </Button>
+              </div>
+            }
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <InfoItem label="Nama" value={pegawai.name} icon={UserRound} />
+              <InfoItem label="Status" value={pegawai.status} icon={BadgeCheck} />
+              <InfoItem label="NIP" value={pegawai.nip} icon={IdCard} />
+              <InfoItem label="NIK" value={pegawai.nik} icon={ShieldCheck} />
+              <InfoItem
+                label="Jabatan"
+                value={pegawai.position}
+                icon={IdCard}
+              />
+              <InfoItem label="Unit" value={pegawai.unit} icon={Building2} />
+              <InfoItem
+                label="Pangkat/Golongan"
+                value={pegawai.rank}
+                icon={BadgeCheck}
+              />
+              <InfoItem
+                label="No Rekening"
+                value={pegawai.bankAccount}
+                icon={IdCard}
+              />
+              <InfoItem label="Email" value={pegawai.email} icon={Mail} />
+              <InfoItem label="Telepon" value={pegawai.phone} icon={Phone} />
+              <InfoItem
+                label="Alamat"
+                value={pegawai.address}
+                icon={MapPin}
+                className="md:col-span-2"
+              />
+            </div>
+          </SectionCard>
+        </section>
+      )}
 
       {uploadOpen ? (
         <SectionCard
@@ -737,6 +1055,49 @@ function FormInput({
   );
 }
 
+function EmployeeFormInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+  className,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  className?: string;
+}) {
+  return (
+    <label className={cn("grid gap-2", className)}>
+      <span className="text-sm font-bold text-pbd-navy">{label}</span>
+      <Input
+        value={value}
+        type={type}
+        onChange={(event) => onChange(event.target.value)}
+        required
+      />
+    </label>
+  );
+}
+
+function createEditForm(pegawai: PegawaiArchive): PegawaiArchivePayload {
+  return {
+    nip: pegawai.nip,
+    nik: pegawai.nik,
+    name: pegawai.name,
+    position: pegawai.position,
+    unit: pegawai.unit,
+    rank: pegawai.rank,
+    email: pegawai.email,
+    phone: pegawai.phone,
+    bankAccount: pegawai.bankAccount,
+    address: pegawai.address,
+    status: pegawai.status,
+    photoColor: pegawai.photoColor,
+  };
+}
+
 function createEmptyUploadForm(): UploadForm {
   return {
     title: "",
@@ -754,13 +1115,4 @@ function formatDate(value: string) {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
-}
-
-function getInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word.charAt(0).toUpperCase())
-    .join("");
 }

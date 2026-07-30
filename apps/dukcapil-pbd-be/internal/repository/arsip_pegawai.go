@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -41,7 +42,16 @@ func (r *ArsipPegawaiRepository) List(ctx context.Context, params model.ArsipPeg
 			no_rekening AS bank_account,
 			alamat AS address,
 			status,
-			photo_color
+			photo_color,
+			photo_file_id,
+			COALESCE(
+			  (SELECT f.original_filename FROM stored_files f WHERE f.id = photo_file_id AND f.deleted_at IS NULL),
+			  ''
+			) AS photo_original_name,
+			COALESCE(
+			  (SELECT f.storage_key FROM stored_files f WHERE f.id = photo_file_id AND f.deleted_at IS NULL),
+			  ''
+			) AS photo_storage_url
 		`).
 		Order("created_at DESC, id DESC").
 		Scan(&records).Error; err != nil {
@@ -76,7 +86,16 @@ func (r *ArsipPegawaiRepository) Detail(ctx context.Context, id int64) (model.Ar
 			no_rekening AS bank_account,
 			alamat AS address,
 			status,
-			photo_color
+			photo_color,
+			photo_file_id,
+			COALESCE(
+			  (SELECT f.original_filename FROM stored_files f WHERE f.id = photo_file_id AND f.deleted_at IS NULL),
+			  ''
+			) AS photo_original_name,
+			COALESCE(
+			  (SELECT f.storage_key FROM stored_files f WHERE f.id = photo_file_id AND f.deleted_at IS NULL),
+			  ''
+			) AS photo_storage_url
 		`).
 		Take(&record).Error
 	if err != nil {
@@ -163,6 +182,63 @@ func (r *ArsipPegawaiRepository) Update(ctx context.Context, id int64, payload m
 	return item, found, err
 }
 
+func (r *ArsipPegawaiRepository) ReplacePhoto(
+	ctx context.Context,
+	id int64,
+	input model.StoredFileInput,
+) (model.ArsipPegawaiItem, bool, string, error) {
+	db, err := r.session(ctx)
+	if err != nil {
+		return model.ArsipPegawaiItem{}, false, "", err
+	}
+
+	found := true
+	previousStorageURL := ""
+	err = db.Transaction(func(tx *gorm.DB) error {
+		var current model.ArsipPegawaiEntity
+		if takeErr := tx.Where("id = ?", id).Take(&current).Error; takeErr != nil {
+			if errors.Is(takeErr, gorm.ErrRecordNotFound) {
+				found = false
+				return nil
+			}
+			return takeErr
+		}
+
+		file, createErr := createStoredFileRecord(tx, input, id)
+		if createErr != nil {
+			return createErr
+		}
+		if current.PhotoFileID != nil {
+			previous, previousFound, previousErr := storedFileByID(tx, *current.PhotoFileID)
+			if previousErr != nil {
+				return previousErr
+			}
+			if previousFound {
+				previousStorageURL = previous.StorageKey
+			}
+			if deleteErr := softDeleteStoredFileRecord(tx, *current.PhotoFileID); deleteErr != nil {
+				return deleteErr
+			}
+		}
+
+		return tx.Table("arsip_pegawai").
+			Where("id = ?", id).
+			Updates(map[string]any{
+				"photo_file_id": file.ID,
+				"updated_at":    gorm.Expr("NOW()"),
+			}).Error
+	})
+	if err != nil {
+		return model.ArsipPegawaiItem{}, false, "", fmt.Errorf("replace arsip pegawai photo: %w", err)
+	}
+	if !found {
+		return model.ArsipPegawaiItem{}, false, "", nil
+	}
+
+	item, found, err := r.Detail(ctx, id)
+	return item, found, previousStorageURL, err
+}
+
 func (r *ArsipPegawaiRepository) Delete(ctx context.Context, id int64) (bool, error) {
 	db, err := r.session(ctx)
 	if err != nil {
@@ -179,6 +255,16 @@ func (r *ArsipPegawaiRepository) Delete(ctx context.Context, id int64) (bool, er
 			  AND related_entity_id IN (
 			    SELECT id FROM arsip WHERE sumber_aplikasi = 'arsip_pegawai' AND pegawai_id = ?
 			  )
+			  AND deleted_at IS NULL
+		`, id).Error; err != nil {
+			return err
+		}
+		if err := tx.Exec(`
+			UPDATE stored_files
+			SET deleted_at = NOW(), updated_at = NOW()
+			WHERE module = 'arsip-pegawai'
+			  AND related_entity_type = 'arsip_pegawai'
+			  AND related_entity_id = ?
 			  AND deleted_at IS NULL
 		`, id).Error; err != nil {
 			return err
@@ -344,6 +430,7 @@ func (r *ArsipPegawaiRepository) attachDocuments(db *gorm.DB, records []model.Ar
 	for index := range records {
 		ids = append(ids, records[index].ID)
 		indexByID[records[index].ID] = index
+		records[index] = finalizeArsipPegawaiItem(records[index])
 		records[index].Documents = []model.ArsipPegawaiDocument{}
 	}
 
@@ -364,6 +451,16 @@ func (r *ArsipPegawaiRepository) attachDocuments(db *gorm.DB, records []model.Ar
 		}
 	}
 	return nil
+}
+
+func finalizeArsipPegawaiItem(record model.ArsipPegawaiItem) model.ArsipPegawaiItem {
+	if record.PhotoFileID != nil && *record.PhotoFileID > 0 {
+		record.PhotoPreviewURL = fmt.Sprintf(
+			"/api/backend/files/%d/preview",
+			*record.PhotoFileID,
+		)
+	}
+	return record
 }
 
 func arsipPegawaiDocumentSelect() string {

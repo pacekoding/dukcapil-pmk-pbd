@@ -280,6 +280,18 @@ func storedFileAccessAllowed(db *gorm.DB, file model.StoredFile, claims security
 			return false, fmt.Errorf("check archive file access: %w", err)
 		}
 		return count > 0, nil
+	case "arsip-pegawai":
+		if file.RelatedEntityType != "arsip_pegawai" {
+			return false, nil
+		}
+		var count int64
+		err := db.Table("arsip_pegawai").
+			Where("id = ? AND photo_file_id = ?", file.RelatedEntityID, file.ID).
+			Count(&count).Error
+		if err != nil {
+			return false, fmt.Errorf("check employee photo access: %w", err)
+		}
+		return count > 0, nil
 	default:
 		return false, nil
 	}

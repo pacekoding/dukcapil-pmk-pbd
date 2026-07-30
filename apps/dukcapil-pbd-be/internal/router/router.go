@@ -84,6 +84,7 @@ func New(config Config) *echo.Echo {
 	protected.POST("/arsip-pegawai", config.ArsipPegawai.Create)
 	protected.GET("/arsip-pegawai/:id", config.ArsipPegawai.Detail)
 	protected.PUT("/arsip-pegawai/:id", config.ArsipPegawai.Update)
+	protected.POST("/arsip-pegawai/:id/photo", config.ArsipPegawai.UploadPhoto)
 	protected.DELETE("/arsip-pegawai/:id", config.ArsipPegawai.Delete)
 	protected.POST("/arsip-pegawai/:id/documents", config.ArsipPegawai.UploadDocument)
 	protected.DELETE("/arsip-pegawai/:id/documents/:document_id", config.ArsipPegawai.DeleteDocument)

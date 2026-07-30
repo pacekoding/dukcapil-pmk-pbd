@@ -41,6 +41,9 @@ export type PegawaiArchive = {
   address: string;
   status: "Aktif" | "Cuti" | "Mutasi";
   photoColor: string;
+  photoFileId?: number;
+  photoOriginalName: string;
+  photoPreviewUrl: string;
   documents: PegawaiDocument[];
 };
 

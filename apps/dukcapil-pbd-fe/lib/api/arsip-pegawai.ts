@@ -45,6 +45,16 @@ export function deleteArsipPegawai(id: number) {
   });
 }
 
+export function uploadArsipPegawaiPhoto(id: number, photo: File) {
+  const formData = new FormData();
+  formData.append("photo", photo);
+
+  return apiRequest<PegawaiArchive>(apiEndpoints.arsipPegawaiPhoto(id), {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export function uploadPegawaiDocument(
   pegawaiId: number,
   payload: UploadPegawaiDocumentPayload,

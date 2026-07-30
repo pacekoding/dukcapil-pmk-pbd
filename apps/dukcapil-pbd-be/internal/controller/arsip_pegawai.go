@@ -21,6 +21,7 @@ type ArsipPegawaiStore interface {
 	Detail(ctx context.Context, id int64) (model.ArsipPegawaiItem, bool, error)
 	Create(ctx context.Context, payload model.ArsipPegawaiPayload) (model.ArsipPegawaiItem, error)
 	Update(ctx context.Context, id int64, payload model.ArsipPegawaiPayload) (model.ArsipPegawaiItem, bool, error)
+	ReplacePhoto(ctx context.Context, id int64, file model.StoredFileInput) (model.ArsipPegawaiItem, bool, string, error)
 	Delete(ctx context.Context, id int64) (bool, error)
 	CreateDocument(ctx context.Context, payload model.ArsipPegawaiDocumentPayload) (model.ArsipPegawaiDocument, error)
 	DocumentByID(ctx context.Context, pegawaiID int64, id int64) (model.ArsipPegawaiDocument, bool, error)
@@ -109,6 +110,65 @@ func (a *ArsipPegawaiController) Update(c echo.Context) error {
 	return jsonData(c, http.StatusOK, record)
 }
 
+func (a *ArsipPegawaiController) UploadPhoto(c echo.Context) error {
+	id, err := arsipPegawaiID(c)
+	if err != nil {
+		return err
+	}
+	if _, found, detailErr := a.pegawai.Detail(c.Request().Context(), id); detailErr != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "data pegawai gagal dimuat")
+	} else if !found {
+		return echo.NewHTTPError(http.StatusNotFound, "data pegawai tidak ditemukan")
+	}
+
+	claims, ok := authmiddleware.ClaimsFromContext(c)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "session login tidak valid")
+	}
+	tahunAnggaran, err := pelaksanaanDocumentTahunAnggaran(c)
+	if err != nil {
+		return err
+	}
+	fileHeader, err := c.FormFile("photo")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "foto pegawai wajib diunggah")
+	}
+	if a.files == nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "storage file belum dikonfigurasi")
+	}
+
+	file, err := a.files.Save(c.Request().Context(), fileasset.SaveRequest{
+		Header:          fileHeader,
+		Kind:            fileasset.KindImage,
+		Visibility:      model.FileVisibilityPrivate,
+		Module:          "arsip-pegawai",
+		RelatedType:     "arsip_pegawai",
+		Category:        "foto",
+		StorageCategory: "foto",
+		Year:            tahunAnggaran,
+		UploadedBy:      &claims.UserID,
+	})
+	if err != nil {
+		return managedUploadHTTPError(err)
+	}
+
+	record, found, previousStorageURL, replaceErr := a.pegawai.ReplacePhoto(
+		c.Request().Context(),
+		id,
+		file,
+	)
+	if replaceErr != nil {
+		deleteManagedStoredFile(c, a.files, file.StorageKey)
+		return echo.NewHTTPError(http.StatusInternalServerError, "foto pegawai gagal disimpan")
+	}
+	if !found {
+		deleteManagedStoredFile(c, a.files, file.StorageKey)
+		return echo.NewHTTPError(http.StatusNotFound, "data pegawai tidak ditemukan")
+	}
+	deleteManagedStoredFile(c, a.files, previousStorageURL)
+	return jsonData(c, http.StatusOK, record)
+}
+
 func (a *ArsipPegawaiController) Delete(c echo.Context) error {
 	id, err := arsipPegawaiID(c)
 	if err != nil {
@@ -134,6 +194,7 @@ func (a *ArsipPegawaiController) Delete(c echo.Context) error {
 	for _, document := range record.Documents {
 		deleteManagedStoredFile(c, a.files, document.StorageURL)
 	}
+	deleteManagedStoredFile(c, a.files, record.PhotoStorageURL)
 	return c.NoContent(http.StatusNoContent)
 }
 

@@ -48,20 +48,24 @@ type ArsipPegawaiDocumentPayload struct {
 }
 
 type ArsipPegawaiItem struct {
-	ID          int64                  `json:"id" gorm:"column:id"`
-	NIP         string                 `json:"nip" gorm:"column:nip"`
-	NIK         string                 `json:"nik" gorm:"column:nik"`
-	Name        string                 `json:"name" gorm:"column:name"`
-	Position    string                 `json:"position" gorm:"column:position"`
-	Unit        string                 `json:"unit" gorm:"column:unit"`
-	Rank        string                 `json:"rank" gorm:"column:rank"`
-	Email       string                 `json:"email" gorm:"column:email"`
-	Phone       string                 `json:"phone" gorm:"column:phone"`
-	BankAccount string                 `json:"bankAccount" gorm:"column:bank_account"`
-	Address     string                 `json:"address" gorm:"column:address"`
-	Status      string                 `json:"status" gorm:"column:status"`
-	PhotoColor  string                 `json:"photoColor" gorm:"column:photo_color"`
-	Documents   []ArsipPegawaiDocument `json:"documents" gorm:"-"`
+	ID                int64                  `json:"id" gorm:"column:id"`
+	NIP               string                 `json:"nip" gorm:"column:nip"`
+	NIK               string                 `json:"nik" gorm:"column:nik"`
+	Name              string                 `json:"name" gorm:"column:name"`
+	Position          string                 `json:"position" gorm:"column:position"`
+	Unit              string                 `json:"unit" gorm:"column:unit"`
+	Rank              string                 `json:"rank" gorm:"column:rank"`
+	Email             string                 `json:"email" gorm:"column:email"`
+	Phone             string                 `json:"phone" gorm:"column:phone"`
+	BankAccount       string                 `json:"bankAccount" gorm:"column:bank_account"`
+	Address           string                 `json:"address" gorm:"column:address"`
+	Status            string                 `json:"status" gorm:"column:status"`
+	PhotoColor        string                 `json:"photoColor" gorm:"column:photo_color"`
+	PhotoFileID       *int64                 `json:"photoFileId,omitempty" gorm:"column:photo_file_id"`
+	PhotoOriginalName string                 `json:"photoOriginalName" gorm:"column:photo_original_name"`
+	PhotoPreviewURL   string                 `json:"photoPreviewUrl" gorm:"-"`
+	PhotoStorageURL   string                 `json:"-" gorm:"column:photo_storage_url"`
+	Documents         []ArsipPegawaiDocument `json:"documents" gorm:"-"`
 }
 
 type ArsipPegawaiDocument struct {
@@ -99,6 +103,7 @@ type ArsipPegawaiEntity struct {
 	Alamat          string    `gorm:"column:alamat"`
 	Status          string    `gorm:"column:status"`
 	PhotoColor      string    `gorm:"column:photo_color"`
+	PhotoFileID     *int64    `gorm:"column:photo_file_id"`
 	CreatedAt       time.Time `gorm:"column:created_at"`
 	UpdatedAt       time.Time `gorm:"column:updated_at"`
 }
