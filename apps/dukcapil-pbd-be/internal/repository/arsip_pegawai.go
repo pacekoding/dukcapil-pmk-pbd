@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"dukcapil-pbd-be/internal/model"
 
@@ -34,7 +35,10 @@ func (r *ArsipPegawaiRepository) List(ctx context.Context, params model.ArsipPeg
 			nip,
 			nik,
 			nama AS name,
+			tempat_lahir AS birth_place,
+			COALESCE(TO_CHAR(tanggal_lahir, 'YYYY-MM-DD'), '') AS birth_date,
 			jabatan AS position,
+			bidang,
 			unit,
 			pangkat_golongan AS rank,
 			email,
@@ -78,7 +82,10 @@ func (r *ArsipPegawaiRepository) Detail(ctx context.Context, id int64) (model.Ar
 			nip,
 			nik,
 			nama AS name,
+			tempat_lahir AS birth_place,
+			COALESCE(TO_CHAR(tanggal_lahir, 'YYYY-MM-DD'), '') AS birth_date,
 			jabatan AS position,
+			bidang,
 			unit,
 			pangkat_golongan AS rank,
 			email,
@@ -151,7 +158,10 @@ func (r *ArsipPegawaiRepository) Update(ctx context.Context, id int64, payload m
 		"nip":              record.NIP,
 		"nik":              record.NIK,
 		"nama":             record.Nama,
+		"tempat_lahir":     record.TempatLahir,
+		"tanggal_lahir":    record.TanggalLahir,
 		"jabatan":          record.Jabatan,
+		"bidang":           record.Bidang,
 		"unit":             record.Unit,
 		"pangkat_golongan": record.PangkatGolongan,
 		"email":            record.Email,
@@ -365,6 +375,45 @@ func (r *ArsipPegawaiRepository) DocumentByID(ctx context.Context, pegawaiID int
 	return finalizeArsipPegawaiDocument(record), true, nil
 }
 
+func (r *ArsipPegawaiRepository) UpdateDocument(
+	ctx context.Context,
+	pegawaiID int64,
+	id int64,
+	payload model.ArsipPegawaiDocumentMetadataPayload,
+) (model.ArsipPegawaiDocument, bool, error) {
+	db, err := r.session(ctx)
+	if err != nil {
+		return model.ArsipPegawaiDocument{}, false, err
+	}
+
+	result := db.Table("arsip").
+		Where(
+			"sumber_aplikasi = ? AND pegawai_id = ? AND id = ?",
+			"arsip_pegawai",
+			pegawaiID,
+			id,
+		).
+		Updates(map[string]any{
+			"bidang":            strings.TrimSpace(payload.Bidang),
+			"nama":              strings.TrimSpace(payload.Title),
+			"kategori":          strings.TrimSpace(payload.Category),
+			"nomor_dokumen":     strings.TrimSpace(payload.Number),
+			"tahun_dokumen":     strings.TrimSpace(payload.Year),
+			"status_verifikasi": strings.TrimSpace(payload.Status),
+		})
+	if result.Error != nil {
+		return model.ArsipPegawaiDocument{}, false, fmt.Errorf(
+			"update metadata dokumen arsip pegawai: %w",
+			result.Error,
+		)
+	}
+	if result.RowsAffected == 0 {
+		return model.ArsipPegawaiDocument{}, false, nil
+	}
+
+	return r.DocumentByID(ctx, pegawaiID, id)
+}
+
 func (r *ArsipPegawaiRepository) DeleteDocument(ctx context.Context, pegawaiID int64, id int64) (model.ArsipPegawaiDocument, bool, error) {
 	db, err := r.session(ctx)
 	if err != nil {
@@ -413,9 +462,11 @@ func (r *ArsipPegawaiRepository) pegawaiQuery(db *gorm.DB, params model.ArsipPeg
 			LOWER(nip) LIKE ? OR
 			LOWER(nik) LIKE ? OR
 			LOWER(jabatan) LIKE ? OR
+			LOWER(tempat_lahir) LIKE ? OR
+			LOWER(bidang) LIKE ? OR
 			LOWER(unit) LIKE ? OR
 			LOWER(pangkat_golongan) LIKE ?
-		`, like, like, like, like, like, like)
+		`, like, like, like, like, like, like, like, like)
 	}
 	return query
 }
@@ -514,8 +565,8 @@ func finalizeArsipPegawaiDocument(record model.ArsipPegawaiDocument) model.Arsip
 		record.DownloadURL = fmt.Sprintf("/api/backend/files/%d/download", *record.FileID)
 		record.PreviewURL = fmt.Sprintf("/api/backend/files/%d/preview", *record.FileID)
 	} else {
-		record.DownloadURL = fmt.Sprintf("/api/backend/arsip-pegawai/%d/documents/%d/download", record.PegawaiID, record.ID)
-		record.PreviewURL = fmt.Sprintf("/api/backend/arsip-pegawai/%d/documents/%d/download?disposition=inline", record.PegawaiID, record.ID)
+		record.DownloadURL = fmt.Sprintf("/api/backend/arsipku/%d/documents/%d/download", record.PegawaiID, record.ID)
+		record.PreviewURL = fmt.Sprintf("/api/backend/arsipku/%d/documents/%d/download?disposition=inline", record.PegawaiID, record.ID)
 	}
 	return record
 }
@@ -525,7 +576,10 @@ func pegawaiEntityFromPayload(payload model.ArsipPegawaiPayload) model.ArsipPega
 		NIP:             strings.TrimSpace(payload.NIP),
 		NIK:             strings.TrimSpace(payload.NIK),
 		Nama:            strings.TrimSpace(payload.Name),
+		TempatLahir:     strings.TrimSpace(payload.BirthPlace),
+		TanggalLahir:    arsipPegawaiBirthDate(payload.BirthDate),
 		Jabatan:         strings.TrimSpace(payload.Position),
+		Bidang:          strings.TrimSpace(payload.Bidang),
 		Unit:            strings.TrimSpace(payload.Unit),
 		PangkatGolongan: strings.TrimSpace(payload.Rank),
 		Email:           strings.TrimSpace(payload.Email),
@@ -535,6 +589,14 @@ func pegawaiEntityFromPayload(payload model.ArsipPegawaiPayload) model.ArsipPega
 		Status:          strings.TrimSpace(payload.Status),
 		PhotoColor:      strings.TrimSpace(payload.PhotoColor),
 	}
+}
+
+func arsipPegawaiBirthDate(value string) *time.Time {
+	parsed, err := time.Parse("2006-01-02", strings.TrimSpace(value))
+	if err != nil {
+		return nil
+	}
+	return &parsed
 }
 
 func (r *ArsipPegawaiRepository) session(ctx context.Context) (*gorm.DB, error) {

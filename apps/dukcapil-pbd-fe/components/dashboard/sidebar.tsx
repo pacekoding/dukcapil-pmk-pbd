@@ -133,7 +133,7 @@ function systemAccessForHref(href: string) {
   if (href.startsWith("/optima-info")) {
     return "optima_info";
   }
-  if (href.startsWith("/arsip-pegawai")) {
+  if (href.startsWith("/arsipku")) {
     return "arsip_pegawai";
   }
   return "";
@@ -222,7 +222,7 @@ function getSidebarMenus(pathname: string) {
     return optimaInfoMenus;
   }
 
-  if (pathname.startsWith("/arsip-pegawai")) {
+  if (pathname.startsWith("/arsipku")) {
     return arsipPegawaiMenus;
   }
 
@@ -311,7 +311,7 @@ function getSidebarBrand(pathname: string) {
     };
   }
 
-  if (pathname.startsWith("/arsip-pegawai")) {
+  if (pathname.startsWith("/arsipku")) {
     return {
       title: "ARSIPKU",
       subtitle: "Dokumen Kepegawaian",

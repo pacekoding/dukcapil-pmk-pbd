@@ -172,9 +172,19 @@ const menuTitles: Record<
     description: "Buat draft informasi baru untuk website publik",
   },
 
-  "/arsip-pegawai": {
-    title: "ARSIPKU",
-    description: "Data pegawai dan dokumen kepegawaian",
+  "/arsipku/dashboard": {
+    title: "Dashboard ARSIPKU",
+    description: "Ringkasan data pegawai dan dokumen kepegawaian",
+  },
+
+  "/arsipku/data-pegawai": {
+    title: "Data Pegawai",
+    description: "Kelola biodata dan status pegawai",
+  },
+
+  "/arsipku/data-arsip": {
+    title: "Data Arsip",
+    description: "Cari dan filter seluruh dokumen kepegawaian",
   },
 
   "/dashboard/users": {
@@ -310,8 +320,16 @@ function getPageInfo(pathname: string) {
     };
   }
 
-  if (pathname.startsWith("/arsip-pegawai")) {
-    return menuTitles["/arsip-pegawai"];
+  if (pathname.startsWith("/arsipku/data-pegawai")) {
+    return menuTitles["/arsipku/data-pegawai"];
+  }
+
+  if (pathname.startsWith("/arsipku/data-arsip")) {
+    return menuTitles["/arsipku/data-arsip"];
+  }
+
+  if (pathname.startsWith("/arsipku")) {
+    return menuTitles["/arsipku/dashboard"];
   }
 
   if (pathname.startsWith("/dashboard/subkegiatan")) {

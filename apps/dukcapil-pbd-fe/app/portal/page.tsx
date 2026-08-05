@@ -247,7 +247,7 @@ const appMenus: AppMenu[] = [
     subtitle: "Sistem ARSIPKU",
     description:
       "Kelola biodata pegawai dan file ijazah, SK, SPMT, sertifikat, dan dokumen lainnya.",
-    href: "/arsip-pegawai",
+    href: "/arsipku/dashboard",
     accessKey: "arsip_pegawai",
     icon: IdCard,
     tone: {

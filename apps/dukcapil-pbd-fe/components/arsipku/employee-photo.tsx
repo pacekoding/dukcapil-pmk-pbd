@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 import { cn } from "@/lib/utils";
-import type { PegawaiArchive } from "@/types/arsip-pegawai";
+import type { PegawaiArchive } from "@/types/arsipku";
 
 type EmployeePhotoProps = {
   employee: Pick<

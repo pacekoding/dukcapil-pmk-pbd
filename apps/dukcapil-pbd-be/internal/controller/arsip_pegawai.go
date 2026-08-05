@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"dukcapil-pbd-be/internal/fileasset"
 	authmiddleware "dukcapil-pbd-be/internal/middleware"
@@ -25,6 +26,12 @@ type ArsipPegawaiStore interface {
 	Delete(ctx context.Context, id int64) (bool, error)
 	CreateDocument(ctx context.Context, payload model.ArsipPegawaiDocumentPayload) (model.ArsipPegawaiDocument, error)
 	DocumentByID(ctx context.Context, pegawaiID int64, id int64) (model.ArsipPegawaiDocument, bool, error)
+	UpdateDocument(
+		ctx context.Context,
+		pegawaiID int64,
+		id int64,
+		payload model.ArsipPegawaiDocumentMetadataPayload,
+	) (model.ArsipPegawaiDocument, bool, error)
 	DeleteDocument(ctx context.Context, pegawaiID int64, id int64) (model.ArsipPegawaiDocument, bool, error)
 }
 
@@ -273,6 +280,39 @@ func (a *ArsipPegawaiController) PreviewDocument(c echo.Context) error {
 	return a.serveDocument(c, "inline")
 }
 
+func (a *ArsipPegawaiController) UpdateDocument(c echo.Context) error {
+	pegawaiID, err := arsipPegawaiID(c)
+	if err != nil {
+		return err
+	}
+	documentID, err := arsipPegawaiDocumentID(c)
+	if err != nil {
+		return err
+	}
+
+	var request model.ArsipPegawaiDocumentMetadataPayload
+	if err := c.Bind(&request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "metadata dokumen tidak valid")
+	}
+	if err := validateArsipPegawaiDocumentMetadataPayload(&request); err != nil {
+		return err
+	}
+
+	document, found, err := a.pegawai.UpdateDocument(
+		c.Request().Context(),
+		pegawaiID,
+		documentID,
+		request,
+	)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "metadata dokumen gagal diperbarui")
+	}
+	if !found {
+		return echo.NewHTTPError(http.StatusNotFound, "dokumen arsip pegawai tidak ditemukan")
+	}
+	return jsonData(c, http.StatusOK, document)
+}
+
 func (a *ArsipPegawaiController) serveDocument(c echo.Context, disposition string) error {
 	pegawaiID, err := arsipPegawaiID(c)
 	if err != nil {
@@ -328,7 +368,10 @@ func validateArsipPegawaiPayload(request *model.ArsipPegawaiPayload) error {
 	request.NIP = strings.TrimSpace(request.NIP)
 	request.NIK = strings.TrimSpace(request.NIK)
 	request.Name = strings.TrimSpace(request.Name)
+	request.BirthPlace = strings.TrimSpace(request.BirthPlace)
+	request.BirthDate = strings.TrimSpace(request.BirthDate)
 	request.Position = strings.TrimSpace(request.Position)
+	request.Bidang = strings.TrimSpace(request.Bidang)
 	request.Unit = strings.TrimSpace(request.Unit)
 	request.Rank = strings.TrimSpace(request.Rank)
 	request.Email = strings.TrimSpace(request.Email)
@@ -344,8 +387,13 @@ func validateArsipPegawaiPayload(request *model.ArsipPegawaiPayload) error {
 	if request.Name == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "nama pegawai wajib diisi")
 	}
+	if request.BirthDate != "" {
+		if _, err := time.Parse("2006-01-02", request.BirthDate); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "tanggal lahir tidak valid")
+		}
+	}
 	switch request.Status {
-	case "", "Aktif", "Cuti", "Mutasi":
+	case "", "Aktif", "Nonaktif", "Cuti", "Mutasi":
 		if request.Status == "" {
 			request.Status = "Aktif"
 		}
@@ -356,13 +404,29 @@ func validateArsipPegawaiPayload(request *model.ArsipPegawaiPayload) error {
 }
 
 func validateArsipPegawaiDocumentPayload(payload *model.ArsipPegawaiDocumentPayload) error {
+	payload.Bidang = strings.ToLower(strings.TrimSpace(payload.Bidang))
+	payload.Title = strings.TrimSpace(payload.Title)
+	payload.Category = strings.TrimSpace(payload.Category)
+	payload.Number = strings.TrimSpace(payload.Number)
+	payload.Year = strings.TrimSpace(payload.Year)
+	payload.Status = strings.TrimSpace(payload.Status)
+
+	if payload.Bidang == "" {
+		payload.Bidang = "sekretariat"
+	}
+	if err := validateArsipBidang(payload.Bidang); err != nil {
+		return err
+	}
 	if payload.Category == "" {
 		payload.Category = string(model.ArsipPegawaiDocumentLainnya)
 	}
 	switch model.ArsipPegawaiDocumentCategory(payload.Category) {
 	case model.ArsipPegawaiDocumentIjazah,
 		model.ArsipPegawaiDocumentSK,
+		model.ArsipPegawaiDocumentSKCPNS,
+		model.ArsipPegawaiDocumentSKPNS,
 		model.ArsipPegawaiDocumentSPMT,
+		model.ArsipPegawaiDocumentKTP,
 		model.ArsipPegawaiDocumentSertifikat,
 		model.ArsipPegawaiDocumentLainnya:
 	default:
@@ -380,6 +444,33 @@ func validateArsipPegawaiDocumentPayload(payload *model.ArsipPegawaiDocumentPayl
 	default:
 		return echo.NewHTTPError(http.StatusBadRequest, "status dokumen tidak valid")
 	}
+	return nil
+}
+
+func validateArsipPegawaiDocumentMetadataPayload(
+	payload *model.ArsipPegawaiDocumentMetadataPayload,
+) error {
+	documentPayload := model.ArsipPegawaiDocumentPayload{
+		Bidang:   payload.Bidang,
+		Title:    payload.Title,
+		Category: payload.Category,
+		Number:   payload.Number,
+		Year:     payload.Year,
+		Status:   payload.Status,
+	}
+	if err := validateArsipPegawaiDocumentPayload(&documentPayload); err != nil {
+		return err
+	}
+	if documentPayload.Title == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "nama dokumen wajib diisi")
+	}
+
+	payload.Bidang = documentPayload.Bidang
+	payload.Title = documentPayload.Title
+	payload.Category = documentPayload.Category
+	payload.Number = documentPayload.Number
+	payload.Year = documentPayload.Year
+	payload.Status = documentPayload.Status
 	return nil
 }
 

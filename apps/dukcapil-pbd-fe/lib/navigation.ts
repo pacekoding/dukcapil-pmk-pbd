@@ -127,7 +127,7 @@ export const dashboardMenus: DashboardMenuItem[] = [
   },
   {
     title: "ARSIPKU",
-    href: "/arsip-pegawai",
+    href: "/arsipku/dashboard",
     icon: "idCard",
   },
 ];
@@ -277,9 +277,19 @@ export const optimaInfoMenus: DashboardMenuItem[] = [
 
 export const arsipPegawaiMenus: DashboardMenuItem[] = [
   {
+    title: "Dashboard",
+    href: "/arsipku/dashboard",
+    icon: "home",
+  },
+  {
     title: "Data Pegawai",
-    href: "/arsip-pegawai",
+    href: "/arsipku/data-pegawai",
     icon: "users",
+  },
+  {
+    title: "Data Arsip",
+    href: "/arsipku/data-arsip",
+    icon: "folderArchive",
   },
 ];
 

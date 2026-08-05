@@ -3,7 +3,10 @@ export type ArsipBidang = "sekretariat" | "dukcapil" | "pmk";
 export type PegawaiDocumentCategory =
   | "Ijazah"
   | "SK"
+  | "SK CPNS"
+  | "SK PNS"
   | "SPMT"
+  | "KTP"
   | "Sertifikat"
   | "Lainnya";
 
@@ -32,14 +35,17 @@ export type PegawaiArchive = {
   nip: string;
   nik: string;
   name: string;
+  birthPlace: string;
+  birthDate: string;
   position: string;
+  bidang: string;
   unit: string;
   rank: string;
   email: string;
   phone: string;
   bankAccount: string;
   address: string;
-  status: "Aktif" | "Cuti" | "Mutasi";
+  status: "Aktif" | "Nonaktif" | "Cuti" | "Mutasi";
   photoColor: string;
   photoFileId?: number;
   photoOriginalName: string;
@@ -51,7 +57,10 @@ export type PegawaiArchivePayload = {
   nip: string;
   nik: string;
   name: string;
+  birthPlace: string;
+  birthDate: string;
   position: string;
+  bidang: string;
   unit: string;
   rank: string;
   email: string;
@@ -64,6 +73,12 @@ export type PegawaiArchivePayload = {
 
 export type UploadPegawaiDocumentPayload = {
   file: File;
+  title: string;
+  category: PegawaiDocumentCategory;
+  year: string;
+};
+
+export type UpdatePegawaiDocumentMetadataPayload = {
   bidang: ArsipBidang;
   title: string;
   category: PegawaiDocumentCategory;

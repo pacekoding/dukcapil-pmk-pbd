@@ -87,7 +87,7 @@ export default function proxy(
 
   const isArsipPegawai =
     pathname.startsWith(
-      "/arsip-pegawai"
+      "/arsipku"
     );
 
   const isOptimaInfo =
@@ -234,8 +234,8 @@ export const config = {
     "/sitekad/:path*",
     "/aspirasiku/:path*",
     "/optima-info/:path*",
-    "/arsip-pegawai",
-    "/arsip-pegawai/:path*",
+    "/arsipku",
+    "/arsipku/:path*",
     "/settings",
     "/settings/:path*",
     "/login",

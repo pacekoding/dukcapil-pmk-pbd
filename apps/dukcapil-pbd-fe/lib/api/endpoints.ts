@@ -62,16 +62,16 @@ export const apiEndpoints = {
   optimaInfoImages: (id: number) => `${API_PREFIX}/optima-info/${id}/images`,
   optimaInfoImageDetail: (id: number, fileId: number) =>
     `${API_PREFIX}/optima-info/${id}/images/${fileId}`,
-  arsipPegawai: `${API_PREFIX}/arsip-pegawai`,
-  arsipPegawaiDetail: (id: number) => `${API_PREFIX}/arsip-pegawai/${id}`,
+  arsipPegawai: `${API_PREFIX}/arsipku`,
+  arsipPegawaiDetail: (id: number) => `${API_PREFIX}/arsipku/${id}`,
   arsipPegawaiPhoto: (id: number) =>
-    `${API_PREFIX}/arsip-pegawai/${id}/photo`,
+    `${API_PREFIX}/arsipku/${id}/photo`,
   arsipPegawaiDocumentList: (pegawaiId: number) =>
-    `${API_PREFIX}/arsip-pegawai/${pegawaiId}/documents`,
+    `${API_PREFIX}/arsipku/${pegawaiId}/documents`,
   arsipPegawaiDocumentDetail: (pegawaiId: number, documentId: number) =>
-    `${API_PREFIX}/arsip-pegawai/${pegawaiId}/documents/${documentId}`,
+    `${API_PREFIX}/arsipku/${pegawaiId}/documents/${documentId}`,
   arsipPegawaiDocumentDownload: (pegawaiId: number, documentId: number) =>
-    `${API_PREFIX}/arsip-pegawai/${pegawaiId}/documents/${documentId}/download`,
+    `${API_PREFIX}/arsipku/${pegawaiId}/documents/${documentId}/download`,
   websiteHome: `${API_PREFIX}/website/home`,
   websitePortalApps: `${API_PREFIX}/website/portal-apps`,
   websiteAspirasiku: `${API_PREFIX}/website/aspirasiku`,

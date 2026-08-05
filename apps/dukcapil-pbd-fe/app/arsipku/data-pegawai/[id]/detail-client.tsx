@@ -1,11 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
 import {
   ArrowLeft,
   BadgeCheck,
   Building2,
+  CalendarDays,
   Camera,
   Download,
   Edit3,
@@ -26,7 +33,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { EmployeePhoto } from "@/components/arsip-pegawai/employee-photo";
+import { EmployeePhoto } from "@/components/arsipku/employee-photo";
 import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { formatFileSize } from "@/components/dashboard/document-utils";
 import { PageHero } from "@/components/dashboard/page-hero";
@@ -43,6 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -55,9 +63,10 @@ import {
   deletePegawaiDocument,
   getArsipPegawaiDetail,
   updateArsipPegawai,
+  updatePegawaiDocumentMetadata,
   uploadArsipPegawaiPhoto,
   uploadPegawaiDocument,
-} from "@/lib/api/arsip-pegawai";
+} from "@/lib/api/arsipku";
 import { apiEndpoints } from "@/lib/api/endpoints";
 import { withInlineBackendAssetDisposition } from "@/lib/api/assets";
 import {
@@ -72,22 +81,29 @@ import type {
   PegawaiArchivePayload,
   PegawaiDocument,
   PegawaiDocumentCategory,
-} from "@/types/arsip-pegawai";
+} from "@/types/arsipku";
 
 const documentCategories: PegawaiDocumentCategory[] = [
-  "Ijazah",
-  "SK",
+  "SK CPNS",
+  "SK PNS",
   "SPMT",
+  "Ijazah",
+  "KTP",
   "Sertifikat",
-  "Lainnya",
 ];
-const bidangOptions: { value: ArsipBidang; label: string }[] = [
-  { value: "sekretariat", label: "Sekretariat" },
-  { value: "dukcapil", label: "Dukcapil" },
-  { value: "pmk", label: "PMK" },
+const metadataDocumentCategories: PegawaiDocumentCategory[] = [
+  ...documentCategories,
+  "SK",
+  "Lainnya",
 ];
 
 type UploadForm = {
+  title: string;
+  category: PegawaiDocumentCategory;
+  year: string;
+};
+
+type MetadataForm = {
   title: string;
   category: PegawaiDocumentCategory;
   number: string;
@@ -99,6 +115,7 @@ type UploadForm = {
 export function ArsipPegawaiDetailClient({ id }: { id: string }) {
   const pegawaiId = Number(id);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const documentTitleInputRef = useRef<HTMLInputElement | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const [pegawai, setPegawai] = useState<PegawaiArchive | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,6 +126,12 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
   const [uploading, setUploading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<PegawaiDocument | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [metadataTarget, setMetadataTarget] =
+    useState<PegawaiDocument | null>(null);
+  const [metadataForm, setMetadataForm] = useState<MetadataForm>(() =>
+    createEmptyMetadataForm(),
+  );
+  const [updatingMetadata, setUpdatingMetadata] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<PegawaiArchivePayload | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
@@ -152,6 +175,19 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
       mounted = false;
     };
   }, [pegawaiId]);
+
+  useEffect(() => {
+    if (!uploadOpen) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      documentTitleInputRef.current?.focus();
+      documentTitleInputRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+  }, [uploadOpen]);
 
   const documentCount = pegawai?.documents.length ?? 0;
   const needsVerification = useMemo(
@@ -257,6 +293,9 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
           : current,
       );
       setMessage(`${deleteTarget.title} berhasil dihapus.`);
+      if (metadataTarget?.id === deleteTarget.id) {
+        setMetadataTarget(null);
+      }
       setDeleteTarget(null);
     } catch (deleteError) {
       console.error(deleteError);
@@ -267,6 +306,61 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
       );
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const startMetadataEdit = (document: PegawaiDocument) => {
+    setMetadataTarget(document);
+    setMetadataForm({
+      title: document.title,
+      category: document.category,
+      number: document.number,
+      year: document.year,
+      bidang: document.bidang,
+      status: document.status,
+    });
+    setError(null);
+    setMessage(null);
+  };
+
+  const handleUpdateMetadata = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    if (!pegawai || !metadataTarget) {
+      return;
+    }
+
+    setUpdatingMetadata(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const updated = await updatePegawaiDocumentMetadata(
+        pegawai.id,
+        metadataTarget.id,
+        metadataForm,
+      );
+      setPegawai((current) =>
+        current
+          ? {
+              ...current,
+              documents: current.documents.map((document) =>
+                document.id === updated.id ? updated : document,
+              ),
+            }
+          : current,
+      );
+      setMessage(`Metadata ${updated.title} berhasil diperbarui.`);
+      setMetadataTarget(null);
+    } catch (updateError) {
+      console.error(updateError);
+      setError(
+        updateError instanceof Error
+          ? updateError.message
+          : "Metadata dokumen gagal diperbarui.",
+      );
+    } finally {
+      setUpdatingMetadata(false);
     }
   };
 
@@ -387,7 +481,7 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
           description="Data pegawai belum tersedia atau sudah dihapus dari sistem arsip."
           aside={
             <Button asChild variant="outline" className="h-11 rounded-xl">
-              <Link href="/arsip-pegawai">
+              <Link href="/arsipku/data-pegawai">
                 <ArrowLeft className="h-4 w-4" />
                 Kembali
               </Link>
@@ -408,7 +502,14 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
         description="Biodata singkat dan arsip dokumen pegawai."
         meta={
           <div className="flex flex-wrap gap-2">
-            <Badge className="h-8 rounded-full bg-emerald-50 px-4 text-sm font-bold text-emerald-700">
+            <Badge
+              className={cn(
+                "h-8 rounded-full px-4 text-sm font-bold",
+                pegawai.status === "Aktif"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-slate-100 text-slate-600",
+              )}
+            >
               {pegawai.status}
             </Badge>
             <Badge variant="outline" className="h-8 rounded-full px-4 text-sm">
@@ -438,7 +539,7 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
               </Button>
             ) : null}
             <Button asChild variant="outline" className="h-11 rounded-xl">
-              <Link href="/arsip-pegawai">
+              <Link href="/arsipku/data-pegawai">
                 <ArrowLeft className="h-4 w-4" />
                 Kembali
               </Link>
@@ -547,12 +648,30 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
                   onChange={(value) => updateEditField("name", value)}
                 />
                 <EmployeeFormInput
+                  label="Tempat Lahir"
+                  value={editForm.birthPlace}
+                  required={false}
+                  onChange={(value) => updateEditField("birthPlace", value)}
+                />
+                <EmployeeFormInput
+                  label="Tanggal Lahir"
+                  value={editForm.birthDate}
+                  type="date"
+                  required={false}
+                  onChange={(value) => updateEditField("birthDate", value)}
+                />
+                <EmployeeFormInput
                   label="Jabatan"
                   value={editForm.position}
                   onChange={(value) => updateEditField("position", value)}
                 />
                 <EmployeeFormInput
-                  label="Unit"
+                  label="Bidang"
+                  value={editForm.bidang}
+                  onChange={(value) => updateEditField("bidang", value)}
+                />
+                <EmployeeFormInput
+                  label="Seksi"
                   value={editForm.unit}
                   onChange={(value) => updateEditField("unit", value)}
                 />
@@ -576,30 +695,27 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
                   value={editForm.bankAccount}
                   onChange={(value) => updateEditField("bankAccount", value)}
                 />
-                <label className="grid gap-2">
+                <div className="grid gap-2">
                   <span className="text-sm font-bold text-pbd-navy">
-                    Status
+                    Status Pegawai
                   </span>
-                  <Select
-                    value={editForm.status}
-                    disabled={saving}
-                    onValueChange={(value) =>
-                      updateEditField(
-                        "status",
-                        value as PegawaiArchive["status"],
-                      )
-                    }
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Aktif">Aktif</SelectItem>
-                      <SelectItem value="Cuti">Cuti</SelectItem>
-                      <SelectItem value="Mutasi">Mutasi</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </label>
+                  <div className="flex h-10 items-center justify-between rounded-md border border-input px-3">
+                    <span className="text-sm font-semibold text-slate-700">
+                      {editForm.status === "Aktif" ? "Aktif" : "Nonaktif"}
+                    </span>
+                    <Switch
+                      checked={editForm.status === "Aktif"}
+                      disabled={saving}
+                      onCheckedChange={(checked) =>
+                        updateEditField(
+                          "status",
+                          checked ? "Aktif" : "Nonaktif",
+                        )
+                      }
+                      aria-label="Status aktif pegawai"
+                    />
+                  </div>
+                </div>
                 <EmployeeFormInput
                   label="Alamat"
                   value={editForm.address}
@@ -647,7 +763,10 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
               <p className="mt-1 text-sm font-semibold text-pbd-blue">
                 {pegawai.position}
               </p>
-              <p className="mt-2 text-sm text-slate-500">{pegawai.unit}</p>
+              <p className="mt-2 text-sm text-slate-500">
+                {[pegawai.bidang, pegawai.unit].filter(Boolean).join(" • ") ||
+                  "-"}
+              </p>
             </div>
           </SectionCard>
 
@@ -669,11 +788,26 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
               <InfoItem label="NIP" value={pegawai.nip} icon={IdCard} />
               <InfoItem label="NIK" value={pegawai.nik} icon={ShieldCheck} />
               <InfoItem
+                label="Tempat Lahir"
+                value={pegawai.birthPlace}
+                icon={MapPin}
+              />
+              <InfoItem
+                label="Tanggal Lahir"
+                value={formatBirthDate(pegawai.birthDate)}
+                icon={CalendarDays}
+              />
+              <InfoItem
                 label="Jabatan"
                 value={pegawai.position}
                 icon={IdCard}
               />
-              <InfoItem label="Unit" value={pegawai.unit} icon={Building2} />
+              <InfoItem
+                label="Bidang"
+                value={pegawai.bidang}
+                icon={Building2}
+              />
+              <InfoItem label="Seksi" value={pegawai.unit} icon={Building2} />
               <InfoItem
                 label="Pangkat/Golongan"
                 value={pegawai.rank}
@@ -700,7 +834,7 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
       {uploadOpen ? (
         <SectionCard
           title="Upload Dokumen Pegawai"
-          description="File disimpan ke tabel arsip dengan sumber ARSIPKU dan bidang yang dipilih."
+          description="Pilih file, isi nama dokumen, tahun dokumen, dan kategori arsip."
         >
           <form onSubmit={(event) => void handleUpload(event)} className="space-y-5">
             <div className="grid gap-4 md:grid-cols-2">
@@ -751,17 +885,9 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
                 label="Nama Dokumen"
                 value={form.title}
                 placeholder="Contoh: SK Pangkat Terakhir"
+                inputRef={documentTitleInputRef}
                 onChange={(value) =>
                   setForm((current) => ({ ...current, title: value }))
-                }
-              />
-              <FormInput
-                id="arsipku-number"
-                label="Nomor Dokumen"
-                value={form.number}
-                placeholder="Contoh: SK/2026/001"
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, number: value }))
                 }
               />
               <FormInput
@@ -797,53 +923,6 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid gap-2">
-                <Label>Bidang</Label>
-                <Select
-                  value={form.bidang}
-                  disabled={uploading}
-                  onValueChange={(value) =>
-                    setForm((current) => ({
-                      ...current,
-                      bidang: value as ArsipBidang,
-                    }))
-                  }
-                >
-                  <SelectTrigger className="h-11 rounded-lg">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bidangOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label>Status</Label>
-                <Select
-                  value={form.status}
-                  disabled={uploading}
-                  onValueChange={(value) =>
-                    setForm((current) => ({
-                      ...current,
-                      status: value as PegawaiDocument["status"],
-                    }))
-                  }
-                >
-                  <SelectTrigger className="h-11 rounded-lg">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Lengkap">Lengkap</SelectItem>
-                    <SelectItem value="Perlu Verifikasi">
-                      Perlu Verifikasi
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
@@ -867,113 +946,109 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
         </SectionCard>
       ) : null}
 
+      {metadataTarget ? (
+        <SectionCard
+          title="Edit Metadata Dokumen"
+          description={`Perbarui identitas arsip ${metadataTarget.storedFileName}. File asli tidak berubah.`}
+        >
+          <form
+            onSubmit={(event) => void handleUpdateMetadata(event)}
+            className="space-y-5"
+          >
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <FormInput
+                id="arsipku-edit-title"
+                label="Nama Dokumen"
+                value={metadataForm.title}
+                placeholder="Contoh: SK Pangkat Terakhir"
+                onChange={(value) =>
+                  setMetadataForm((current) => ({
+                    ...current,
+                    title: value,
+                  }))
+                }
+              />
+              <FormInput
+                id="arsipku-edit-year"
+                label="Tahun Dokumen"
+                value={metadataForm.year}
+                placeholder="Contoh: 2026"
+                onChange={(value) =>
+                  setMetadataForm((current) => ({ ...current, year: value }))
+                }
+              />
+              <DocumentSelectField
+                label="Kategori"
+                value={metadataForm.category}
+                disabled={updatingMetadata}
+                onValueChange={(value) =>
+                  setMetadataForm((current) => ({
+                    ...current,
+                    category: value as PegawaiDocumentCategory,
+                  }))
+                }
+                options={metadataDocumentCategories.map((category) => ({
+                  value: category,
+                  label: category,
+                }))}
+              />
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={updatingMetadata}
+                onClick={() => setMetadataTarget(null)}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={updatingMetadata}
+                className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              >
+                {updatingMetadata ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Edit3 className="h-4 w-4" />
+                )}
+                {updatingMetadata ? "Menyimpan..." : "Simpan Metadata"}
+              </Button>
+            </div>
+          </form>
+        </SectionCard>
+      ) : null}
+
       <SectionCard
         title="Daftar File Arsip"
-        description={`${needsVerification} file menunggu verifikasi.`}
+        description={`${documentCount} file tersimpan. ${needsVerification} file menunggu verifikasi. Gunakan menu Data Arsip untuk pencarian dan filter seluruh dokumen.`}
         contentClassName="p-0"
       >
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nama File</TableHead>
+              <TableHead>Nama Dokumen</TableHead>
+              <TableHead>Tahun Dokumen</TableHead>
               <TableHead>Kategori</TableHead>
-              <TableHead>Bidang</TableHead>
-              <TableHead>Nomor Dokumen</TableHead>
-              <TableHead>Tahun</TableHead>
-              <TableHead>Jenis</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>File</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {pegawai.documents.length > 0 ? (
               pegawai.documents.map((document) => (
-                <TableRow key={document.id}>
-                  <TableCell className="min-w-[260px] whitespace-normal">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue">
-                        {document.category === "Ijazah" ? (
-                          <GraduationCap className="h-5 w-5" />
-                        ) : (
-                          <FileText className="h-5 w-5" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-bold text-pbd-navy">
-                          {document.title}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Upload {formatDate(document.uploadedAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="bg-slate-50">
-                      {document.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="capitalize">{document.bidang}</TableCell>
-                  <TableCell>{document.number || "-"}</TableCell>
-                  <TableCell>{document.year || "-"}</TableCell>
-                  <TableCell>{document.fileType}</TableCell>
-                  <TableCell>
-                    <Badge
-                      className={
-                        document.status === "Lengkap"
-                          ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
-                          : "border border-amber-100 bg-amber-50 text-amber-700"
-                      }
-                    >
-                      {document.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button asChild type="button" variant="outline" size="sm">
-                        <a
-                          href={withInlineBackendAssetDisposition(
-                            document.previewUrl ??
-                              apiEndpoints.arsipPegawaiDocumentDownload(
-                                pegawai.id,
-                                document.id,
-                              ),
-                          )}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <Eye className="h-4 w-4" />
-                          Lihat
-                        </a>
-                      </Button>
-                      <Button asChild type="button" variant="outline" size="sm">
-                        <a
-                          href={apiEndpoints.arsipPegawaiDocumentDownload(
-                            pegawai.id,
-                            document.id,
-                          )}
-                        >
-                          <Download className="h-4 w-4" />
-                          Download
-                        </a>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDeleteTarget(document)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Hapus
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <DocumentTableRow
+                  key={document.id}
+                  pegawaiId={pegawai.id}
+                  document={document}
+                  onEdit={startMetadataEdit}
+                  onDelete={setDeleteTarget}
+                />
               ))
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={5}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
                   Belum ada file arsip untuk pegawai ini.
@@ -997,6 +1072,137 @@ export function ArsipPegawaiDetailClient({ id }: { id: string }) {
         onConfirm={() => void handleDeleteDocument()}
       />
     </main>
+  );
+}
+
+function DocumentTableRow({
+  pegawaiId,
+  document,
+  onEdit,
+  onDelete,
+}: {
+  pegawaiId: number;
+  document: PegawaiDocument;
+  onEdit: (document: PegawaiDocument) => void;
+  onDelete: (document: PegawaiDocument) => void;
+}) {
+  return (
+    <TableRow>
+      <TableCell className="min-w-[260px] whitespace-normal">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-pbd-blue">
+            {document.category === "Ijazah" ? (
+              <GraduationCap className="h-5 w-5" />
+            ) : (
+              <FileText className="h-5 w-5" />
+            )}
+          </div>
+          <div>
+            <p className="font-bold text-pbd-navy">{document.title}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Upload {formatDate(document.uploadedAt)}
+            </p>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>{document.year || "-"}</TableCell>
+      <TableCell>
+        <Badge variant="outline" className="bg-slate-50">
+          {document.category}
+        </Badge>
+      </TableCell>
+      <TableCell className="min-w-[220px] whitespace-normal">
+        <p className="font-medium text-pbd-navy">{document.storedFileName}</p>
+        <p className="mt-1 text-xs text-slate-500">
+          {document.fileType} • {formatFileSize(document.fileSize)}
+        </p>
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(document)}
+          >
+            <Edit3 className="h-4 w-4" />
+            Edit
+          </Button>
+          <Button asChild type="button" variant="outline" size="sm">
+            <a
+              href={withInlineBackendAssetDisposition(
+                document.previewUrl ??
+                  apiEndpoints.arsipPegawaiDocumentDownload(
+                    pegawaiId,
+                    document.id,
+                  ),
+              )}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Eye className="h-4 w-4" />
+              Lihat
+            </a>
+          </Button>
+          <Button asChild type="button" variant="outline" size="sm">
+            <a
+              href={apiEndpoints.arsipPegawaiDocumentDownload(
+                pegawaiId,
+                document.id,
+              )}
+            >
+              <Download className="h-4 w-4" />
+              Download
+            </a>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onDelete(document)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Hapus
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function DocumentSelectField({
+  label,
+  value,
+  options,
+  onValueChange,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onValueChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-bold text-pbd-navy">{label}</span>
+      <Select
+        value={value}
+        disabled={disabled}
+        onValueChange={onValueChange}
+      >
+        <SelectTrigger className="h-10">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </label>
   );
 }
 
@@ -1034,17 +1240,20 @@ function FormInput({
   value,
   onChange,
   placeholder,
+  inputRef,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  inputRef?: Ref<HTMLInputElement>;
 }) {
   return (
     <label className="grid gap-2">
       <span className="text-sm font-bold text-pbd-navy">{label}</span>
       <Input
+        ref={inputRef}
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -1061,12 +1270,14 @@ function EmployeeFormInput({
   onChange,
   type = "text",
   className,
+  required = true,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   className?: string;
+  required?: boolean;
 }) {
   return (
     <label className={cn("grid gap-2", className)}>
@@ -1075,7 +1286,7 @@ function EmployeeFormInput({
         value={value}
         type={type}
         onChange={(event) => onChange(event.target.value)}
-        required
+        required={required}
       />
     </label>
   );
@@ -1086,14 +1297,17 @@ function createEditForm(pegawai: PegawaiArchive): PegawaiArchivePayload {
     nip: pegawai.nip,
     nik: pegawai.nik,
     name: pegawai.name,
+    birthPlace: pegawai.birthPlace,
+    birthDate: pegawai.birthDate,
     position: pegawai.position,
+    bidang: pegawai.bidang,
     unit: pegawai.unit,
     rank: pegawai.rank,
     email: pegawai.email,
     phone: pegawai.phone,
     bankAccount: pegawai.bankAccount,
     address: pegawai.address,
-    status: pegawai.status,
+    status: pegawai.status === "Aktif" ? "Aktif" : "Nonaktif",
     photoColor: pegawai.photoColor,
   };
 }
@@ -1101,7 +1315,15 @@ function createEditForm(pegawai: PegawaiArchive): PegawaiArchivePayload {
 function createEmptyUploadForm(): UploadForm {
   return {
     title: "",
-    category: "Lainnya",
+    category: "SK CPNS",
+    year: "",
+  };
+}
+
+function createEmptyMetadataForm(): MetadataForm {
+  return {
+    title: "",
+    category: "SK CPNS",
     number: "",
     year: "",
     bidang: "sekretariat",
@@ -1115,4 +1337,15 @@ function formatDate(value: string) {
     month: "short",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function formatBirthDate(value: string) {
+  if (!value) {
+    return "-";
+  }
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${value}T00:00:00`));
 }

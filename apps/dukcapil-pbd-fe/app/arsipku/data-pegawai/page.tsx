@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type Ref,
 } from "react";
 import {
   Archive,
@@ -14,6 +15,7 @@ import {
   Camera,
   Edit,
   FileCheck2,
+  FileDown,
   IdCard,
   MoreHorizontal,
   Plus,
@@ -23,7 +25,7 @@ import {
   X,
 } from "lucide-react";
 
-import { EmployeePhoto } from "@/components/arsip-pegawai/employee-photo";
+import { EmployeePhoto } from "@/components/arsipku/employee-photo";
 import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { formatFileSize } from "@/components/dashboard/document-utils";
 import { PageHero } from "@/components/dashboard/page-hero";
@@ -39,6 +41,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -53,19 +56,23 @@ import {
   getArsipPegawai,
   uploadArsipPegawaiPhoto,
   updateArsipPegawai,
-} from "@/lib/api/arsip-pegawai";
+} from "@/lib/api/arsipku";
 import {
   IMAGE_FILE_ACCEPT,
   validateClientUpload,
 } from "@/lib/api/file-policy";
 import { cn } from "@/lib/utils";
-import type { PegawaiArchive } from "@/types/arsip-pegawai";
+import { downloadXlsx } from "@/lib/xlsx";
+import type { PegawaiArchive } from "@/types/arsipku";
 
 type PegawaiForm = {
   nip: string;
   nik: string;
   name: string;
+  birthPlace: string;
+  birthDate: string;
   position: string;
+  bidang: string;
   unit: string;
   rank: string;
   email: string;
@@ -85,6 +92,7 @@ const photoColors = [
 
 export default function ArsipPegawaiPage() {
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const firstEmployeeInputRef = useRef<HTMLInputElement | null>(null);
   const [pegawaiRecords, setPegawaiRecords] = useState<PegawaiArchive[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -130,6 +138,19 @@ export default function ArsipPegawaiPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!formOpen) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      firstEmployeeInputRef.current?.focus();
+      firstEmployeeInputRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+  }, [formOpen]);
+
   const filteredPegawai = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -143,6 +164,9 @@ export default function ArsipPegawaiPage() {
         pegawai.nip,
         pegawai.nik,
         pegawai.position,
+        pegawai.birthPlace,
+        pegawai.birthDate,
+        pegawai.bidang,
         pegawai.unit,
         pegawai.rank,
       ]
@@ -182,14 +206,17 @@ export default function ArsipPegawaiPage() {
       nip: pegawai.nip,
       nik: pegawai.nik,
       name: pegawai.name,
+      birthPlace: pegawai.birthPlace,
+      birthDate: pegawai.birthDate,
       position: pegawai.position,
+      bidang: pegawai.bidang,
       unit: pegawai.unit,
       rank: pegawai.rank,
       email: pegawai.email,
       phone: pegawai.phone,
       bankAccount: pegawai.bankAccount,
       address: pegawai.address,
-      status: pegawai.status,
+      status: pegawai.status === "Aktif" ? "Aktif" : "Nonaktif",
     });
     resetPhotoInput();
     setFormOpen(true);
@@ -344,12 +371,102 @@ export default function ArsipPegawaiPage() {
     }
   };
 
+  const handleExportRecap = () => {
+    const reportRows = pegawaiRecords.flatMap((pegawai) =>
+      (pegawai.documents.length > 0 ? pegawai.documents : [null]).map(
+        (document) => [
+          pegawai.nip,
+          pegawai.nik,
+          pegawai.name,
+          pegawai.birthPlace,
+          pegawai.birthDate,
+          pegawai.position,
+          pegawai.bidang,
+          pegawai.unit,
+          pegawai.rank,
+          pegawai.email,
+          pegawai.phone,
+          pegawai.bankAccount,
+          pegawai.address,
+          pegawai.status,
+          pegawai.documents.length,
+          document?.title ?? "",
+          document?.category ?? "",
+          document?.bidang ?? "",
+          document?.number ?? "",
+          document?.year ?? "",
+          document?.status ?? "",
+          document?.storedFileName ?? "",
+          document ? formatReportDate(document.uploadedAt) : "",
+        ],
+      ),
+    );
+
+    downloadXlsx({
+      fileName: `rekap-arsipku-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: "Rekap ARSIPKU",
+      columns: [
+        { width: 24 },
+        { width: 24 },
+        { width: 34 },
+        { width: 24 },
+        { width: 18 },
+        { width: 28 },
+        { width: 24 },
+        { width: 24 },
+        { width: 24 },
+        { width: 30 },
+        { width: 20 },
+        { width: 24 },
+        { width: 42 },
+        { width: 16 },
+        { width: 18 },
+        { width: 36 },
+        { width: 20 },
+        { width: 18 },
+        { width: 24 },
+        { width: 14 },
+        { width: 20 },
+        { width: 36 },
+        { width: 18 },
+      ],
+      rows: [
+        [
+          "NIP",
+          "NIK",
+          "Nama Pegawai",
+          "Tempat Lahir",
+          "Tanggal Lahir",
+          "Jabatan",
+          "Bidang",
+          "Seksi",
+          "Pangkat/Golongan",
+          "Email",
+          "Telepon",
+          "No Rekening",
+          "Alamat",
+          "Status Pegawai",
+          "Jumlah Dokumen",
+          "Nama Dokumen",
+          "Kategori",
+          "Bidang",
+          "Nomor Dokumen",
+          "Tahun Dokumen",
+          "Status Verifikasi",
+          "Nama File",
+          "Tanggal Upload",
+        ],
+        ...reportRows,
+      ],
+    });
+  };
+
   return (
     <main className="space-y-6">
       <PageHero
         icon={Archive}
         eyebrow="Sistem ARSIPKU"
-        title="ARSIPKU"
+        title="Data Pegawai"
         description="Kelola daftar pegawai dan arsip dokumen kepegawaian seperti ijazah, SK, SPMT, sertifikat, dan dokumen pendukung lainnya."
         meta={
           <Badge className="h-8 rounded-full bg-blue-50 px-4 text-sm font-bold text-pbd-blue">
@@ -357,14 +474,26 @@ export default function ArsipPegawaiPage() {
           </Badge>
         }
         aside={
-          <Button
-            type="button"
-            className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            onClick={openCreateForm}
-          >
-            <Plus className="h-4 w-4" />
-            Tambah Pegawai
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-xl"
+              disabled={loading || pegawaiRecords.length === 0}
+              onClick={handleExportRecap}
+            >
+              <FileDown className="h-4 w-4" />
+              Ekspor Rekap
+            </Button>
+            <Button
+              type="button"
+              className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              onClick={openCreateForm}
+            >
+              <Plus className="h-4 w-4" />
+              Tambah Pegawai
+            </Button>
+          </div>
         }
       />
 
@@ -406,6 +535,7 @@ export default function ArsipPegawaiPage() {
                 label="NIP"
                 value={form.nip}
                 placeholder="Contoh: 198501012010011001"
+                inputRef={firstEmployeeInputRef}
                 onChange={(value) =>
                   setForm((current) => ({ ...current, nip: value }))
                 }
@@ -427,6 +557,25 @@ export default function ArsipPegawaiPage() {
                 }
               />
               <FormInput
+                label="Tempat Lahir"
+                value={form.birthPlace}
+                placeholder="Contoh: Sorong"
+                required={false}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, birthPlace: value }))
+                }
+              />
+              <FormInput
+                label="Tanggal Lahir"
+                value={form.birthDate}
+                placeholder=""
+                type="date"
+                required={false}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, birthDate: value }))
+                }
+              />
+              <FormInput
                 label="Jabatan"
                 value={form.position}
                 placeholder="Contoh: Analis Kebijakan"
@@ -435,9 +584,17 @@ export default function ArsipPegawaiPage() {
                 }
               />
               <FormInput
-                label="Unit"
+                label="Bidang"
+                value={form.bidang}
+                placeholder="Contoh: Bidang Pemerintahan dan Otonomi Khusus"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, bidang: value }))
+                }
+              />
+              <FormInput
+                label="Seksi"
                 value={form.unit}
-                placeholder="Contoh: Sekretariat"
+                placeholder="Contoh: Seksi Data dan Informasi"
                 onChange={(value) =>
                   setForm((current) => ({ ...current, unit: value }))
                 }
@@ -474,23 +631,27 @@ export default function ArsipPegawaiPage() {
                   setForm((current) => ({ ...current, bankAccount: value }))
                 }
               />
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-pbd-navy">Status</span>
-                <select
-                  value={form.status}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      status: event.target.value as PegawaiArchive["status"],
-                    }))
-                  }
-                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                >
-                  <option value="Aktif">Aktif</option>
-                  <option value="Cuti">Cuti</option>
-                  <option value="Mutasi">Mutasi</option>
-                </select>
-              </label>
+              <div className="grid gap-2">
+                <span className="text-sm font-bold text-pbd-navy">
+                  Status Pegawai
+                </span>
+                <div className="flex h-10 items-center justify-between rounded-md border border-input px-3">
+                  <span className="text-sm font-semibold text-slate-700">
+                    {form.status === "Aktif" ? "Aktif" : "Nonaktif"}
+                  </span>
+                  <Switch
+                    checked={form.status === "Aktif"}
+                    disabled={saving}
+                    onCheckedChange={(checked) =>
+                      setForm((current) => ({
+                        ...current,
+                        status: checked ? "Aktif" : "Nonaktif",
+                      }))
+                    }
+                    aria-label="Status aktif pegawai"
+                  />
+                </div>
+              </div>
               <FormInput
                 label="Alamat"
                 value={form.address}
@@ -615,7 +776,8 @@ export default function ArsipPegawaiPage() {
             <TableRow>
               <TableHead>Nama Pegawai</TableHead>
               <TableHead>NIP</TableHead>
-              <TableHead>Unit</TableHead>
+              <TableHead>Bidang</TableHead>
+              <TableHead>Seksi</TableHead>
               <TableHead>Jabatan</TableHead>
               <TableHead>Dokumen</TableHead>
               <TableHead>Status</TableHead>
@@ -626,7 +788,7 @@ export default function ArsipPegawaiPage() {
             {loading ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
                   Memuat data pegawai...
@@ -637,7 +799,7 @@ export default function ArsipPegawaiPage() {
                 <TableRow key={pegawai.id} className="group">
                   <TableCell className="min-w-[260px] whitespace-normal">
                     <Link
-                      href={`/arsip-pegawai/${pegawai.id}`}
+                      href={`/arsipku/data-pegawai/${pegawai.id}`}
                       className="flex items-center gap-3"
                     >
                       <EmployeePhoto
@@ -658,7 +820,8 @@ export default function ArsipPegawaiPage() {
                   <TableCell className="font-semibold text-slate-700">
                     {pegawai.nip}
                   </TableCell>
-                  <TableCell>{pegawai.unit}</TableCell>
+                  <TableCell>{pegawai.bidang || "-"}</TableCell>
+                  <TableCell>{pegawai.unit || "-"}</TableCell>
                   <TableCell>{pegawai.position}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="bg-slate-50">
@@ -666,7 +829,13 @@ export default function ArsipPegawaiPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="border border-emerald-100 bg-emerald-50 text-emerald-700">
+                    <Badge
+                      className={
+                        pegawai.status === "Aktif"
+                          ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
+                          : "border border-slate-200 bg-slate-100 text-slate-600"
+                      }
+                    >
                       {pegawai.status}
                     </Badge>
                   </TableCell>
@@ -684,7 +853,7 @@ export default function ArsipPegawaiPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/arsip-pegawai/${pegawai.id}`}>
+                          <Link href={`/arsipku/data-pegawai/${pegawai.id}`}>
                             <ArrowRight className="h-4 w-4" />
                             Buka Detail
                           </Link>
@@ -708,7 +877,7 @@ export default function ArsipPegawaiPage() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
                   Tidak ada pegawai yang sesuai dengan pencarian.
@@ -742,6 +911,8 @@ function FormInput({
   placeholder,
   type = "text",
   className,
+  inputRef,
+  required = true,
 }: {
   label: string;
   value: string;
@@ -749,19 +920,30 @@ function FormInput({
   placeholder: string;
   type?: string;
   className?: string;
+  inputRef?: Ref<HTMLInputElement>;
+  required?: boolean;
 }) {
   return (
     <label className={cn("grid gap-2", className)}>
       <span className="text-sm font-bold text-pbd-navy">{label}</span>
       <Input
+        ref={inputRef}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         type={type}
-        required
+        required={required}
       />
     </label>
   );
+}
+
+function formatReportDate(value: string) {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
 function createEmptyPegawaiForm(): PegawaiForm {
@@ -769,7 +951,10 @@ function createEmptyPegawaiForm(): PegawaiForm {
     nip: "",
     nik: "",
     name: "",
+    birthPlace: "",
+    birthDate: "",
     position: "",
+    bidang: "",
     unit: "",
     rank: "",
     email: "",

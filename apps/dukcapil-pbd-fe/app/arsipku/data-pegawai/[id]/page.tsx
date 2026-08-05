@@ -1,4 +1,4 @@
-import { ArsipPegawaiDetailClient } from "@/app/arsip-pegawai/[id]/detail-client";
+import { ArsipPegawaiDetailClient } from "@/app/arsipku/data-pegawai/[id]/detail-client";
 
 export default async function ArsipPegawaiDetailPage({
   params,

@@ -4,8 +4,9 @@ import type {
   PegawaiArchive,
   PegawaiArchivePayload,
   PegawaiDocument,
+  UpdatePegawaiDocumentMetadataPayload,
   UploadPegawaiDocumentPayload,
-} from "@/types/arsip-pegawai";
+} from "@/types/arsipku";
 
 export function getArsipPegawai(search?: string) {
   const searchParams = new URLSearchParams();
@@ -61,12 +62,12 @@ export function uploadPegawaiDocument(
 ) {
   const formData = new FormData();
   formData.append("file", payload.file);
-  formData.append("bidang", payload.bidang);
+  formData.append("bidang", "sekretariat");
   formData.append("title", payload.title.trim());
   formData.append("category", payload.category);
-  formData.append("number", payload.number.trim());
+  formData.append("number", "");
   formData.append("year", payload.year.trim());
-  formData.append("status", payload.status);
+  formData.append("status", "Lengkap");
 
   return apiRequest<PegawaiDocument>(
     apiEndpoints.arsipPegawaiDocumentList(pegawaiId),
@@ -81,5 +82,24 @@ export function deletePegawaiDocument(pegawaiId: number, documentId: number) {
   return apiRequest<void>(
     apiEndpoints.arsipPegawaiDocumentDetail(pegawaiId, documentId),
     { method: "DELETE" },
+  );
+}
+
+export function updatePegawaiDocumentMetadata(
+  pegawaiId: number,
+  documentId: number,
+  payload: UpdatePegawaiDocumentMetadataPayload,
+) {
+  return apiRequest<PegawaiDocument>(
+    apiEndpoints.arsipPegawaiDocumentDetail(pegawaiId, documentId),
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        ...payload,
+        title: payload.title.trim(),
+        number: payload.number.trim(),
+        year: payload.year.trim(),
+      }),
+    },
   );
 }
