@@ -103,6 +103,10 @@ export default function SiberDashboardPage() {
       (total, region) => total + region.oap.jumlahOap,
       0,
     );
+    const totalNonOap = regions.reduce(
+      (total, region) => total + region.oap.jumlahNonOap,
+      0,
+    );
     const totalKtpEl = regions.reduce(
       (total, region) => total + region.registration.pencetakanKtpEl,
       0,
@@ -117,7 +121,13 @@ export default function SiberDashboardPage() {
       0,
     );
 
-    return { totalPenduduk, totalOap, totalKtpEl, totalDokumenSipil };
+    return {
+      totalPenduduk,
+      totalOap,
+      totalNonOap,
+      totalKtpEl,
+      totalDokumenSipil,
+    };
   }, [regions]);
 
   const releaseLabel = settings
@@ -236,27 +246,248 @@ export default function SiberDashboardPage() {
         </SectionCard>
       ) : null}
 
-      <SectionCard
-        title="Menu SIRBE"
-        description="Kelola data internal atau periksa hasilnya pada halaman publik Data Wilayah."
-      >
-        <div className="grid gap-4 lg:grid-cols-2">
-          <DashboardLink
-            href="/siber/data"
-            icon={Database}
-            title="Kelola Data Dukcapil"
-            description="Edit data per kabupaten/kota untuk pendaftaran penduduk, pencatatan sipil, dan OAP."
-          />
-          <DashboardLink
-            href={publicDataWilayahHref}
-            icon={ExternalLink}
-            title="Lihat Data Wilayah"
-            description="Buka halaman publik untuk memeriksa tampilan statistik yang sudah dirilis."
-          />
-        </div>
-      </SectionCard>
+      <section className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+        <PopulationCompositionChart
+          totalOap={totals.totalOap}
+          totalNonOap={totals.totalNonOap}
+          tahunAnggaran={tahunAnggaran}
+          loading={loading}
+        />
+
+        <SectionCard
+          title="Menu SIRBE"
+          description="Kelola data internal atau periksa hasilnya pada halaman publik Data Wilayah."
+          className="h-full"
+        >
+          <div className="grid gap-4">
+            <DashboardLink
+              href="/siber/data"
+              icon={Database}
+              title="Kelola Data Dukcapil"
+              description="Edit data per kabupaten/kota untuk pendaftaran penduduk, pencatatan sipil, dan OAP."
+            />
+            <DashboardLink
+              href={publicDataWilayahHref}
+              icon={ExternalLink}
+              title="Lihat Data Wilayah"
+              description="Buka halaman publik untuk memeriksa tampilan statistik yang sudah dirilis."
+            />
+          </div>
+        </SectionCard>
+      </section>
     </main>
   );
+}
+
+type PieSlice = {
+  label: string;
+  value: number;
+  color: string;
+  startAngle: number;
+  endAngle: number;
+  percentage: number;
+};
+
+function PopulationCompositionChart({
+  totalOap,
+  totalNonOap,
+  tahunAnggaran,
+  loading,
+}: {
+  totalOap: number;
+  totalNonOap: number;
+  tahunAnggaran: string;
+  loading: boolean;
+}) {
+  const total = totalOap + totalNonOap;
+  const values = [
+    { label: "Penduduk OAP", value: totalOap, color: "#2563eb" },
+    { label: "Penduduk Non-OAP", value: totalNonOap, color: "#94a3b8" },
+  ];
+  let currentAngle = -90;
+  const slices: PieSlice[] = values.map((item) => {
+    const percentage = total > 0 ? (item.value / total) * 100 : 0;
+    const startAngle = currentAngle;
+    const endAngle = startAngle + percentage * 3.6;
+    currentAngle = endAngle;
+    return { ...item, startAngle, endAngle, percentage };
+  });
+
+  return (
+    <SectionCard
+      title="Komposisi Penduduk (OAP vs. Non-OAP)"
+      description={`Data OAP dan Non-OAP tahun ${tahunAnggaran || "—"}.`}
+      className="h-full"
+    >
+      {loading ? (
+        <div className="grid min-h-[280px] place-items-center">
+          <div className="h-52 w-52 animate-pulse rounded-full bg-slate-100" />
+        </div>
+      ) : total > 0 ? (
+        <>
+          <div className="grid items-center gap-6 sm:grid-cols-[minmax(220px,1fr)_minmax(180px,0.8fr)]">
+            <div className="mx-auto w-full max-w-[280px]">
+              <svg
+                viewBox="0 0 240 240"
+                role="img"
+                aria-label={`Komposisi penduduk: ${formatNumber(totalOap)} OAP dan ${formatNumber(totalNonOap)} Non-OAP`}
+                className="h-auto w-full drop-shadow-sm"
+              >
+                <title>Komposisi Penduduk OAP dan Non-OAP</title>
+                {slices.map((slice) => {
+                  const fullCircle = slice.percentage >= 99.999;
+                  const labelPoint = polarPoint(
+                    120,
+                    120,
+                    68,
+                    (slice.startAngle + slice.endAngle) / 2,
+                  );
+
+                  return (
+                    <g key={slice.label}>
+                      {fullCircle ? (
+                        <circle
+                          cx="120"
+                          cy="120"
+                          r="96"
+                          fill={slice.color}
+                          stroke="white"
+                          strokeWidth="2"
+                        />
+                      ) : slice.percentage > 0 ? (
+                        <path
+                          d={pieSlicePath(
+                            120,
+                            120,
+                            96,
+                            slice.startAngle,
+                            slice.endAngle,
+                          )}
+                          fill={slice.color}
+                          stroke="white"
+                          strokeWidth="2"
+                        >
+                          <title>
+                            {slice.label}: {formatNumber(slice.value)} (
+                            {formatPercentage(slice.percentage)})
+                          </title>
+                        </path>
+                      ) : null}
+                      {slice.percentage >= 7 ? (
+                        <text
+                          x={labelPoint.x}
+                          y={labelPoint.y}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          className="fill-white text-[13px] font-bold"
+                        >
+                          {formatPercentage(slice.percentage)}
+                        </text>
+                      ) : null}
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                  Total Penduduk
+                </p>
+                <p className="mt-1 text-2xl font-bold tracking-tight text-pbd-navy">
+                  {formatNumber(total)}
+                </p>
+              </div>
+              <div className="space-y-3">
+                {slices.map((slice) => (
+                  <div key={slice.label} className="flex items-start gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="mt-1 h-3 w-3 shrink-0 rounded-sm"
+                      style={{ backgroundColor: slice.color }}
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-700">
+                        {slice.label}
+                      </p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {formatNumber(slice.value)} ·{" "}
+                        {formatPercentage(slice.percentage)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 border-t border-slate-200 pt-4 sm:grid-cols-2">
+            {slices.map((slice) => (
+              <div key={slice.label} className="rounded-lg bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold text-slate-500">
+                  {slice.label}
+                </p>
+                <p className="mt-1 font-bold text-pbd-navy">
+                  {formatNumber(slice.value)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="grid min-h-[280px] place-items-center text-center">
+          <div>
+            <Users className="mx-auto h-10 w-10 text-slate-300" />
+            <p className="mt-3 font-semibold text-pbd-navy">
+              Data komposisi belum tersedia
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Isi data OAP dan Non-OAP untuk menampilkan pie chart.
+            </p>
+          </div>
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function polarPoint(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angle: number,
+) {
+  const radians = (angle * Math.PI) / 180;
+  return {
+    x: centerX + radius * Math.cos(radians),
+    y: centerY + radius * Math.sin(radians),
+  };
+}
+
+function pieSlicePath(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number,
+) {
+  const start = polarPoint(centerX, centerY, radius, startAngle);
+  const end = polarPoint(centerX, centerY, radius, endAngle);
+  const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+
+  return [
+    `M ${centerX} ${centerY}`,
+    `L ${start.x} ${start.y}`,
+    `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`,
+    "Z",
+  ].join(" ");
+}
+
+function formatPercentage(value: number) {
+  return `${new Intl.NumberFormat("id-ID", {
+    maximumFractionDigits: 1,
+  }).format(value)}%`;
 }
 
 function DashboardLink({

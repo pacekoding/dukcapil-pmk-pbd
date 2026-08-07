@@ -27,16 +27,17 @@ func (r *PelaksanaanDocumentRepository) Create(ctx context.Context, tahunAnggara
 	}
 
 	record := model.PelaksanaanDocumentEntity{
-		TahunAnggaran:  strings.TrimSpace(tahunAnggaran),
-		SumberAplikasi: strings.TrimSpace(payload.SumberAplikasi),
-		Bidang:         strings.TrimSpace(payload.Bidang),
-		SubkegiatanID:  payload.SubkegiatanID,
-		Nama:           strings.TrimSpace(payload.Nama),
-		OriginalName:   strings.TrimSpace(payload.OriginalName),
-		MimeType:       strings.TrimSpace(payload.MimeType),
-		Size:           payload.Size,
-		URL:            strings.TrimSpace(payload.URL),
-		IsDokumenDSSD:  payload.IsDokumenDSSD,
+		TahunAnggaran:    strings.TrimSpace(tahunAnggaran),
+		SumberAplikasi:   strings.TrimSpace(payload.SumberAplikasi),
+		Bidang:           strings.TrimSpace(payload.Bidang),
+		SubkegiatanID:    payload.SubkegiatanID,
+		Nama:             strings.TrimSpace(payload.Nama),
+		OriginalName:     strings.TrimSpace(payload.OriginalName),
+		MimeType:         strings.TrimSpace(payload.MimeType),
+		Size:             payload.Size,
+		URL:              strings.TrimSpace(payload.URL),
+		IsDokumenDSSD:    payload.IsDokumenDSSD,
+		StatusVerifikasi: "Lengkap",
 	}
 	if record.Nama == "" {
 		record.Nama = record.OriginalName

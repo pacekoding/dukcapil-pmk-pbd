@@ -17,6 +17,10 @@ func TestDeriveMacekuPKKLevel(t *testing.T) {
 		want          model.MacekuPKKLevel
 	}{
 		{
+			name: "province level",
+			want: model.MacekuPKKLevelProvinsi,
+		},
+		{
 			name:          "kabupaten level",
 			kabupatenKota: "Kota Sorong",
 			want:          model.MacekuPKKLevelKabupaten,
@@ -53,12 +57,28 @@ func TestValidateMacekuProfilePayload(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "valid province profile",
+			payload: model.MacekuPKKProfilePayload{
+				Name:  "TP PKK Provinsi Papua Barat Daya",
+				Phone: "08123456789",
+			},
+		},
+		{
 			name: "valid kabupaten profile",
 			payload: model.MacekuPKKProfilePayload{
 				Name:          "TP PKK Kota Sorong",
 				KabupatenKota: "Kota Sorong",
 				Phone:         "08123456789",
 			},
+		},
+		{
+			name: "distrik without kabupaten",
+			payload: model.MacekuPKKProfilePayload{
+				Name:    "PKK Distrik X",
+				Distrik: "Aimas",
+				Phone:   "08123456789",
+			},
+			wantErr: true,
 		},
 		{
 			name: "kampung without distrik",

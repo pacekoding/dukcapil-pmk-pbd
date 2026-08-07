@@ -71,6 +71,7 @@ const initialFormState: SaveMacekuPKKProfilePayload = {
 };
 
 const levelOptions = [
+  "PKK Provinsi",
   "PKK Kabupaten/Kota",
   "PKK Kecamatan/Distrik",
   "PKK Desa/Kampung",
@@ -234,8 +235,8 @@ export default function MacekuPkkDataPage() {
       logo: form.logo ?? null,
     };
 
-    if (!payload.name || !payload.kabupatenKota || !payload.phone) {
-      setError("Nama PKK, kabupaten/kota, dan telepon wajib diisi.");
+    if (!payload.name || !payload.phone) {
+      setError("Nama PKK dan telepon wajib diisi.");
       setMessage(null);
       return;
     }
@@ -367,21 +368,26 @@ export default function MacekuPkkDataPage() {
                   setForm((current) => ({
                     ...current,
                     kabupatenKota: value,
+                    distrik: value ? current.distrik : "",
+                    kampung: value ? current.kampung : "",
                   }))
                 }
                 options={options.kabupatenKota}
+                placeholder="Tidak dipilih (Otomatis menjadi PKK Provinsi)"
               />
               <FormInput
                 label="Kecamatan/Distrik"
                 value={form.distrik}
                 placeholder="Tulis nama distrik/kecamatan"
                 onChange={(value) => setForm((current) => ({ ...current, distrik: value }))}
+                disabled={!form.kabupatenKota}
               />
               <FormInput
                 label="Desa/Kampung"
                 value={form.kampung}
                 placeholder="Tulis nama desa/kampung"
                 onChange={(value) => setForm((current) => ({ ...current, kampung: value }))}
+                disabled={!form.distrik}
               />
               <FormInput
                 label="Periode Kepengurusan"
@@ -696,11 +702,13 @@ function FormInput({
   value,
   onChange,
   placeholder,
+  disabled,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="grid gap-2">
@@ -709,6 +717,7 @@ function FormInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
+        disabled={disabled}
       />
     </label>
   );
@@ -805,9 +814,10 @@ function derivePkkLevel(kabupatenKota: string, distrik: string, kampung: string)
   if (kabupatenKota.trim()) {
     return "PKK Kabupaten/Kota";
   }
-  return "-";
+  return "PKK Provinsi";
 }
 
 function formatRegion(kabupatenKota: string, distrik: string, kampung: string) {
-  return [kabupatenKota, distrik, kampung].filter(Boolean).join(" / ");
+  const region = [kabupatenKota, distrik, kampung].filter(Boolean).join(" / ");
+  return region || "Provinsi Papua Barat Daya";
 }

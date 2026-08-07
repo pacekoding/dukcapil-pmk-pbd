@@ -1,4 +1,5 @@
 export type MacekuPKKLevel =
+  | "PKK Provinsi"
   | "PKK Kabupaten/Kota"
   | "PKK Kecamatan/Distrik"
   | "PKK Desa/Kampung";

@@ -467,11 +467,11 @@ func validateMacekuProfilePayload(payload *model.MacekuPKKProfilePayload) error 
 	if payload.Name == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "nama PKK wajib diisi")
 	}
-	if payload.KabupatenKota == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "kabupaten/kota wajib diisi")
-	}
 	if payload.Distrik == "" && payload.Kampung != "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "desa/kampung membutuhkan kecamatan/distrik")
+	}
+	if payload.KabupatenKota == "" && (payload.Distrik != "" || payload.Kampung != "") {
+		return echo.NewHTTPError(http.StatusBadRequest, "kecamatan/distrik dan desa/kampung membutuhkan kabupaten/kota")
 	}
 	if payload.Email != "" && !emailPattern.MatchString(payload.Email) {
 		return echo.NewHTTPError(http.StatusBadRequest, "email tidak valid")
@@ -542,7 +542,10 @@ func deriveMacekuPKKLevel(kabupatenKota, distrik, kampung string) model.MacekuPK
 	if strings.TrimSpace(distrik) != "" {
 		return model.MacekuPKKLevelDistrik
 	}
-	return model.MacekuPKKLevelKabupaten
+	if strings.TrimSpace(kabupatenKota) != "" {
+		return model.MacekuPKKLevelKabupaten
+	}
+	return model.MacekuPKKLevelProvinsi
 }
 
 func ensureMacekuScopeConfigured(claims security.Claims) error {

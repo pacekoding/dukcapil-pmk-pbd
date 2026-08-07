@@ -5,6 +5,7 @@ import "time"
 type MacekuPKKLevel string
 
 const (
+	MacekuPKKLevelProvinsi  MacekuPKKLevel = "PKK Provinsi"
 	MacekuPKKLevelKabupaten MacekuPKKLevel = "PKK Kabupaten/Kota"
 	MacekuPKKLevelDistrik   MacekuPKKLevel = "PKK Kecamatan/Distrik"
 	MacekuPKKLevelKampung   MacekuPKKLevel = "PKK Desa/Kampung"

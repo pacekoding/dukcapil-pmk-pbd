@@ -84,6 +84,7 @@ const emptyArchiveForm: ArchiveForm = {
 export function MacekuPkkDetailClient({ id }: { id: string }) {
   const profileId = Number(id);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadSectionRef = useRef<HTMLDivElement | null>(null);
   const [profile, setProfile] = useState<MacekuPKKProfileDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [archiveQuery, setArchiveQuery] = useState("");
@@ -141,6 +142,22 @@ export function MacekuPkkDetailClient({ id }: { id: string }) {
     };
   }, [profileId]);
 
+  useEffect(() => {
+    if (!uploadOpen) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      uploadSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      uploadSectionRef.current?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [uploadOpen]);
+
   const filteredArchives = useMemo(() => {
     if (!profile) {
       return [];
@@ -176,6 +193,18 @@ export function MacekuPkkDetailClient({ id }: { id: string }) {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const openUploadForm = () => {
+    if (uploadOpen) {
+      uploadSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      uploadSectionRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    setUploadOpen(true);
   };
 
   const handleFileChange = (file: File | null) => {
@@ -403,7 +432,7 @@ export function MacekuPkkDetailClient({ id }: { id: string }) {
             <Button
               type="button"
               className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-              onClick={() => setUploadOpen((current) => !current)}
+              onClick={openUploadForm}
             >
               <Plus className="h-4 w-4" />
               Unggah Arsip
@@ -454,7 +483,8 @@ export function MacekuPkkDetailClient({ id }: { id: string }) {
           description="Data utama organisasi PKK dan kontak sekretariat."
         >
           <div className="grid gap-4 md:grid-cols-2">
-            <InfoItem label="Kabupaten/Kota" value={profile.kabupatenKota} />
+            <InfoItem label="Provinsi" value="Papua Barat Daya" />
+            <InfoItem label="Kabupaten/Kota" value={profile.kabupatenKota || "-"} />
             <InfoItem label="Kecamatan/Distrik" value={profile.distrik || "-"} />
             <InfoItem label="Desa/Kampung" value={profile.kampung || "-"} />
             <InfoItem label="Periode Kepengurusan" value={profile.managementPeriod || "-"} />
@@ -477,113 +507,129 @@ export function MacekuPkkDetailClient({ id }: { id: string }) {
       </section>
 
       {uploadOpen ? (
-        <SectionCard
-          title="Unggah Arsip PKK"
-          description="File akan ditautkan langsung ke profil organisasi PKK ini."
+        <div
+          ref={uploadSectionRef}
+          tabIndex={-1}
+          className="scroll-mt-24 outline-none"
         >
-          <form onSubmit={(event) => void handleUpload(event)} className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2 md:col-span-2">
-                <span className="text-sm font-bold text-pbd-navy">File Arsip</span>
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={ARCHIVE_FILE_ACCEPT}
+          <SectionCard
+            title="Unggah Arsip PKK"
+            description="File akan ditautkan langsung ke profil organisasi PKK ini."
+          >
+            <form onSubmit={(event) => void handleUpload(event)} className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="grid gap-2 md:col-span-2">
+                  <span className="text-sm font-bold text-pbd-navy">File Arsip</span>
+                  <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={ARCHIVE_FILE_ACCEPT}
+                    disabled={uploading}
+                    onChange={(event) =>
+                      handleFileChange(event.target.files?.[0] ?? null)
+                    }
+                  />
+                  {selectedFile ? (
+                    <p className="text-sm text-slate-500">
+                      {selectedFile.name} · {formatFileSize(selectedFile.size)}
+                    </p>
+                  ) : null}
+                  {fileError ? (
+                    <p className="text-sm font-medium text-red-600">{fileError}</p>
+                  ) : null}
+                </label>
+                <FormInput
+                  label="Judul Dokumen"
+                  value={form.title}
+                  placeholder="Contoh: Program Kerja PKK 2026"
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, title: value }))
+                  }
+                />
+                <SelectField
+                  label="Kategori Arsip"
+                  value={form.category}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      category: value as MacekuPKKArchiveCategory,
+                    }))
+                  }
+                  options={macekuArchiveCategories}
+                />
+                <FormInput
+                  label="Tahun Dokumen"
+                  value={form.documentYear}
+                  placeholder="Contoh: 2026"
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, documentYear: value }))
+                  }
+                />
+                <FormInput
+                  label="Nomor Dokumen"
+                  value={form.documentNumber}
+                  placeholder="Contoh: 01/PKK/VII/2026"
+                  onChange={(value) =>
+                    setForm((current) => ({ ...current, documentNumber: value }))
+                  }
+                />
+                <label className="grid gap-2">
+                  <span className="text-sm font-bold text-pbd-navy">Tanggal Dokumen</span>
+                  <Input
+                    type="date"
+                    value={form.documentDate}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        documentDate: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="grid gap-2 md:col-span-2">
+                  <span className="text-sm font-bold text-pbd-navy">Keterangan</span>
+                  <Textarea
+                    value={form.description}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
+                    }
+                    placeholder="Tulis keterangan tambahan jika diperlukan"
+                  />
+                </label>
+              </div>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
                   disabled={uploading}
-                  onChange={(event) =>
-                    handleFileChange(event.target.files?.[0] ?? null)
-                  }
-                />
-                {selectedFile ? (
-                  <p className="text-sm text-slate-500">
-                    {selectedFile.name} · {formatFileSize(selectedFile.size)}
-                  </p>
-                ) : null}
-                {fileError ? <p className="text-sm font-medium text-red-600">{fileError}</p> : null}
-              </label>
-              <FormInput
-                label="Judul Dokumen"
-                value={form.title}
-                placeholder="Contoh: Program Kerja PKK 2026"
-                onChange={(value) => setForm((current) => ({ ...current, title: value }))}
-              />
-              <SelectField
-                label="Kategori Arsip"
-                value={form.category}
-                onChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    category: value as MacekuPKKArchiveCategory,
-                  }))
-                }
-                options={macekuArchiveCategories}
-              />
-              <FormInput
-                label="Tahun Dokumen"
-                value={form.documentYear}
-                placeholder="Contoh: 2026"
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, documentYear: value }))
-                }
-              />
-              <FormInput
-                label="Nomor Dokumen"
-                value={form.documentNumber}
-                placeholder="Contoh: 01/PKK/VII/2026"
-                onChange={(value) =>
-                  setForm((current) => ({ ...current, documentNumber: value }))
-                }
-              />
-              <label className="grid gap-2">
-                <span className="text-sm font-bold text-pbd-navy">Tanggal Dokumen</span>
-                <Input
-                  type="date"
-                  value={form.documentDate}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, documentDate: event.target.value }))
-                  }
-                />
-              </label>
-              <label className="grid gap-2 md:col-span-2">
-                <span className="text-sm font-bold text-pbd-navy">Keterangan</span>
-                <Textarea
-                  value={form.description}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, description: event.target.value }))
-                  }
-                  placeholder="Tulis keterangan tambahan jika diperlukan"
-                />
-              </label>
-            </div>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={uploading}
-                onClick={() => {
-                  setUploadOpen(false);
-                  resetUploadForm();
-                }}
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                disabled={uploading}
-                className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Mengunggah...
-                  </>
-                ) : (
-                  "Simpan Arsip"
-                )}
-              </Button>
-            </div>
-          </form>
-        </SectionCard>
+                  onClick={() => {
+                    setUploadOpen(false);
+                    resetUploadForm();
+                  }}
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={uploading}
+                  className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Mengunggah...
+                    </>
+                  ) : (
+                    "Simpan Arsip"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </SectionCard>
+        </div>
       ) : null}
 
       <SectionCard
@@ -882,5 +928,6 @@ function SelectField({
 }
 
 function formatRegion(kabupatenKota: string, distrik: string, kampung: string) {
-  return [kabupatenKota, distrik, kampung].filter(Boolean).join(" / ");
+  const region = [kabupatenKota, distrik, kampung].filter(Boolean).join(" / ");
+  return region || "Provinsi Papua Barat Daya";
 }

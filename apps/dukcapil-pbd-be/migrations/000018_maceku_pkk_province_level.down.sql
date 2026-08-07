@@ -1,0 +1,2 @@
+-- Intentionally left as a no-op. Removing the province-level constraint would
+-- require deleting existing PKK Provinsi profiles and their archives.

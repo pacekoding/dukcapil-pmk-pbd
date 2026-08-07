@@ -51,7 +51,9 @@ export default function MacekuPkkDashboardPage() {
   const stats = useMemo(() => {
     const activeCount = items.filter((item) => item.isActive).length;
     const documentCount = items.reduce((total, item) => total + item.documentCount, 0);
-    const kabupatenCount = new Set(items.map((item) => item.kabupatenKota)).size;
+    const kabupatenCount = new Set(
+      items.map((item) => item.kabupatenKota).filter(Boolean),
+    ).size;
 
     return [
       {
@@ -91,7 +93,7 @@ export default function MacekuPkkDashboardPage() {
         icon={UsersRound}
         eyebrow="MACEKU PKK"
         title="Manajemen Organisasi PKK"
-        description="Kelola profil organisasi PKK dari tingkat kabupaten/kota, kecamatan/distrik, hingga desa/kampung beserta arsip dokumennya."
+        description="Kelola profil organisasi PKK dari tingkat Provinsi Papua Barat Daya, kabupaten/kota, kecamatan/distrik, hingga desa/kampung beserta arsip dokumennya."
         meta={
           <Badge className="h-8 rounded-full bg-teal-50 px-4 text-sm font-bold text-teal-700">
             {items.length} profil PKK
