@@ -5,38 +5,44 @@ import "time"
 type SitekadKategoriUsaha string
 
 const (
-	SitekadKategoriPertanian   SitekadKategoriUsaha = "Pertanian"
-	SitekadKategoriPerikanan   SitekadKategoriUsaha = "Perikanan"
-	SitekadKategoriPeternakan  SitekadKategoriUsaha = "Peternakan"
-	SitekadKategoriPerkebunan  SitekadKategoriUsaha = "Perkebunan"
-	SitekadKategoriPariwisata  SitekadKategoriUsaha = "Pariwisata"
-	SitekadKategoriPerdagangan SitekadKategoriUsaha = "Perdagangan"
-	SitekadKategoriKerajinan   SitekadKategoriUsaha = "Kerajinan"
-	SitekadKategoriJasa        SitekadKategoriUsaha = "Jasa"
-	SitekadKategoriLainnya     SitekadKategoriUsaha = "Lainnya"
+	SitekadKategoriPertanian      SitekadKategoriUsaha = "Pertanian"
+	SitekadKategoriPerikanan      SitekadKategoriUsaha = "Perikanan"
+	SitekadKategoriPerikananDarat SitekadKategoriUsaha = "Perikanan Darat"
+	SitekadKategoriPerikananLaut  SitekadKategoriUsaha = "Perikanan Laut"
+	SitekadKategoriPeternakan     SitekadKategoriUsaha = "Peternakan"
+	SitekadKategoriPerkebunan     SitekadKategoriUsaha = "Perkebunan"
+	SitekadKategoriPariwisata     SitekadKategoriUsaha = "Pariwisata"
+	SitekadKategoriPerdagangan    SitekadKategoriUsaha = "Perdagangan"
+	SitekadKategoriKerajinan      SitekadKategoriUsaha = "Kerajinan"
+	SitekadKategoriJasa           SitekadKategoriUsaha = "Jasa"
+	SitekadKategoriLainnya        SitekadKategoriUsaha = "Lainnya"
 )
 
 type SitekadPotensiKampung struct {
-	ID              int64                `json:"id"`
-	Kode            string               `json:"kode"`
-	KabupatenKota   string               `json:"kabupatenKota"`
-	Kampung         string               `json:"kampung"`
-	KategoriUsaha   SitekadKategoriUsaha `json:"kategoriUsaha"`
-	DanaAlokasi     int64                `json:"danaAlokasi"`
-	CapaianUtama    string               `json:"capaianUtama"`
-	KendalaLapangan string               `json:"kendalaLapangan"`
-	CreatedAt       time.Time            `json:"createdAt"`
-	UpdatedAt       time.Time            `json:"updatedAt"`
+	ID            int64                `json:"id"`
+	Kode          string               `json:"kode"`
+	KabupatenKota string               `json:"kabupatenKota"`
+	Distrik       string               `json:"distrik"`
+	Kampung       string               `json:"kampung"`
+	NamaKelompok  string               `json:"namaKelompok"`
+	KategoriUsaha SitekadKategoriUsaha `json:"kategoriUsaha"`
+	Komoditas     string               `json:"komoditas"`
+	JumlahAnggota int64                `json:"jumlahAnggota"`
+	DanaAlokasi   int64                `json:"danaAlokasi"`
+	CreatedAt     time.Time            `json:"createdAt"`
+	UpdatedAt     time.Time            `json:"updatedAt"`
 }
 
 type SitekadPotensiKampungPayload struct {
-	Kode            string               `json:"kode"`
-	KabupatenKota   string               `json:"kabupatenKota"`
-	Kampung         string               `json:"kampung"`
-	KategoriUsaha   SitekadKategoriUsaha `json:"kategoriUsaha"`
-	DanaAlokasi     int64                `json:"danaAlokasi"`
-	CapaianUtama    string               `json:"capaianUtama"`
-	KendalaLapangan string               `json:"kendalaLapangan"`
+	Kode          string               `json:"kode"`
+	KabupatenKota string               `json:"kabupatenKota"`
+	Distrik       string               `json:"distrik"`
+	Kampung       string               `json:"kampung"`
+	NamaKelompok  string               `json:"namaKelompok"`
+	KategoriUsaha SitekadKategoriUsaha `json:"kategoriUsaha"`
+	Komoditas     string               `json:"komoditas"`
+	JumlahAnggota int64                `json:"jumlahAnggota"`
+	DanaAlokasi   int64                `json:"danaAlokasi"`
 }
 
 type SitekadPotensiKampungListResponse struct {
@@ -55,16 +61,18 @@ type SitekadOptionsResponse struct {
 }
 
 type SitekadPotensiKampungEntity struct {
-	ID              int64                `gorm:"primaryKey;column:id"`
-	Kode            string               `gorm:"column:kode"`
-	KabupatenKota   string               `gorm:"column:kabupaten_kota"`
-	Kampung         string               `gorm:"column:kampung"`
-	KategoriUsaha   SitekadKategoriUsaha `gorm:"column:kategori_usaha"`
-	DanaAlokasi     int64                `gorm:"column:dana_alokasi"`
-	CapaianUtama    string               `gorm:"column:capaian_utama"`
-	KendalaLapangan string               `gorm:"column:kendala_lapangan"`
-	CreatedAt       time.Time            `gorm:"column:created_at"`
-	UpdatedAt       time.Time            `gorm:"column:updated_at"`
+	ID            int64                `gorm:"primaryKey;column:id"`
+	Kode          string               `gorm:"column:kode"`
+	KabupatenKota string               `gorm:"column:kabupaten_kota"`
+	Distrik       string               `gorm:"column:distrik"`
+	Kampung       string               `gorm:"column:kampung"`
+	NamaKelompok  string               `gorm:"column:nama_kelompok"`
+	KategoriUsaha SitekadKategoriUsaha `gorm:"column:kategori_usaha"`
+	Komoditas     string               `gorm:"column:komoditas"`
+	JumlahAnggota int64                `gorm:"column:jumlah_anggota"`
+	DanaAlokasi   int64                `gorm:"column:dana_alokasi"`
+	CreatedAt     time.Time            `gorm:"column:created_at"`
+	UpdatedAt     time.Time            `gorm:"column:updated_at"`
 }
 
 func (SitekadPotensiKampungEntity) TableName() string {
@@ -73,15 +81,17 @@ func (SitekadPotensiKampungEntity) TableName() string {
 
 func (s SitekadPotensiKampungEntity) ToSitekadPotensiKampung() SitekadPotensiKampung {
 	return SitekadPotensiKampung{
-		ID:              s.ID,
-		Kode:            s.Kode,
-		KabupatenKota:   s.KabupatenKota,
-		Kampung:         s.Kampung,
-		KategoriUsaha:   s.KategoriUsaha,
-		DanaAlokasi:     s.DanaAlokasi,
-		CapaianUtama:    s.CapaianUtama,
-		KendalaLapangan: s.KendalaLapangan,
-		CreatedAt:       s.CreatedAt,
-		UpdatedAt:       s.UpdatedAt,
+		ID:            s.ID,
+		Kode:          s.Kode,
+		KabupatenKota: s.KabupatenKota,
+		Distrik:       s.Distrik,
+		Kampung:       s.Kampung,
+		NamaKelompok:  s.NamaKelompok,
+		KategoriUsaha: s.KategoriUsaha,
+		Komoditas:     s.Komoditas,
+		JumlahAnggota: s.JumlahAnggota,
+		DanaAlokasi:   s.DanaAlokasi,
+		CreatedAt:     s.CreatedAt,
+		UpdatedAt:     s.UpdatedAt,
 	}
 }

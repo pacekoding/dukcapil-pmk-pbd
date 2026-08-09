@@ -1,6 +1,8 @@
 export type SitekadKategoriUsaha =
   | "Pertanian"
   | "Perikanan"
+  | "Perikanan Darat"
+  | "Perikanan Laut"
   | "Peternakan"
   | "Perkebunan"
   | "Pariwisata"
@@ -12,6 +14,8 @@ export type SitekadKategoriUsaha =
 export const sitekadKategoriUsahaOptions: SitekadKategoriUsaha[] = [
   "Pertanian",
   "Perikanan",
+  "Perikanan Darat",
+  "Perikanan Laut",
   "Peternakan",
   "Perkebunan",
   "Pariwisata",
@@ -25,11 +29,13 @@ export type SitekadPotensiKampung = {
   id: number;
   kode: string;
   kabupatenKota: string;
+  distrik: string;
   kampung: string;
+  namaKelompok: string;
   kategoriUsaha: SitekadKategoriUsaha;
+  komoditas: string;
+  jumlahAnggota: number;
   danaAlokasi: number;
-  capaianUtama: string;
-  kendalaLapangan: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -37,11 +43,13 @@ export type SitekadPotensiKampung = {
 export type SitekadPotensiKampungPayload = {
   kode: string;
   kabupatenKota: string;
+  distrik: string;
   kampung: string;
+  namaKelompok: string;
   kategoriUsaha: SitekadKategoriUsaha;
+  komoditas: string;
+  jumlahAnggota: number;
   danaAlokasi: number;
-  capaianUtama: string;
-  kendalaLapangan: string;
 };
 
 export type SitekadListResponse = {
@@ -57,4 +65,30 @@ export type SitekadKampungOption = {
 export type SitekadOptionsResponse = {
   kabupatenKota: string[];
   kampung: SitekadKampungOption[];
+};
+
+export type SitekadCapaianKendala = {
+  id: number;
+  kelompokId: number;
+  kelompok: SitekadPotensiKampung;
+  namaCapaian: string;
+  tahunBinaan: string;
+  deskripsiCapaian: string;
+  kendalaHambatan: string;
+  dokumentasiUrls: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SitekadCapaianKendalaPayload = {
+  kelompokId: number;
+  namaCapaian: string;
+  tahunBinaan: string;
+  deskripsiCapaian: string;
+  kendalaHambatan: string;
+  dokumentasiUrls: string[];
+};
+
+export type SitekadCapaianKendalaListResponse = {
+  items: SitekadCapaianKendala[];
 };

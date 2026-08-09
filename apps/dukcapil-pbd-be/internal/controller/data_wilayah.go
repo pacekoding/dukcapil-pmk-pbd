@@ -196,7 +196,7 @@ func siberDataWilayahTahunAnggaran(c echo.Context) (string, error) {
 	}
 
 	tahunAnggaran := strings.TrimSpace(claims.TahunAnggaran)
-	if !dataWilayahTahunAnggaranPattern.MatchString(tahunAnggaran) {
+	if !dataWilayahTahunAnggaranPattern.MatchString(tahunAnggaran) || !isSupportedTahunAnggaran(tahunAnggaran) {
 		return "", echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran tidak valid")
 	}
 

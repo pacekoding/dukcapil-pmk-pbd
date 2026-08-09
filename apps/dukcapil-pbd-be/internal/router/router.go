@@ -115,6 +115,10 @@ func New(config Config) *echo.Echo {
 
 	protected.GET("/sitekad", config.Sitekad.List)
 	protected.GET("/sitekad/options", config.Sitekad.Options)
+	protected.GET("/sitekad/capaian-kendala", config.Sitekad.ListCapaianKendala)
+	protected.POST("/sitekad/capaian-kendala", config.Sitekad.CreateCapaianKendala)
+	protected.PUT("/sitekad/capaian-kendala/:id", config.Sitekad.UpdateCapaianKendala)
+	protected.DELETE("/sitekad/capaian-kendala/:id", config.Sitekad.DeleteCapaianKendala)
 	protected.POST("/sitekad", config.Sitekad.Create)
 	protected.PUT("/sitekad/:id", config.Sitekad.Update)
 	protected.DELETE("/sitekad/:id", config.Sitekad.Delete)

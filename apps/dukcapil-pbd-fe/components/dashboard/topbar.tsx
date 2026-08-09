@@ -92,13 +92,18 @@ const menuTitles: Record<
   },
 
   "/sitekad/dashboard": {
-    title: "SiTEKAD",
-    description: "Sistem Informasi Tekad",
+    title: "SITEKAD",
+    description: "Sistem Informasi Terpadu Program TEKAD",
   },
 
   "/sitekad/data": {
-    title: "Data Potensi Kampung",
-    description: "Kelola data evaluasi dan potensi kampung",
+    title: "Data Kelompok Binaan",
+    description: "Kelola data kelompok binaan pada lokus Program TEKAD",
+  },
+
+  "/sitekad/capaian-kendala": {
+    title: "Capaian & Kendala",
+    description: "Kelola riwayat capaian dan kendala kelompok binaan Program TEKAD",
   },
 
   "/aspirasiku/dashboard": {
@@ -248,6 +253,10 @@ function getPageInfo(pathname: string) {
 
   if (pathname.startsWith("/sitekad/data")) {
     return menuTitles["/sitekad/data"];
+  }
+
+  if (pathname.startsWith("/sitekad/capaian-kendala")) {
+    return menuTitles["/sitekad/capaian-kendala"];
   }
 
   if (pathname.startsWith("/aspirasiku/dashboard")) {

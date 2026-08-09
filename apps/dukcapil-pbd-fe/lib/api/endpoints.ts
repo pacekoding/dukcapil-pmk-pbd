@@ -26,6 +26,9 @@ export const apiEndpoints = {
   sitekad: `${API_PREFIX}/sitekad`,
   sitekadOptions: `${API_PREFIX}/sitekad/options`,
   sitekadDetail: (id: number) => `${API_PREFIX}/sitekad/${id}`,
+  sitekadCapaianKendala: `${API_PREFIX}/sitekad/capaian-kendala`,
+  sitekadCapaianKendalaDetail: (id: number) =>
+    `${API_PREFIX}/sitekad/capaian-kendala/${id}`,
   aspirasiku: `${API_PREFIX}/aspirasiku`,
   aspirasikuDetail: (id: number) => `${API_PREFIX}/aspirasiku/${id}`,
   aspirasikuStatus: (id: number) => `${API_PREFIX}/aspirasiku/${id}/status`,

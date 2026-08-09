@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	authmiddleware "dukcapil-pbd-be/internal/middleware"
@@ -14,6 +15,8 @@ import (
 )
 
 var tahunAnggaranPattern = regexp.MustCompile(`^\d{4}$`)
+
+const earliestSupportedTahunAnggaran = 2025
 
 type UserAuthenticator interface {
 	Authenticate(ctx context.Context, username, password string) (model.User, bool, error)
@@ -39,7 +42,7 @@ func (a *AuthController) Login(c echo.Context) error {
 
 	request.Username = strings.TrimSpace(request.Username)
 	request.TahunAnggaran = strings.TrimSpace(request.TahunAnggaran)
-	if !tahunAnggaranPattern.MatchString(request.TahunAnggaran) {
+	if !isSupportedTahunAnggaran(request.TahunAnggaran) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran tidak valid")
 	}
 
@@ -95,7 +98,7 @@ func (a *AuthController) SwitchTahunAnggaran(c echo.Context) error {
 	}
 
 	request.TahunAnggaran = strings.TrimSpace(request.TahunAnggaran)
-	if !tahunAnggaranPattern.MatchString(request.TahunAnggaran) {
+	if !isSupportedTahunAnggaran(request.TahunAnggaran) {
 		return echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran tidak valid")
 	}
 
@@ -117,4 +120,13 @@ func (a *AuthController) SwitchTahunAnggaran(c echo.Context) error {
 		User:          user,
 		TahunAnggaran: request.TahunAnggaran,
 	})
+}
+
+func isSupportedTahunAnggaran(value string) bool {
+	if !tahunAnggaranPattern.MatchString(value) {
+		return false
+	}
+
+	year, err := strconv.Atoi(value)
+	return err == nil && year >= earliestSupportedTahunAnggaran
 }

@@ -1,6 +1,9 @@
 import { apiEndpoints } from "@/lib/api/endpoints";
 import { apiRequest } from "@/lib/api/http";
 import type {
+  SitekadCapaianKendala,
+  SitekadCapaianKendalaListResponse,
+  SitekadCapaianKendalaPayload,
   SitekadListResponse,
   SitekadOptionsResponse,
   SitekadPotensiKampung,
@@ -36,6 +39,43 @@ export function updateSitekadPotensiKampung(
 
 export function deleteSitekadPotensiKampung(id: number) {
   return apiRequest<null>(apiEndpoints.sitekadDetail(id), {
+    method: "DELETE",
+  });
+}
+
+export function getSitekadCapaianKendala() {
+  return apiRequest<SitekadCapaianKendalaListResponse>(
+    apiEndpoints.sitekadCapaianKendala,
+  );
+}
+
+export function createSitekadCapaianKendala(
+  payload: SitekadCapaianKendalaPayload,
+) {
+  return apiRequest<SitekadCapaianKendala>(
+    apiEndpoints.sitekadCapaianKendala,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function updateSitekadCapaianKendala(
+  id: number,
+  payload: SitekadCapaianKendalaPayload,
+) {
+  return apiRequest<SitekadCapaianKendala>(
+    apiEndpoints.sitekadCapaianKendalaDetail(id),
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function deleteSitekadCapaianKendala(id: number) {
+  return apiRequest<null>(apiEndpoints.sitekadCapaianKendalaDetail(id), {
     method: "DELETE",
   });
 }

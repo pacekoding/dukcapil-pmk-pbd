@@ -27,6 +27,7 @@ import {
   PanelLeftOpen,
   Settings,
   ToggleLeft,
+  Trophy,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -86,6 +87,7 @@ const dashboardMenuIconMap: Record<DashboardMenuIcon, LucideIcon> = {
   calendarClock: CalendarClock,
   monitorPlay: MonitorPlay,
   toggle: ToggleLeft,
+  trophy: Trophy,
   users: UsersRound,
   keyRound: KeyRound,
   settings: Settings,
@@ -257,8 +259,8 @@ function getSidebarBrand(pathname: string) {
 
   if (pathname.startsWith("/sitekad")) {
     return {
-      title: "SiTEKAD",
-      subtitle: "Potensi Kampung",
+      title: "SITEKAD",
+      subtitle: "Program TEKAD",
     };
   }
 

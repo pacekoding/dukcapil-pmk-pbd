@@ -287,7 +287,7 @@ func subkegiatanTahunAnggaran(c echo.Context) (string, error) {
 	}
 
 	tahunAnggaran := strings.TrimSpace(claims.TahunAnggaran)
-	if !subkegiatanTahunAnggaranPattern.MatchString(tahunAnggaran) {
+	if !subkegiatanTahunAnggaranPattern.MatchString(tahunAnggaran) || !isSupportedTahunAnggaran(tahunAnggaran) {
 		return "", echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran tidak valid")
 	}
 

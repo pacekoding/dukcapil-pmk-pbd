@@ -17,6 +17,7 @@ export type DashboardMenuIcon =
   | "calendarClock"
   | "monitorPlay"
   | "toggle"
+  | "trophy"
   | "users"
   | "keyRound"
   | "settings";
@@ -178,9 +179,14 @@ export const sitekadMenus: DashboardMenuItem[] = [
     icon: "home",
   },
   {
-    title: "Data Potensi Kampung",
+    title: "Data Kelompok Binaan",
     href: "/sitekad/data",
     icon: "database",
+  },
+  {
+    title: "Capaian & Kendala",
+    href: "/sitekad/capaian-kendala",
+    icon: "trophy",
   },
 ];
 

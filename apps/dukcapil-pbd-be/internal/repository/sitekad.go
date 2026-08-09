@@ -88,14 +88,16 @@ func (r *SitekadRepository) Update(ctx context.Context, id int64, payload model.
 	}
 
 	updates := map[string]any{
-		"kode":             strings.TrimSpace(payload.Kode),
-		"kabupaten_kota":   strings.TrimSpace(payload.KabupatenKota),
-		"kampung":          strings.TrimSpace(payload.Kampung),
-		"kategori_usaha":   payload.KategoriUsaha,
-		"dana_alokasi":     payload.DanaAlokasi,
-		"capaian_utama":    strings.TrimSpace(payload.CapaianUtama),
-		"kendala_lapangan": strings.TrimSpace(payload.KendalaLapangan),
-		"updated_at":       gorm.Expr("NOW()"),
+		"kode":           strings.TrimSpace(payload.Kode),
+		"kabupaten_kota": strings.TrimSpace(payload.KabupatenKota),
+		"distrik":        strings.TrimSpace(payload.Distrik),
+		"kampung":        strings.TrimSpace(payload.Kampung),
+		"nama_kelompok":  strings.TrimSpace(payload.NamaKelompok),
+		"kategori_usaha": payload.KategoriUsaha,
+		"komoditas":      strings.TrimSpace(payload.Komoditas),
+		"jumlah_anggota": payload.JumlahAnggota,
+		"dana_alokasi":   payload.DanaAlokasi,
+		"updated_at":     gorm.Expr("NOW()"),
 	}
 
 	if err := db.Transaction(func(tx *gorm.DB) error {
@@ -157,12 +159,14 @@ func (r *SitekadRepository) find(ctx context.Context, db *gorm.DB, id int64) (mo
 
 func payloadToSitekadEntity(payload model.SitekadPotensiKampungPayload) model.SitekadPotensiKampungEntity {
 	return model.SitekadPotensiKampungEntity{
-		Kode:            strings.TrimSpace(payload.Kode),
-		KabupatenKota:   strings.TrimSpace(payload.KabupatenKota),
-		Kampung:         strings.TrimSpace(payload.Kampung),
-		KategoriUsaha:   payload.KategoriUsaha,
-		DanaAlokasi:     payload.DanaAlokasi,
-		CapaianUtama:    strings.TrimSpace(payload.CapaianUtama),
-		KendalaLapangan: strings.TrimSpace(payload.KendalaLapangan),
+		Kode:          strings.TrimSpace(payload.Kode),
+		KabupatenKota: strings.TrimSpace(payload.KabupatenKota),
+		Distrik:       strings.TrimSpace(payload.Distrik),
+		Kampung:       strings.TrimSpace(payload.Kampung),
+		NamaKelompok:  strings.TrimSpace(payload.NamaKelompok),
+		KategoriUsaha: payload.KategoriUsaha,
+		Komoditas:     strings.TrimSpace(payload.Komoditas),
+		JumlahAnggota: payload.JumlahAnggota,
+		DanaAlokasi:   payload.DanaAlokasi,
 	}
 }
