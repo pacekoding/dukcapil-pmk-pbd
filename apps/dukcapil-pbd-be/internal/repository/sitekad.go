@@ -53,12 +53,21 @@ func (r *SitekadRepository) Options(ctx context.Context) (model.SitekadOptionsRe
 	}
 
 	kampung := make([]model.SitekadKampungOption, 0)
-	if err := db.Table("bum_kampung").
-		Select("DISTINCT kabupaten_kota, distrik, kampung").
-		Where("TRIM(kabupaten_kota) <> '' AND TRIM(kampung) <> ''").
+	if err := db.Table("sikampung_data").
+		Select("DISTINCT kabupaten AS kabupaten_kota, distrik, desa AS kampung").
+		Where("TRIM(kabupaten) <> '' AND TRIM(distrik) <> '' AND TRIM(desa) <> ''").
 		Order("kabupaten_kota ASC, distrik ASC, kampung ASC").
 		Scan(&kampung).Error; err != nil {
 		return model.SitekadOptionsResponse{}, fmt.Errorf("list sitekad kampung options: %w", err)
+	}
+	if len(kampung) == 0 {
+		if err := db.Table("bum_kampung").
+			Select("DISTINCT kabupaten_kota, distrik, kampung").
+			Where("TRIM(kabupaten_kota) <> '' AND TRIM(distrik) <> '' AND TRIM(kampung) <> ''").
+			Order("kabupaten_kota ASC, distrik ASC, kampung ASC").
+			Scan(&kampung).Error; err != nil {
+			return model.SitekadOptionsResponse{}, fmt.Errorf("list sitekad fallback kampung options: %w", err)
+		}
 	}
 
 	return model.SitekadOptionsResponse{

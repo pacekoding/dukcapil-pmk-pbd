@@ -1,7 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import {
+  Check,
+  ChevronDown,
   Edit,
   Eye,
   Plus,
@@ -40,6 +49,7 @@ import {
   getSitekadPotensiKampung,
   updateSitekadPotensiKampung,
 } from "@/lib/api/sitekad";
+import { cn } from "@/lib/utils";
 import type {
   SitekadKampungOption,
   SitekadPotensiKampung,
@@ -125,6 +135,16 @@ export default function SitekadDataPage() {
     [form.kabupatenKota, kampungOptions],
   );
 
+  const distrikOptions = useMemo(
+    () => getDistrikOptions(filteredKampungOptions),
+    [filteredKampungOptions],
+  );
+
+  const desaOptions = useMemo(
+    () => getKampungOptionsByDistrik(filteredKampungOptions, form.distrik),
+    [filteredKampungOptions, form.distrik],
+  );
+
   const selectedKampungValue =
     form.distrik && form.kampung
       ? makeKampungOptionValue(form.distrik, form.kampung)
@@ -136,7 +156,8 @@ export default function SitekadDataPage() {
     return records.filter((record) => {
       if (
         kabupatenFilter &&
-        record.kabupatenKota !== kabupatenFilter
+        normalizeKabupatenName(record.kabupatenKota) !==
+          normalizeKabupatenName(kabupatenFilter)
       ) {
         return false;
       }
@@ -220,14 +241,22 @@ export default function SitekadDataPage() {
     }));
   };
 
+  const handleDistrikChange = (value: string) => {
+    setForm((current) => ({
+      ...current,
+      distrik: value,
+      kampung: "",
+    }));
+  };
+
   const handleKampungChange = (value: string) => {
-    const selected = filteredKampungOptions.find(
+    const selected = desaOptions.find(
       (item) => makeKampungOptionValue(item.distrik, item.kampung) === value,
     );
 
     setForm((current) => ({
       ...current,
-      distrik: selected?.distrik ?? "",
+      distrik: selected?.distrik ?? current.distrik,
       kampung: selected?.kampung ?? "",
     }));
   };
@@ -399,24 +428,42 @@ export default function SitekadDataPage() {
                 onChange={handleKabupatenChange}
                 placeholder="Pilih kabupaten"
               />
-              <FormSelect
-                label="Kampung"
+              <SearchableSelect
+                label="Kecamatan/Distrik"
+                value={form.distrik}
+                fallbackLabel={form.distrik}
+                options={distrikOptions.map((item) => ({
+                  label: item,
+                  value: item,
+                }))}
+                onChange={handleDistrikChange}
+                placeholder={
+                  form.kabupatenKota
+                    ? "Pilih kecamatan/distrik"
+                    : "Pilih kabupaten dahulu"
+                }
+                searchPlaceholder="Cari kecamatan/distrik..."
+                emptyText="Kecamatan/distrik tidak ditemukan."
+                disabled={!form.kabupatenKota || distrikOptions.length === 0}
+              />
+              <SearchableSelect
+                label="Desa/Kampung"
                 value={selectedKampungValue}
-                options={filteredKampungOptions.map((item) => ({
-                  label: item.distrik
-                    ? `${item.kampung} - ${item.distrik}`
-                    : item.kampung,
+                fallbackLabel={form.kampung}
+                options={desaOptions.map((item) => ({
+                  label: item.kampung,
                   value: makeKampungOptionValue(item.distrik, item.kampung),
+                  description: item.distrik,
                 }))}
                 onChange={handleKampungChange}
-                placeholder="Pilih kampung"
-              />
-              <FormInput
-                label="Distrik"
-                value={form.distrik}
-                onChange={() => undefined}
-                placeholder="Terisi sesuai kampung"
-                disabled
+                placeholder={
+                  form.distrik
+                    ? "Pilih desa/kampung"
+                    : "Pilih kecamatan dahulu"
+                }
+                searchPlaceholder="Cari desa/kampung..."
+                emptyText="Desa/kampung tidak ditemukan."
+                disabled={!form.distrik || desaOptions.length === 0}
               />
               <FormSelect
                 label="Kategori Usaha"
@@ -468,8 +515,8 @@ export default function SitekadDataPage() {
             </div>
             {kabupatenOptions.length === 0 || kampungOptions.length === 0 ? (
               <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
-                Data kabupaten atau kampung belum tersedia. Pastikan master data
-                wilayah sudah tersimpan di database.
+                Data kabupaten, kecamatan, atau desa belum tersedia. Pastikan
+                master data wilayah sudah tersimpan di database.
               </p>
             ) : null}
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -486,7 +533,7 @@ export default function SitekadDataPage() {
                 disabled={
                   saving ||
                   kabupatenOptions.length === 0 ||
-                  filteredKampungOptions.length === 0
+                  (!form.distrik && distrikOptions.length === 0)
                 }
                 className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
               >
@@ -814,6 +861,183 @@ function FormSelect({
   );
 }
 
+function SearchableSelect({
+  label,
+  value,
+  fallbackLabel,
+  options,
+  onChange,
+  placeholder = "Pilih data",
+  searchPlaceholder = "Cari data...",
+  emptyText = "Data tidak ditemukan.",
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  fallbackLabel?: string;
+  options: Array<{ label: string; value: string; description?: string }>;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  emptyText?: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  const selectedOption = options.find((option) => option.value === value);
+  const selectedLabel = selectedOption?.label ?? fallbackLabel;
+  const visibleOptions = useMemo(() => {
+    const normalizedQuery = searchQuery.toLowerCase().trim();
+    if (!normalizedQuery) {
+      return options;
+    }
+
+    return options.filter((option) =>
+      [option.label, option.description]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [options, searchQuery]);
+
+  useEffect(() => {
+    if (open) {
+      searchInputRef.current?.focus();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+        setSearchQuery("");
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="grid gap-2">
+      <span className="text-sm font-bold text-pbd-navy">{label}</span>
+      <button
+        type="button"
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => {
+          setSearchQuery("");
+          setOpen((current) => !current);
+        }}
+        className={cn(
+          "flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-white px-3 py-2 text-left text-sm text-slate-900 shadow-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500",
+          open && "border-ring ring-[3px] ring-ring/20",
+        )}
+      >
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate",
+            !selectedLabel && "text-slate-400",
+          )}
+        >
+          {selectedLabel || placeholder}
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-slate-500 transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
+      {open ? (
+        <div className="rounded-md border border-slate-200 bg-white p-2 shadow-sm">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              ref={searchInputRef}
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                }
+                if (event.key === "Escape") {
+                  setOpen(false);
+                  setSearchQuery("");
+                }
+              }}
+              placeholder={searchPlaceholder}
+              className="pl-9"
+            />
+          </div>
+          <div
+            role="listbox"
+            className="mt-2 max-h-56 overflow-y-auto rounded-md border border-slate-100"
+          >
+            {visibleOptions.length > 0 ? (
+              visibleOptions.map((option) => {
+                const selected = option.value === value;
+
+                return (
+                  <button
+                    key={`${option.value}-${option.label}`}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => {
+                      onChange(option.value);
+                      setOpen(false);
+                      setSearchQuery("");
+                    }}
+                    className={cn(
+                      "flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-slate-50",
+                      selected && "bg-blue-50 text-pbd-navy",
+                    )}
+                  >
+                    <Check
+                      className={cn(
+                        "mt-0.5 h-4 w-4 shrink-0",
+                        selected ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate font-semibold">
+                        {option.label}
+                      </span>
+                      {option.description ? (
+                        <span className="block truncate text-xs text-slate-500">
+                          {option.description}
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <p className="px-3 py-4 text-center text-sm font-medium text-slate-500">
+                {emptyText}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function FilterSelect({
   value,
   onChange,
@@ -870,7 +1094,42 @@ function getKampungOptionsByKabupaten(
   const uniqueOptions = new Map<string, SitekadKampungOption>();
 
   for (const option of options) {
-    if (option.kabupatenKota !== kabupatenKota) {
+    if (
+      normalizeKabupatenName(option.kabupatenKota) !==
+      normalizeKabupatenName(kabupatenKota)
+    ) {
+      continue;
+    }
+
+    const key = makeKampungOptionValue(option.distrik, option.kampung);
+    if (!uniqueOptions.has(key)) {
+      uniqueOptions.set(key, option);
+    }
+  }
+
+  return Array.from(uniqueOptions.values());
+}
+
+function getDistrikOptions(options: SitekadKampungOption[]) {
+  const uniqueOptions = new Set<string>();
+
+  for (const option of options) {
+    if (option.distrik.trim()) {
+      uniqueOptions.add(option.distrik);
+    }
+  }
+
+  return Array.from(uniqueOptions).sort((a, b) => a.localeCompare(b, "id"));
+}
+
+function getKampungOptionsByDistrik(
+  options: SitekadKampungOption[],
+  distrik: string,
+) {
+  const uniqueOptions = new Map<string, SitekadKampungOption>();
+
+  for (const option of options) {
+    if (option.distrik !== distrik) {
       continue;
     }
 
@@ -885,6 +1144,13 @@ function getKampungOptionsByKabupaten(
 
 function makeKampungOptionValue(distrik: string, kampung: string) {
   return `${distrik}::${kampung}`;
+}
+
+function normalizeKabupatenName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/^(kabupaten|kota)\s+/, "")
+    .trim();
 }
 
 function formatCurrency(value: number) {
