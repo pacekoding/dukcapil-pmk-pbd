@@ -1383,8 +1383,8 @@ function DatasetContent({
     if (total === 0 && values.every((value) => value === 0)) {
       return (
         <DatasetEmptyState
-          title="Data BUMDes belum tersedia"
-          description={`Data BUMDes untuk ${region.name} pada periode ${tahunAnggaran || "-"} belum dipublikasikan.`}
+          title="Data BUMDes/BUMKam belum tersedia"
+          description={`Data BUMDes/BUMKam dari SIBUM Kampung untuk ${region.name} pada periode ${tahunAnggaran || "-"} belum dipublikasikan.`}
           region={region}
           tahunAnggaran={tahunAnggaran}
         />
@@ -1395,10 +1395,10 @@ function DatasetContent({
       <DataGroup
         values={values}
         items={[
-          { icon: Building2, label: "Jumlah BUMDes", description: "Total terdaftar", value: region.bumdes.jumlah },
-          { icon: BadgeCheck, label: "BUMDes Aktif", description: "Status aktif", value: region.bumdes.aktif },
-          { icon: Building2, label: "BUMDes Tidak Aktif", description: "Status tidak aktif", value: region.bumdes.tidakAktif },
-          { icon: Building2, label: "BUMDes Bersama", description: "Lintas kampung", value: region.bumdes.bersama },
+          { icon: Building2, label: "Jumlah BUMDes/BUMKam", description: "Total terdata di SIBUM", value: region.bumdes.jumlah },
+          { icon: BadgeCheck, label: "Terverifikasi", description: "Nama/dokumen terverifikasi", value: region.bumdes.aktif },
+          { icon: Building2, label: "Perlu Perbaikan", description: "Dokumen atau nama perlu perbaikan", value: region.bumdes.tidakAktif },
+          { icon: Building2, label: "BUMKam Bersama", description: "Lintas kampung", value: region.bumdes.bersama },
         ]}
       />
     );

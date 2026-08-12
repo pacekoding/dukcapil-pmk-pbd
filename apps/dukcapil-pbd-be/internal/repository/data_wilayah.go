@@ -41,6 +41,9 @@ func (r *DataWilayahRepository) List(ctx context.Context, tahunAnggaran string) 
 			latestUpdatedAt = record.UpdatedAt
 		}
 	}
+	if err := r.attachBumKampungSummary(ctx, db, tahunAnggaran, regions); err != nil {
+		return model.DataWilayahResponse{}, err
+	}
 
 	var updatedAt *time.Time
 	if !latestUpdatedAt.IsZero() {
@@ -268,6 +271,85 @@ func (r *DataWilayahRepository) ensureCurrentReleaseYearData(db *gorm.DB, curren
 func currentDataWilayahReleaseYear() string {
 	wit := time.FixedZone("WIT", 9*60*60)
 	return fmt.Sprintf("%d", time.Now().In(wit).Year())
+}
+
+type bumKampungRegionSummary struct {
+	KabupatenKota string
+	Jumlah        int
+	Aktif         int
+	TidakAktif    int
+	Bersama       int
+}
+
+func (r *DataWilayahRepository) attachBumKampungSummary(
+	ctx context.Context,
+	db *gorm.DB,
+	tahunAnggaran string,
+	regions []model.RegionData,
+) error {
+	if len(regions) == 0 {
+		return nil
+	}
+
+	var summaries []bumKampungRegionSummary
+	if err := db.WithContext(ctx).
+		Table("bum_kampung").
+		Select(`
+			kabupaten_kota,
+			COUNT(*)::INTEGER AS jumlah,
+			COUNT(*) FILTER (
+				WHERE status IN ('Dokumen Badan Hukum Terverifikasi', 'Nama Terverifikasi')
+			)::INTEGER AS aktif,
+			COUNT(*) FILTER (
+				WHERE status NOT IN ('Dokumen Badan Hukum Terverifikasi', 'Nama Terverifikasi')
+			)::INTEGER AS tidak_aktif,
+			COUNT(*) FILTER (WHERE kategori = 'BUMKam bersama')::INTEGER AS bersama
+		`).
+		Where("tahun_anggaran = ?", strings.TrimSpace(tahunAnggaran)).
+		Group("kabupaten_kota").
+		Scan(&summaries).Error; err != nil {
+		return fmt.Errorf("summarize bum kampung for data wilayah: %w", err)
+	}
+
+	applyBumKampungSummary(regions, summaries)
+	return nil
+}
+
+func applyBumKampungSummary(
+	regions []model.RegionData,
+	summaries []bumKampungRegionSummary,
+) {
+	summaryByKabupaten := make(map[string]bumKampungRegionSummary, len(summaries))
+	for _, summary := range summaries {
+		summaryByKabupaten[normalizeRegionName(summary.KabupatenKota)] = summary
+	}
+
+	for index := range regions {
+		regionKey := normalizeRegionName(regions[index].Name)
+		summary, found := summaryByKabupaten[regionKey]
+		if !found {
+			regionKey = normalizeRegionName(regions[index].ShortName)
+			summary, found = summaryByKabupaten[regionKey]
+		}
+		if !found {
+			regions[index].Bumdes = model.BumdesData{}
+			continue
+		}
+
+		regions[index].Bumdes = model.BumdesData{
+			Jumlah:     summary.Jumlah,
+			Aktif:      summary.Aktif,
+			TidakAktif: summary.TidakAktif,
+			Bersama:    summary.Bersama,
+		}
+	}
+}
+
+func normalizeRegionName(value string) string {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	normalized = strings.TrimPrefix(normalized, "kabupaten ")
+	normalized = strings.TrimPrefix(normalized, "kota ")
+	return strings.Join(strings.Fields(normalized), " ")
 }
 
 func (r *DataWilayahRepository) loadOrCreateWebsiteSettings(

@@ -14,10 +14,15 @@ import {
 import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { BumVisualization } from "@/components/sibum/dashboard/bum-visualization";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getBumKampung } from "@/lib/api/bum-kampung";
 import type { BumKampung } from "@/types/bum-kampung";
+import {
+  bumKampungKategoriOptions,
+  bumKampungStatusOptions,
+} from "@/types/bum-kampung";
 
 export default function SibumKampungPage() {
   const [records, setRecords] = useState<BumKampung[]>([]);
@@ -91,6 +96,10 @@ export default function SibumKampungPage() {
     ];
   }, [loading, records, tahunAnggaran]);
 
+  const statusData = useMemo(() => buildStatusData(records), [records]);
+  const kabupatenData = useMemo(() => buildKabupatenData(records), [records]);
+  const kategoriData = useMemo(() => buildKategoriData(records), [records]);
+
   return (
     <main className="space-y-6">
       <PageHero
@@ -137,6 +146,14 @@ export default function SibumKampungPage() {
         ))}
       </section>
 
+      <BumVisualization
+        year={tahunAnggaran}
+        statusData={statusData}
+        kabupatenData={kabupatenData}
+        kategoriData={kategoriData}
+        loading={loading}
+      />
+
       <SectionCard
         title="Menu SIBUM Kampung"
         description="Gunakan menu Data untuk mengelola data BUMKam kabupaten/kota, distrik, kampung, kategori, dan status."
@@ -162,4 +179,54 @@ export default function SibumKampungPage() {
       </SectionCard>
     </main>
   );
+}
+
+function buildStatusData(records: BumKampung[]) {
+  const counts = new Map(records.map((record) => [record.status, 0]));
+  for (const option of bumKampungStatusOptions) {
+    counts.set(option, 0);
+  }
+
+  for (const record of records) {
+    counts.set(record.status, (counts.get(record.status) ?? 0) + 1);
+  }
+
+  return bumKampungStatusOptions.map((status) => ({
+    key: status,
+    name: status,
+    value: counts.get(status) ?? 0,
+  }));
+}
+
+function buildKategoriData(records: BumKampung[]) {
+  const counts = new Map(records.map((record) => [record.kategori, 0]));
+  for (const option of bumKampungKategoriOptions) {
+    counts.set(option, 0);
+  }
+
+  for (const record of records) {
+    counts.set(record.kategori, (counts.get(record.kategori) ?? 0) + 1);
+  }
+
+  return bumKampungKategoriOptions.map((kategori) => ({
+    key: kategori,
+    name: kategori,
+    value: counts.get(kategori) ?? 0,
+  }));
+}
+
+function buildKabupatenData(records: BumKampung[]) {
+  const counts = new Map<string, number>();
+
+  for (const record of records) {
+    counts.set(record.kabupatenKota, (counts.get(record.kabupatenKota) ?? 0) + 1);
+  }
+
+  return Array.from(counts, ([name, value]) => ({ name, value })).sort((a, b) => {
+    if (b.value !== a.value) {
+      return b.value - a.value;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
 }

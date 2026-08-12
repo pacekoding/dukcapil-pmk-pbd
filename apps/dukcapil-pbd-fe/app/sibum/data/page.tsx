@@ -14,6 +14,7 @@ import {
 
 import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { PageHero } from "@/components/dashboard/page-hero";
+import { Pagination } from "@/components/dashboard/pagination";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -59,11 +67,15 @@ const initialFormState: BumKampungPayload = {
   status: "Perbaikan Dokumen Badan Hukum",
 };
 
+const pageSizeOptions = [10, 25, 50, 100] as const;
+
 export default function SibumDataPage() {
   const [records, setRecords] = useState<BumKampung[]>([]);
   const [kabKotaOptions, setKabKotaOptions] = useState<KabKota[]>([]);
   const [tahunAnggaran, setTahunAnggaran] = useState("2026");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<(typeof pageSizeOptions)[number]>(10);
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<BumKampung | null>(null);
@@ -129,6 +141,13 @@ export default function SibumDataPage() {
         .includes(normalizedQuery),
     );
   }, [query, records]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedRecords = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredRecords.slice(start, start + pageSize);
+  }, [currentPage, filteredRecords, pageSize]);
 
   const editingRecord = editingId
     ? records.find((record) => record.id === editingId)
@@ -390,10 +409,39 @@ export default function SibumDataPage() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setPage(1);
+                }}
                 className="pl-9"
                 placeholder="Cari BUM Kampung, distrik, status..."
               />
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5">
+              <span className="whitespace-nowrap text-sm font-semibold text-slate-600">
+                Tampilkan
+              </span>
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => {
+                  setPageSize(Number(value) as (typeof pageSizeOptions)[number]);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-8 w-20 rounded-md border-slate-200">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {pageSizeOptions.map((option) => (
+                    <SelectItem key={option} value={String(option)}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="whitespace-nowrap text-sm font-semibold text-slate-600">
+                data
+              </span>
             </div>
           </div>
         }
@@ -431,8 +479,8 @@ export default function SibumDataPage() {
                   Memuat data BUMKam...
                 </TableCell>
               </TableRow>
-            ) : filteredRecords.length > 0 ? (
-              filteredRecords.map((record) => (
+            ) : paginatedRecords.length > 0 ? (
+              paginatedRecords.map((record) => (
                 <TableRow key={record.id}>
                   <TableCell className="min-w-[220px] font-bold text-pbd-navy">
                     <div className="flex items-center gap-3">
@@ -494,6 +542,14 @@ export default function SibumDataPage() {
             )}
           </TableBody>
         </Table>
+        {!loading ? (
+          <Pagination
+            page={currentPage}
+            pageSize={pageSize}
+            total={filteredRecords.length}
+            onPageChange={setPage}
+          />
+        ) : null}
       </SectionCard>
 
       <ConfirmDeleteDialog
