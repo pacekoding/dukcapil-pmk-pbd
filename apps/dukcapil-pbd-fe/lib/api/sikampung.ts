@@ -6,8 +6,15 @@ import type {
   SikampungPayload,
 } from "@/types/sikampung";
 
-export function getSikampungData() {
-  return apiRequest<SikampungListResponse>(apiEndpoints.sikampung);
+export function getSikampungData(tahunAnggaran?: string) {
+  if (!tahunAnggaran) {
+    return apiRequest<SikampungListResponse>(apiEndpoints.sikampung);
+  }
+
+  const params = new URLSearchParams({ tahunAnggaran });
+  return apiRequest<SikampungListResponse>(
+    `${apiEndpoints.sikampung}?${params.toString()}`,
+  );
 }
 
 export function createSikampungData(payload: SikampungPayload) {

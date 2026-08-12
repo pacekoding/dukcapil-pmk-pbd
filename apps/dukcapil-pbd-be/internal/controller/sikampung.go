@@ -27,7 +27,7 @@ func NewSikampungController(sikampung SikampungStore) *SikampungController {
 }
 
 func (s *SikampungController) List(c echo.Context) error {
-	tahunAnggaran, err := subkegiatanTahunAnggaran(c)
+	tahunAnggaran, err := sikampungListTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -119,6 +119,21 @@ func sikampungID(c echo.Context) (int64, error) {
 	}
 
 	return id, nil
+}
+
+func sikampungListTahunAnggaran(c echo.Context) (string, error) {
+	tahunAnggaran := strings.TrimSpace(c.QueryParam("tahunAnggaran"))
+	if tahunAnggaran == "" {
+		tahunAnggaran = strings.TrimSpace(c.QueryParam("tahun_anggaran"))
+	}
+	if tahunAnggaran == "" {
+		return subkegiatanTahunAnggaran(c)
+	}
+	if tahunAnggaran != "2025" && tahunAnggaran != "2026" {
+		return "", echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran SIKAMPUNG tidak valid")
+	}
+
+	return tahunAnggaran, nil
 }
 
 func validateSikampungPayload(payload model.SikampungPayload) error {
