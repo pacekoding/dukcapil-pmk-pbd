@@ -66,6 +66,7 @@ const initialFormState: SitekadPotensiKampungPayload = {
   kampung: "",
   namaKelompok: "",
   kategoriUsaha: "Pertanian",
+  jenisUsaha: "",
   komoditas: "",
   jumlahAnggota: 0,
   danaAlokasi: 0,
@@ -175,6 +176,7 @@ export default function SitekadDataPage() {
         record.kampung,
         record.namaKelompok,
         record.kategoriUsaha,
+        record.jenisUsaha,
         record.komoditas,
         String(record.jumlahAnggota),
       ]
@@ -213,6 +215,7 @@ export default function SitekadDataPage() {
       kampung: record.kampung,
       namaKelompok: record.namaKelompok || record.kode,
       kategoriUsaha: record.kategoriUsaha,
+      jenisUsaha: record.jenisUsaha,
       komoditas: record.komoditas,
       jumlahAnggota: record.jumlahAnggota,
       danaAlokasi: record.danaAlokasi,
@@ -271,6 +274,7 @@ export default function SitekadDataPage() {
       kampung: form.kampung.trim(),
       namaKelompok: form.namaKelompok.trim(),
       kategoriUsaha: form.kategoriUsaha,
+      jenisUsaha: form.jenisUsaha.trim(),
       komoditas: form.komoditas.trim(),
       jumlahAnggota: Number(form.jumlahAnggota) || 0,
       danaAlokasi: Number(form.danaAlokasi) || 0,
@@ -282,6 +286,7 @@ export default function SitekadDataPage() {
       !payload.distrik ||
       !payload.kampung ||
       !payload.namaKelompok ||
+      !payload.jenisUsaha ||
       !payload.komoditas
     ) {
       setError("Seluruh informasi kelompok binaan wajib dilengkapi.");
@@ -466,7 +471,7 @@ export default function SitekadDataPage() {
                 disabled={!form.distrik || desaOptions.length === 0}
               />
               <FormSelect
-                label="Kategori Usaha"
+                label="Kategori Sektor Usaha"
                 value={form.kategoriUsaha}
                 options={sitekadKategoriUsahaOptions.map((item) => ({
                   label: item,
@@ -479,6 +484,14 @@ export default function SitekadDataPage() {
                       value as SitekadPotensiKampungPayload["kategoriUsaha"],
                   }))
                 }
+              />
+              <FormInput
+                label="Jenis Usaha"
+                value={form.jenisUsaha}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, jenisUsaha: value }))
+                }
+                placeholder="Contoh: Budidaya ikan air tawar"
               />
               <FormInput
                 label="Komoditas"
@@ -594,7 +607,7 @@ export default function SitekadDataPage() {
               setKategoriFilter(value);
               setPage(1);
             }}
-            ariaLabel="Filter kategori usaha"
+            ariaLabel="Filter kategori sektor usaha"
             placeholder="Semua Kategori"
             options={sitekadKategoriUsahaOptions}
           />
@@ -608,7 +621,8 @@ export default function SitekadDataPage() {
               <TableHead>Distrik</TableHead>
               <TableHead>Kampung</TableHead>
               <TableHead>Nama Kelompok</TableHead>
-              <TableHead>Kategori Usaha</TableHead>
+              <TableHead>Kategori Sektor Usaha</TableHead>
+              <TableHead>Jenis Usaha</TableHead>
               <TableHead>Komoditas</TableHead>
               <TableHead className="text-center">Anggota</TableHead>
               <TableHead>Dana Alokasi</TableHead>
@@ -619,7 +633,7 @@ export default function SitekadDataPage() {
             {loading ? (
               <TableRow>
                 <TableCell
-                  colSpan={10}
+                  colSpan={11}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
                   Memuat data kelompok binaan...
@@ -651,6 +665,9 @@ export default function SitekadDataPage() {
                       {record.kategoriUsaha}
                     </Badge>
                   </TableCell>
+                  <TableCell className="min-w-[190px] whitespace-normal">
+                    {record.jenisUsaha || "-"}
+                  </TableCell>
                   <TableCell className="min-w-[180px] whitespace-normal">
                     {record.komoditas || "-"}
                   </TableCell>
@@ -676,7 +693,7 @@ export default function SitekadDataPage() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={10}
+                  colSpan={11}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
                   Tidak ada kelompok binaan yang sesuai dengan filter.
@@ -729,8 +746,11 @@ export default function SitekadDataPage() {
                     .filter(Boolean)
                     .join(" / ")}
                 </DetailField>
-                <DetailField label="Kategori Usaha">
+                <DetailField label="Kategori Sektor Usaha">
                   {detailTarget.kategoriUsaha}
+                </DetailField>
+                <DetailField label="Jenis Usaha">
+                  {detailTarget.jenisUsaha || "-"}
                 </DetailField>
                 <DetailField label="Komoditas">
                   {detailTarget.komoditas || "-"}

@@ -33,6 +33,7 @@ export type SitekadPotensiKampung = {
   kampung: string;
   namaKelompok: string;
   kategoriUsaha: SitekadKategoriUsaha;
+  jenisUsaha: string;
   komoditas: string;
   jumlahAnggota: number;
   danaAlokasi: number;
@@ -47,6 +48,7 @@ export type SitekadPotensiKampungPayload = {
   kampung: string;
   namaKelompok: string;
   kategoriUsaha: SitekadKategoriUsaha;
+  jenisUsaha: string;
   komoditas: string;
   jumlahAnggota: number;
   danaAlokasi: number;

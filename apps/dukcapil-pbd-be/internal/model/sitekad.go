@@ -26,6 +26,7 @@ type SitekadPotensiKampung struct {
 	Kampung       string               `json:"kampung"`
 	NamaKelompok  string               `json:"namaKelompok"`
 	KategoriUsaha SitekadKategoriUsaha `json:"kategoriUsaha"`
+	JenisUsaha    string               `json:"jenisUsaha"`
 	Komoditas     string               `json:"komoditas"`
 	JumlahAnggota int64                `json:"jumlahAnggota"`
 	DanaAlokasi   int64                `json:"danaAlokasi"`
@@ -40,6 +41,7 @@ type SitekadPotensiKampungPayload struct {
 	Kampung       string               `json:"kampung"`
 	NamaKelompok  string               `json:"namaKelompok"`
 	KategoriUsaha SitekadKategoriUsaha `json:"kategoriUsaha"`
+	JenisUsaha    string               `json:"jenisUsaha"`
 	Komoditas     string               `json:"komoditas"`
 	JumlahAnggota int64                `json:"jumlahAnggota"`
 	DanaAlokasi   int64                `json:"danaAlokasi"`
@@ -68,6 +70,7 @@ type SitekadPotensiKampungEntity struct {
 	Kampung       string               `gorm:"column:kampung"`
 	NamaKelompok  string               `gorm:"column:nama_kelompok"`
 	KategoriUsaha SitekadKategoriUsaha `gorm:"column:kategori_usaha"`
+	JenisUsaha    string               `gorm:"column:jenis_usaha"`
 	Komoditas     string               `gorm:"column:komoditas"`
 	JumlahAnggota int64                `gorm:"column:jumlah_anggota"`
 	DanaAlokasi   int64                `gorm:"column:dana_alokasi"`
@@ -88,6 +91,7 @@ func (s SitekadPotensiKampungEntity) ToSitekadPotensiKampung() SitekadPotensiKam
 		Kampung:       s.Kampung,
 		NamaKelompok:  s.NamaKelompok,
 		KategoriUsaha: s.KategoriUsaha,
+		JenisUsaha:    s.JenisUsaha,
 		Komoditas:     s.Komoditas,
 		JumlahAnggota: s.JumlahAnggota,
 		DanaAlokasi:   s.DanaAlokasi,

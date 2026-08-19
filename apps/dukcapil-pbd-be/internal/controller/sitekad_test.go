@@ -15,6 +15,7 @@ func TestValidateSitekadPayload(t *testing.T) {
 		Kampung:       "Rakam",
 		NamaKelompok:  "Kelompok Tani Rakam",
 		KategoriUsaha: model.SitekadKategoriPerikananDarat,
+		JenisUsaha:    "Budidaya ikan air tawar",
 		Komoditas:     "Budidaya Ikan Nila",
 		JumlahAnggota: 8,
 		DanaAlokasi:   100_000_000,
