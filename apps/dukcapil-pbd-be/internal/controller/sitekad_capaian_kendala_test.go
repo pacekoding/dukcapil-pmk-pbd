@@ -18,6 +18,7 @@ func TestValidateSitekadCapaianKendalaPayload(t *testing.T) {
 		DokumentasiURLs: []string{
 			"https://drive.google.com/example",
 			"https://example.com/foto.jpg",
+			"/api/backend/files/42/preview",
 		},
 	}
 
@@ -68,6 +69,12 @@ func TestValidateSitekadCapaianKendalaPayload(t *testing.T) {
 			name: "invalid documentation link",
 			mutate: func(payload *model.SitekadCapaianKendalaPayload) {
 				payload.DokumentasiURLs = []string{"javascript:alert(1)"}
+			},
+		},
+		{
+			name: "invalid relative documentation link",
+			mutate: func(payload *model.SitekadCapaianKendalaPayload) {
+				payload.DokumentasiURLs = []string{"/uploads/sitekad/foto.jpg"}
 			},
 		},
 	}

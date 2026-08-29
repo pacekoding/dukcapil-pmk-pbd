@@ -115,7 +115,7 @@ const appMenus: AppMenu[] = [
     status: "Pemeliharaan",
   },
   {
-    title: "SiTEKAD",
+    title: "SITeKAD",
     subtitle: "Sistem Informasi Tekad",
     description:
       "Sistem informasi untuk input dan pengelolaan data potensi kampung.",

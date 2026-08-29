@@ -87,7 +87,7 @@ export const dashboardMenus: DashboardMenuItem[] = [
     icon: "map",
   },
   {
-    title: "SiTEKAD",
+    title: "SITeKAD",
     href: "/sitekad/dashboard",
     icon: "listChecks",
   },

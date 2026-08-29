@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"dukcapil-pbd-be/internal/model"
@@ -11,6 +13,8 @@ import (
 	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
+
+var sitekadStoredFileURLPattern = regexp.MustCompile(`^/api/backend/files/([1-9]\d*)/(?:preview|download)(?:\?.*)?$`)
 
 func (r *SitekadRepository) ListCapaianKendala(ctx context.Context) (model.SitekadCapaianKendalaListResponse, error) {
 	db, err := r.session(ctx)
@@ -34,7 +38,7 @@ func (r *SitekadRepository) ListCapaianKendala(ctx context.Context) (model.Sitek
 	return model.SitekadCapaianKendalaListResponse{Items: items}, nil
 }
 
-func (r *SitekadRepository) CreateCapaianKendala(ctx context.Context, payload model.SitekadCapaianKendalaPayload) (model.SitekadCapaianKendala, bool, error) {
+func (r *SitekadRepository) CreateCapaianKendala(ctx context.Context, payload model.SitekadCapaianKendalaPayload, files ...model.StoredFileInput) (model.SitekadCapaianKendala, bool, error) {
 	db, err := r.session(ctx)
 	if err != nil {
 		return model.SitekadCapaianKendala{}, false, err
@@ -45,7 +49,22 @@ func (r *SitekadRepository) CreateCapaianKendala(ctx context.Context, payload mo
 		if err := tx.First(&model.SitekadPotensiKampungEntity{}, "id = ?", payload.KelompokID).Error; err != nil {
 			return err
 		}
-		return tx.Create(&record).Error
+		if err := tx.Create(&record).Error; err != nil {
+			return err
+		}
+		if len(files) == 0 {
+			return nil
+		}
+		documentationURLs := normalizeSitekadDocumentationURLs(payload.DokumentasiURLs)
+		for _, fileInput := range files {
+			file, err := createStoredFileRecord(tx, fileInput, record.ID)
+			if err != nil {
+				return err
+			}
+			documentationURLs = append(documentationURLs, finalizeStoredFile(file, false).PreviewURL)
+		}
+		record.DokumentasiURLs = pq.StringArray(normalizeSitekadDocumentationURLs(documentationURLs))
+		return tx.Model(&record).Update("dokumentasi_urls", record.DokumentasiURLs).Error
 	}); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return model.SitekadCapaianKendala{}, false, nil
@@ -61,19 +80,19 @@ func (r *SitekadRepository) CreateCapaianKendala(ctx context.Context, payload mo
 	return created.ToSitekadCapaianKendala(), true, nil
 }
 
-func (r *SitekadRepository) UpdateCapaianKendala(ctx context.Context, id int64, payload model.SitekadCapaianKendalaPayload) (model.SitekadCapaianKendala, bool, error) {
+func (r *SitekadRepository) UpdateCapaianKendala(ctx context.Context, id int64, payload model.SitekadCapaianKendalaPayload, files ...model.StoredFileInput) (model.SitekadCapaianKendala, bool, error) {
 	db, err := r.session(ctx)
 	if err != nil {
 		return model.SitekadCapaianKendala{}, false, err
 	}
 
+	documentationURLs := normalizeSitekadDocumentationURLs(payload.DokumentasiURLs)
 	updates := map[string]any{
 		"kelompok_id":       payload.KelompokID,
 		"nama_capaian":      strings.TrimSpace(payload.NamaCapaian),
 		"tahun_binaan":      strings.TrimSpace(payload.TahunBinaan),
 		"deskripsi_capaian": strings.TrimSpace(payload.DeskripsiCapaian),
 		"kendala_hambatan":  strings.TrimSpace(payload.KendalaHambatan),
-		"dokumentasi_urls":  pq.StringArray(normalizeSitekadDocumentationURLs(payload.DokumentasiURLs)),
 		"updated_at":        gorm.Expr("NOW()"),
 	}
 
@@ -82,14 +101,36 @@ func (r *SitekadRepository) UpdateCapaianKendala(ctx context.Context, id int64, 
 			return err
 		}
 
-		result := tx.Model(&model.SitekadCapaianKendalaEntity{}).
-			Where("id = ?", id).
-			Updates(updates)
-		if result.Error != nil {
-			return result.Error
+		var current model.SitekadCapaianKendalaEntity
+		if err := tx.First(&current, "id = ?", id).Error; err != nil {
+			return err
 		}
-		if result.RowsAffected == 0 {
-			return gorm.ErrRecordNotFound
+
+		for _, fileInput := range files {
+			file, err := createStoredFileRecord(tx, fileInput, id)
+			if err != nil {
+				return err
+			}
+			documentationURLs = append(documentationURLs, finalizeStoredFile(file, false).PreviewURL)
+		}
+		documentationURLs = normalizeSitekadDocumentationURLs(documentationURLs)
+		updates["dokumentasi_urls"] = pq.StringArray(documentationURLs)
+
+		if err := tx.Model(&model.SitekadCapaianKendalaEntity{}).
+			Where("id = ?", id).
+			Updates(updates).Error; err != nil {
+			return err
+		}
+
+		currentFileIDs := sitekadStoredFileIDs(current.DokumentasiURLs)
+		nextFileIDs := sitekadStoredFileIDs(documentationURLs)
+		for fileID := range currentFileIDs {
+			if _, keep := nextFileIDs[fileID]; keep {
+				continue
+			}
+			if err := softDeleteStoredFileRecord(tx, fileID); err != nil {
+				return err
+			}
 		}
 		return nil
 	}); err != nil {
@@ -112,12 +153,22 @@ func (r *SitekadRepository) DeleteCapaianKendala(ctx context.Context, id int64) 
 		return false, err
 	}
 
-	result := db.Delete(&model.SitekadCapaianKendalaEntity{}, "id = ?", id)
-	if result.Error != nil {
-		return false, fmt.Errorf("delete sitekad capaian kendala: %w", result.Error)
+	var deleted bool
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		if err := softDeleteStoredFilesForEntity(tx, "sitekad", "sitekad_capaian_kendala", id); err != nil {
+			return err
+		}
+		result := tx.Delete(&model.SitekadCapaianKendalaEntity{}, "id = ?", id)
+		if result.Error != nil {
+			return result.Error
+		}
+		deleted = result.RowsAffected > 0
+		return nil
+	}); err != nil {
+		return false, fmt.Errorf("delete sitekad capaian kendala: %w", err)
 	}
 
-	return result.RowsAffected > 0, nil
+	return deleted, nil
 }
 
 func (r *SitekadRepository) findCapaianKendala(ctx context.Context, db *gorm.DB, id int64) (model.SitekadCapaianKendalaEntity, bool, error) {
@@ -155,6 +206,22 @@ func normalizeSitekadDocumentationURLs(values []string) []string {
 		}
 		seen[value] = struct{}{}
 		result = append(result, value)
+	}
+	return result
+}
+
+func sitekadStoredFileIDs(values []string) map[int64]struct{} {
+	result := make(map[int64]struct{})
+	for _, value := range values {
+		matches := sitekadStoredFileURLPattern.FindStringSubmatch(strings.TrimSpace(value))
+		if len(matches) != 2 {
+			continue
+		}
+		id, err := strconv.ParseInt(matches[1], 10, 64)
+		if err != nil || id <= 0 {
+			continue
+		}
+		result[id] = struct{}{}
 	}
 	return result
 }

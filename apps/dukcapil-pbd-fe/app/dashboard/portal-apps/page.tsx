@@ -46,7 +46,7 @@ const portalApps = [
   },
   {
     accessKey: "sitekad",
-    title: "SiTEKAD",
+    title: "SITeKAD",
     subtitle: "Sistem Informasi Tekad",
   },
   {

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"dukcapil-pbd-be/internal/fileasset"
 	"dukcapil-pbd-be/internal/model"
 
 	"github.com/labstack/echo"
@@ -18,17 +19,22 @@ type SitekadStore interface {
 	Update(ctx context.Context, id int64, payload model.SitekadPotensiKampungPayload) (model.SitekadPotensiKampung, bool, error)
 	Delete(ctx context.Context, id int64) (bool, error)
 	ListCapaianKendala(ctx context.Context) (model.SitekadCapaianKendalaListResponse, error)
-	CreateCapaianKendala(ctx context.Context, payload model.SitekadCapaianKendalaPayload) (model.SitekadCapaianKendala, bool, error)
-	UpdateCapaianKendala(ctx context.Context, id int64, payload model.SitekadCapaianKendalaPayload) (model.SitekadCapaianKendala, bool, error)
+	CreateCapaianKendala(ctx context.Context, payload model.SitekadCapaianKendalaPayload, files ...model.StoredFileInput) (model.SitekadCapaianKendala, bool, error)
+	UpdateCapaianKendala(ctx context.Context, id int64, payload model.SitekadCapaianKendalaPayload, files ...model.StoredFileInput) (model.SitekadCapaianKendala, bool, error)
 	DeleteCapaianKendala(ctx context.Context, id int64) (bool, error)
 }
 
 type SitekadController struct {
 	sitekad SitekadStore
+	files   *fileasset.Service
 }
 
-func NewSitekadController(sitekad SitekadStore) *SitekadController {
-	return &SitekadController{sitekad: sitekad}
+func NewSitekadController(sitekad SitekadStore, files ...*fileasset.Service) *SitekadController {
+	var service *fileasset.Service
+	if len(files) > 0 {
+		service = files[0]
+	}
+	return &SitekadController{sitekad: sitekad, files: service}
 }
 
 func (s *SitekadController) List(c echo.Context) error {
@@ -43,7 +49,7 @@ func (s *SitekadController) List(c echo.Context) error {
 func (s *SitekadController) Options(c echo.Context) error {
 	response, err := s.sitekad.Options(c.Request().Context())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "opsi wilayah SiTEKAD gagal dimuat")
+		return echo.NewHTTPError(http.StatusInternalServerError, "opsi wilayah SITeKAD gagal dimuat")
 	}
 
 	return jsonData(c, http.StatusOK, response)

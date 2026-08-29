@@ -1,23 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   AlertTriangle,
-  CalendarDays,
   CheckCircle2,
   Edit,
+  Eye,
   ExternalLink,
   FileImage,
+  ImagePlus,
   MapPinned,
   Plus,
   Search,
   Trash2,
   Trophy,
   UsersRound,
+  X,
 } from "lucide-react";
 
 import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
+import { formatFileSize } from "@/components/dashboard/document-utils";
 import { PageHero } from "@/components/dashboard/page-hero";
 import { Pagination } from "@/components/dashboard/pagination";
 import { SectionCard } from "@/components/dashboard/section-card";
@@ -34,6 +45,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { withInlineBackendAssetDisposition } from "@/lib/api/assets";
+import {
+  DEFAULT_MAX_UPLOAD_SIZE_MB,
+  IMAGE_FILE_ACCEPT,
+  validateClientUpload,
+} from "@/lib/api/file-policy";
 import {
   createSitekadCapaianKendala,
   deleteSitekadCapaianKendala,
@@ -45,6 +62,7 @@ import {
   getCurrentTahunAnggaran,
   getTahunAnggaranOptions,
 } from "@/lib/tahun-anggaran";
+import { cn } from "@/lib/utils";
 import type {
   SitekadCapaianKendala,
   SitekadCapaianKendalaPayload,
@@ -52,7 +70,12 @@ import type {
 } from "@/types/sitekad";
 
 const PAGE_SIZE = 6;
-const MAX_DOCUMENTATION_LINKS = 3;
+const MAX_DOCUMENTATION_PHOTOS = 3;
+
+type SelectedDocumentationPhoto = {
+  file: File;
+  previewUrl: string;
+};
 
 type FormState = {
   kelompokId: number;
@@ -70,10 +93,7 @@ function initialFormState(): FormState {
     tahunBinaan: getCurrentTahunAnggaran(),
     deskripsiCapaian: "",
     kendalaHambatan: "",
-    dokumentasiUrls: Array.from(
-      { length: MAX_DOCUMENTATION_LINKS },
-      () => "",
-    ),
+    dokumentasiUrls: [],
   };
 }
 
@@ -93,6 +113,10 @@ export default function SitekadCapaianKendalaPage() {
   const [deleteTarget, setDeleteTarget] =
     useState<SitekadCapaianKendala | null>(null);
   const [form, setForm] = useState<FormState>(initialFormState);
+  const [documentationPhotos, setDocumentationPhotos] = useState<
+    SelectedDocumentationPhoto[]
+  >([]);
+  const documentationPhotosRef = useRef<SelectedDocumentationPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -131,6 +155,19 @@ export default function SitekadCapaianKendalaPage() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    documentationPhotosRef.current = documentationPhotos;
+  }, [documentationPhotos]);
+
+  useEffect(
+    () => () => {
+      documentationPhotosRef.current.forEach((photo) =>
+        URL.revokeObjectURL(photo.previewUrl),
+      );
+    },
+    [],
+  );
 
   const kabupatenOptions = useMemo(
     () =>
@@ -253,6 +290,13 @@ export default function SitekadCapaianKendalaPage() {
     [form.kelompokId, kelompok],
   );
 
+  const resetDocumentationPhotos = () => {
+    setDocumentationPhotos((current) => {
+      current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+      return [];
+    });
+  };
+
   const openCreateForm = () => {
     if (kelompok.length === 0) {
       setError("Tambahkan data kelompok binaan terlebih dahulu.");
@@ -262,6 +306,7 @@ export default function SitekadCapaianKendalaPage() {
 
     setEditingRecord(null);
     setForm({ ...initialFormState(), kelompokId: kelompok[0].id });
+    resetDocumentationPhotos();
     setError(null);
     setMessage(null);
     setFormOpen(true);
@@ -276,11 +321,9 @@ export default function SitekadCapaianKendalaPage() {
       tahunBinaan: record.tahunBinaan,
       deskripsiCapaian: record.deskripsiCapaian,
       kendalaHambatan: record.kendalaHambatan,
-      dokumentasiUrls: Array.from(
-        { length: MAX_DOCUMENTATION_LINKS },
-        (_, index) => record.dokumentasiUrls[index] ?? "",
-      ),
+      dokumentasiUrls: record.dokumentasiUrls,
     });
+    resetDocumentationPhotos();
     setError(null);
     setMessage(null);
     setFormOpen(true);
@@ -293,15 +336,73 @@ export default function SitekadCapaianKendalaPage() {
     setFormOpen(false);
     setEditingRecord(null);
     setForm(initialFormState());
+    resetDocumentationPhotos();
   };
 
-  const updateDocumentationURL = (index: number, value: string) => {
+  const handleDocumentationPhotoChange = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const selectedPhotos = Array.from(event.currentTarget.files ?? []);
+    event.currentTarget.value = "";
+
+    if (selectedPhotos.length === 0) {
+      return;
+    }
+
+    const remainingSlots =
+      MAX_DOCUMENTATION_PHOTOS -
+      form.dokumentasiUrls.length -
+      documentationPhotos.length;
+
+    if (remainingSlots <= 0) {
+      setMessage(null);
+      setError(`Dokumentasi maksimal ${MAX_DOCUMENTATION_PHOTOS} foto.`);
+      return;
+    }
+
+    try {
+      const photosToAdd = selectedPhotos.slice(0, remainingSlots);
+      photosToAdd.forEach((photo) => validateClientUpload(photo, "image"));
+      const selectedItems = photosToAdd.map((photo) => ({
+        file: photo,
+        previewUrl: URL.createObjectURL(photo),
+      }));
+
+      setDocumentationPhotos((current) => [...current, ...selectedItems]);
+      setError(null);
+      setMessage(
+        selectedPhotos.length > remainingSlots
+          ? `Sebagian foto tidak ditambahkan karena dokumentasi maksimal ${MAX_DOCUMENTATION_PHOTOS} foto.`
+          : null,
+      );
+    } catch (uploadError) {
+      setMessage(null);
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Foto dokumentasi gagal dipilih.",
+      );
+    }
+  };
+
+  const removeExistingDocumentation = (index: number) => {
     setForm((current) => ({
       ...current,
-      dokumentasiUrls: current.dokumentasiUrls.map((item, itemIndex) =>
-        itemIndex === index ? value : item,
+      dokumentasiUrls: current.dokumentasiUrls.filter(
+        (_value, itemIndex) => itemIndex !== index,
       ),
     }));
+  };
+
+  const removeSelectedDocumentationPhoto = (index: number) => {
+    setDocumentationPhotos((current) => {
+      const removedPhoto = current[index];
+      if (removedPhoto) {
+        URL.revokeObjectURL(removedPhoto.previewUrl);
+      }
+
+      return current.filter((_photo, itemIndex) => itemIndex !== index);
+    });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -310,6 +411,15 @@ export default function SitekadCapaianKendalaPage() {
     const dokumentasiUrls = Array.from(
       new Set(form.dokumentasiUrls.map((value) => value.trim()).filter(Boolean)),
     );
+    if (
+      dokumentasiUrls.length + documentationPhotos.length >
+      MAX_DOCUMENTATION_PHOTOS
+    ) {
+      setError(`Dokumentasi maksimal ${MAX_DOCUMENTATION_PHOTOS} foto.`);
+      setMessage(null);
+      return;
+    }
+
     const payload: SitekadCapaianKendalaPayload = {
       kelompokId: form.kelompokId,
       namaCapaian: form.namaCapaian.trim(),
@@ -317,6 +427,7 @@ export default function SitekadCapaianKendalaPage() {
       deskripsiCapaian: form.deskripsiCapaian.trim(),
       kendalaHambatan: form.kendalaHambatan.trim(),
       dokumentasiUrls,
+      documentationPhotos: documentationPhotos.map((photo) => photo.file),
     };
 
     if (
@@ -329,12 +440,6 @@ export default function SitekadCapaianKendalaPage() {
       setMessage(null);
       return;
     }
-    if (dokumentasiUrls.some((value) => !isValidHttpURL(value))) {
-      setError("Tautan dokumentasi harus berupa URL HTTP/HTTPS yang valid.");
-      setMessage(null);
-      return;
-    }
-
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -359,6 +464,7 @@ export default function SitekadCapaianKendalaPage() {
       setFormOpen(false);
       setEditingRecord(null);
       setForm(initialFormState());
+      resetDocumentationPhotos();
     } catch (submitError) {
       console.error(submitError);
       setError(
@@ -663,32 +769,13 @@ export default function SitekadCapaianKendalaPage() {
                 />
               </FormField>
 
-              <div className="space-y-3 border-t border-slate-200 pt-5">
-                <div>
-                  <p className="flex items-center gap-2 text-sm font-bold text-pbd-navy">
-                    <FileImage className="h-4 w-4 text-emerald-700" />
-                    Tautan Foto Dokumentasi / Google Drive
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Opsional, maksimal tiga tautan HTTP/HTTPS.
-                  </p>
-                </div>
-                <div className="grid gap-3 md:grid-cols-3">
-                  {form.dokumentasiUrls.map((value, index) => (
-                    <Input
-                      key={index}
-                      type="url"
-                      value={value}
-                      onChange={(event) =>
-                        updateDocumentationURL(index, event.target.value)
-                      }
-                      maxLength={2048}
-                      placeholder={`Tautan dokumentasi ${index + 1}`}
-                      aria-label={`Tautan dokumentasi ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
+              <DocumentationUploadSection
+                existingUrls={form.dokumentasiUrls}
+                selectedPhotos={documentationPhotos}
+                onAddPhotos={handleDocumentationPhotoChange}
+                onRemoveExisting={removeExistingDocumentation}
+                onRemoveSelected={removeSelectedDocumentationPhoto}
+              />
 
               {error && formOpen ? (
                 <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
@@ -795,6 +882,7 @@ function CapaianCard({
   onDelete: () => void;
 }) {
   const group = record.kelompok;
+  const coverImageUrl = firstDocumentationImageUrl(record.dokumentasiUrls);
 
   return (
     <article className="flex min-h-[430px] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
@@ -816,6 +904,26 @@ function CapaianCard({
           {record.namaCapaian}
         </h2>
       </div>
+
+      {coverImageUrl ? (
+        <button
+          type="button"
+          onClick={onDetail}
+          className="group relative block aspect-[16/9] w-full overflow-hidden bg-slate-100 text-left"
+          aria-label={`Lihat foto ${record.namaCapaian}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={coverImageUrl}
+            alt={`Foto dokumentasi ${record.namaCapaian}`}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+          <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-md bg-white/95 px-2.5 py-1 text-xs font-bold text-pbd-navy shadow-sm">
+            <Eye className="h-3.5 w-3.5" />
+            Lihat Foto
+          </span>
+        </button>
+      ) : null}
 
       <div className="flex flex-1 flex-col gap-4 p-5">
         <div className="border-b border-slate-100 pb-4">
@@ -891,27 +999,246 @@ function CapaianDetail({ record }: { record: SitekadCapaianKendala }) {
       <DetailField label="Kendala / Hambatan">
         {record.kendalaHambatan || "Tidak ada kendala yang dicatat."}
       </DetailField>
-      <DetailField label="Dokumentasi">
-        {record.dokumentasiUrls.length > 0 ? (
-          <div className="space-y-2">
-            {record.dokumentasiUrls.map((value, index) => (
-              <a
-                key={value}
-                href={value}
-                target="_blank"
-                rel="noreferrer"
-                className="flex min-w-0 items-center gap-2 text-pbd-blue hover:underline"
-              >
-                <ExternalLink className="h-4 w-4 shrink-0" />
-                <span className="truncate">Dokumentasi {index + 1}: {value}</span>
-              </a>
-            ))}
+      <section className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Dokumentasi Foto
+            </p>
+            <h3 className="mt-1 text-sm font-extrabold text-pbd-navy">
+              Foto Capaian & Kendala
+            </h3>
           </div>
-        ) : (
-          "Belum ada tautan dokumentasi."
-        )}
-      </DetailField>
+          <Badge
+            variant="outline"
+            className="w-fit border-emerald-200 bg-emerald-50 text-emerald-700"
+          >
+            {record.dokumentasiUrls.length} dokumentasi
+          </Badge>
+        </div>
+        <div className="mt-3">
+          <DocumentationList urls={record.dokumentasiUrls} />
+        </div>
+      </section>
     </div>
+  );
+}
+
+function DocumentationList({ urls }: { urls: string[] }) {
+  if (urls.length === 0) {
+    return (
+      <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500">
+        Belum ada foto dokumentasi.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {urls.map((value, index) => (
+        <DocumentationItem key={`${value}-${index}`} value={value} index={index} />
+      ))}
+    </div>
+  );
+}
+
+function DocumentationUploadSection({
+  existingUrls,
+  selectedPhotos,
+  onAddPhotos,
+  onRemoveExisting,
+  onRemoveSelected,
+}: {
+  existingUrls: string[];
+  selectedPhotos: SelectedDocumentationPhoto[];
+  onAddPhotos: (event: ChangeEvent<HTMLInputElement>) => void;
+  onRemoveExisting: (index: number) => void;
+  onRemoveSelected: (index: number) => void;
+}) {
+  const totalPhotos = existingUrls.length + selectedPhotos.length;
+  const isFull = totalPhotos >= MAX_DOCUMENTATION_PHOTOS;
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+            <FileImage className="h-5 w-5" />
+          </span>
+          <div>
+            <h3 className="text-sm font-extrabold text-pbd-navy">
+              Dokumentasi Foto
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Unggah foto kegiatan, produk, atau kondisi lapangan. Maksimal{" "}
+              {MAX_DOCUMENTATION_PHOTOS} foto, format JPG/PNG/WEBP, ukuran{" "}
+              {DEFAULT_MAX_UPLOAD_SIZE_MB} MB per foto.
+            </p>
+          </div>
+        </div>
+        <Badge
+          variant="outline"
+          className="w-fit border-emerald-200 bg-emerald-50 text-emerald-700"
+        >
+          {totalPhotos}/{MAX_DOCUMENTATION_PHOTOS} foto
+        </Badge>
+      </div>
+
+      <label
+        className={cn(
+          "mt-4 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-emerald-300 bg-emerald-50/60 px-4 py-5 text-center transition hover:border-emerald-500 hover:bg-emerald-50",
+          isFull && "cursor-not-allowed border-slate-200 bg-slate-50 opacity-70",
+        )}
+      >
+        <input
+          type="file"
+          className="sr-only"
+          accept={IMAGE_FILE_ACCEPT}
+          multiple
+          disabled={isFull}
+          onChange={onAddPhotos}
+        />
+        <ImagePlus className="h-8 w-8 text-emerald-700" />
+        <span className="mt-2 text-sm font-extrabold text-pbd-navy">
+          {isFull ? "Batas foto sudah penuh" : "Pilih Foto Dokumentasi"}
+        </span>
+        <span className="mt-1 text-xs font-medium text-slate-500">
+          {isFull
+            ? "Hapus salah satu foto jika ingin mengganti dokumentasi."
+            : "Bisa memilih beberapa foto sekaligus."}
+        </span>
+      </label>
+
+      {totalPhotos > 0 ? (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {existingUrls.map((url, index) => (
+            <DocumentationUploadPreview
+              key={`${url}-${index}`}
+              title={`Foto tersimpan ${index + 1}`}
+              meta="Sudah tersimpan"
+              imageUrl={documentationImageUrl(url)}
+              href={documentationHref(url)}
+              onRemove={() => onRemoveExisting(index)}
+            />
+          ))}
+          {selectedPhotos.map(({ file, previewUrl }, index) => (
+            <DocumentationUploadPreview
+              key={`${file.name}-${file.lastModified}-${index}`}
+              title={file.name}
+              meta={`Siap diunggah / ${formatFileSize(file.size)}`}
+              imageUrl={previewUrl}
+              onRemove={() => onRemoveSelected(index)}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
+          Belum ada foto dokumentasi untuk capaian ini.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function DocumentationUploadPreview({
+  title,
+  meta,
+  imageUrl,
+  href,
+  onRemove,
+}: {
+  title: string;
+  meta: string;
+  imageUrl: string;
+  href?: string;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="group relative overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="aspect-[4/3] overflow-hidden bg-slate-100">
+        {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageUrl}
+            alt={title}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-slate-400">
+            <ExternalLink className="h-8 w-8" />
+          </div>
+        )}
+      </div>
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className="absolute right-2 top-2 h-8 w-8 rounded-full bg-white/95 text-red-600 shadow-sm hover:bg-red-50 hover:text-red-700"
+        onClick={onRemove}
+        aria-label={`Hapus ${title}`}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+      <div className="min-w-0 px-3 py-2">
+        <p className="truncate text-xs font-extrabold text-pbd-navy">
+          {title}
+        </p>
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-flex max-w-full items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800"
+          >
+            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Buka dokumentasi</span>
+          </a>
+        ) : (
+          <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+            {meta}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DocumentationItem({ value, index }: { value: string; index: number }) {
+  const href = documentationHref(value);
+  const imageUrl = documentationImageUrl(value);
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="group min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white text-pbd-navy shadow-sm transition hover:border-emerald-300 hover:shadow-md"
+    >
+      {imageUrl ? (
+        <span className="block aspect-[4/3] overflow-hidden bg-slate-100">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt={`Dokumentasi ${index + 1}`}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+        </span>
+      ) : (
+        <span className="flex aspect-[4/3] items-center justify-center bg-slate-100 text-slate-400">
+          <ExternalLink className="h-8 w-8" />
+        </span>
+      )}
+      <span className="flex min-w-0 items-center gap-2 px-3 py-2 text-sm font-bold text-pbd-blue">
+        {imageUrl ? (
+          <Eye className="h-4 w-4 shrink-0" />
+        ) : (
+          <ExternalLink className="h-4 w-4 shrink-0" />
+        )}
+        <span className="truncate">
+          {imageUrl ? "Lihat Foto" : "Buka Tautan"} {index + 1}
+        </span>
+      </span>
+    </a>
   );
 }
 
@@ -998,10 +1325,41 @@ function FilterSelect({
   );
 }
 
-function isValidHttpURL(value: string) {
+function firstDocumentationImageUrl(values: string[]) {
+  for (const value of values) {
+    const imageUrl = documentationImageUrl(value);
+    if (imageUrl) {
+      return imageUrl;
+    }
+  }
+  return "";
+}
+
+function documentationHref(value: string) {
+  return withInlineBackendAssetDisposition(value.trim());
+}
+
+function documentationImageUrl(value: string) {
+  const href = documentationHref(value);
+  if (!href) {
+    return "";
+  }
+  if (isBackendFileReference(value) || hasImageExtension(href)) {
+    return href;
+  }
+  return "";
+}
+
+function isBackendFileReference(value: string) {
+  return /^\/api\/backend\/files\/[1-9]\d*\/(?:preview|download)(?:\?.*)?$/.test(
+    value.trim(),
+  );
+}
+
+function hasImageExtension(value: string) {
   try {
-    const parsed = new URL(value);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
+    const parsed = new URL(value, "http://sitekad.local");
+    return /\.(jpe?g|png|webp)$/i.test(parsed.pathname);
   } catch {
     return false;
   }

@@ -16,16 +16,24 @@ import {
 import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { SitekadVisualization } from "@/components/sitekad/dashboard/sitekad-visualization";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getSitekadPotensiKampung } from "@/lib/api/sitekad";
-import type { SitekadPotensiKampung } from "@/types/sitekad";
+import {
+  getSitekadCapaianKendala,
+  getSitekadPotensiKampung,
+} from "@/lib/api/sitekad";
+import type {
+  SitekadCapaianKendala,
+  SitekadPotensiKampung,
+} from "@/types/sitekad";
 
 const programTekadDescription =
   "Program Transformasi Ekonomi Kampung Terpadu (TEKAD) merupakan program kerja sama Kementerian Desa, Pembangunan Daerah Tertinggal dengan International Fund for Agricultural Development (IFAD) yang bertujuan memberdayakan masyarakat desa sehingga dapat berkontribusi pada transformasi perdesaan dan pertumbuhan inklusif di Indonesia Timur.";
 
 export default function SitekadDashboardPage() {
   const [records, setRecords] = useState<SitekadPotensiKampung[]>([]);
+  const [capaian, setCapaian] = useState<SitekadCapaianKendala[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -33,22 +41,37 @@ export default function SitekadDashboardPage() {
     let mounted = true;
 
     const loadData = async () => {
-      try {
-        const data = await getSitekadPotensiKampung();
-        if (mounted) {
-          setRecords(data.items);
-          setLoadError(false);
-        }
-      } catch (error) {
-        console.error(error);
-        if (mounted) {
-          setLoadError(true);
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+      const [kelompokResult, capaianResult] = await Promise.allSettled([
+        getSitekadPotensiKampung(),
+        getSitekadCapaianKendala(),
+      ]);
+
+      if (!mounted) {
+        return;
       }
+
+      if (kelompokResult.status === "rejected") {
+        console.error(kelompokResult.reason);
+      }
+      if (capaianResult.status === "rejected") {
+        console.error(capaianResult.reason);
+      }
+
+      setRecords(
+        kelompokResult.status === "fulfilled"
+          ? kelompokResult.value.items ?? []
+          : [],
+      );
+      setCapaian(
+        capaianResult.status === "fulfilled"
+          ? capaianResult.value.items ?? []
+          : [],
+      );
+      setLoadError(
+        kelompokResult.status === "rejected" ||
+          capaianResult.status === "rejected",
+      );
+      setLoading(false);
     };
 
     void loadData();
@@ -66,6 +89,9 @@ export default function SitekadDashboardPage() {
       (total, record) => total + record.danaAlokasi,
       0,
     );
+    const documentedGroups = new Set(
+      capaian.map((item) => item.kelompokId),
+    ).size;
 
     return [
       {
@@ -83,6 +109,15 @@ export default function SitekadDashboardPage() {
         tone: "blue" as const,
       },
       {
+        label: "Capaian Tercatat",
+        value: loading ? "..." : String(capaian.length),
+        description: documentedGroups
+          ? `${documentedGroups} kelompok terdokumentasi`
+          : "Belum ada capaian",
+        icon: Trophy,
+        tone: "amber" as const,
+      },
+      {
         label: "Kabupaten Lokus",
         value: loading ? "..." : String(kabupaten.length),
         description: kabupaten.length
@@ -92,7 +127,7 @@ export default function SitekadDashboardPage() {
         tone: "indigo" as const,
       },
     ];
-  }, [loading, records]);
+  }, [capaian, loading, records]);
 
   return (
     <main className="space-y-6">
@@ -106,7 +141,7 @@ export default function SitekadDashboardPage() {
             {loading
               ? "Memuat data kelompok..."
               : loadError
-                ? "Data kelompok belum tersedia"
+                ? "Sebagian data belum tersedia"
                 : `${records.length} kelompok binaan`}
           </Badge>
         }
@@ -157,7 +192,7 @@ export default function SitekadDashboardPage() {
         </SectionCard>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {dashboardStats.map((item) => (
           <StatCard
             key={item.label}
@@ -169,6 +204,13 @@ export default function SitekadDashboardPage() {
           />
         ))}
       </section>
+
+      <SitekadVisualization
+        records={records}
+        capaian={capaian}
+        loading={loading}
+        error={loadError}
+      />
 
       <SectionCard
         title="Pengelolaan Program TEKAD"

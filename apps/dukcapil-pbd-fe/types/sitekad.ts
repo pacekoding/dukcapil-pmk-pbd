@@ -89,6 +89,7 @@ export type SitekadCapaianKendalaPayload = {
   deskripsiCapaian: string;
   kendalaHambatan: string;
   dokumentasiUrls: string[];
+  documentationPhotos?: File[];
 };
 
 export type SitekadCapaianKendalaListResponse = {

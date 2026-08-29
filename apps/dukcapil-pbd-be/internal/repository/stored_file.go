@@ -292,6 +292,18 @@ func storedFileAccessAllowed(db *gorm.DB, file model.StoredFile, claims security
 			return false, fmt.Errorf("check employee photo access: %w", err)
 		}
 		return count > 0, nil
+	case "sitekad":
+		if file.RelatedEntityType != "sitekad_capaian_kendala" {
+			return false, nil
+		}
+		var count int64
+		err := db.Table("sitekad_capaian_kendala").
+			Where("id = ?", file.RelatedEntityID).
+			Count(&count).Error
+		if err != nil {
+			return false, fmt.Errorf("check SITEKAD file access: %w", err)
+		}
+		return count > 0, nil
 	default:
 		return false, nil
 	}

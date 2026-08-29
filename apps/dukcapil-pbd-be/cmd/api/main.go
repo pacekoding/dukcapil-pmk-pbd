@@ -98,7 +98,7 @@ func main() {
 		ArsipPegawai:    controller.NewArsipPegawaiController(arsipPegawaiRepo, fileService),
 		BumKampung:      controller.NewBumKampungController(bumKampungRepo),
 		Sikampung:       controller.NewSikampungController(sikampungRepo),
-		Sitekad:         controller.NewSitekadController(sitekadRepo),
+		Sitekad:         controller.NewSitekadController(sitekadRepo, fileService),
 		Aspirasiku:      controller.NewAspirasikuController(aspirasikuRepo),
 		MacekuPKK:       controller.NewMacekuPKKController(macekuPkkRepo, fileService),
 		OptimaInfo:      controller.NewOptimaInfoController(optimaInfoRepo, fileService),

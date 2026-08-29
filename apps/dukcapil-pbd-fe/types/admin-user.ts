@@ -20,7 +20,7 @@ export const systemAccessOptions = [
   },
   {
     value: "sitekad",
-    label: "SiTEKAD",
+    label: "SITeKAD",
   },
   {
     value: "aspirasiku",

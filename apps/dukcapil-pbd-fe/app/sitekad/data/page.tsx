@@ -11,6 +11,7 @@ import {
 import {
   Check,
   ChevronDown,
+  Download,
   Edit,
   Eye,
   Plus,
@@ -18,6 +19,7 @@ import {
   Trash2,
   UsersRound,
 } from "lucide-react";
+import { jsPDF } from "jspdf";
 
 import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { PageHero } from "@/components/dashboard/page-hero";
@@ -58,6 +60,13 @@ import type {
 import { sitekadKategoriUsahaOptions } from "@/types/sitekad";
 
 const PAGE_SIZE = 10;
+const SITEKAD_OFFICE_NAME =
+  "Dinas Kependudukan dan Pencatatan Sipil dan Pemberdayaan Masyarakat dan Kampung";
+const SITEKAD_PROVINCE_NAME = "Provinsi Papua Barat Daya";
+const SITEKAD_OFFICE_ADDRESS =
+  "Jl. Basuki Rahmat Km. 12, Kota Sorong, Papua Barat Daya";
+const SITEKAD_HEAD_NAME = "Nikolas Asmuruf, SE., MAP";
+const SITEKAD_HEAD_NIP = "196907172000121006";
 
 const initialFormState: SitekadPotensiKampungPayload = {
   kode: "",
@@ -94,6 +103,7 @@ export default function SitekadDataPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -372,6 +382,30 @@ export default function SitekadDataPage() {
     setDeleteTarget(record);
   };
 
+  const handleDownloadPdf = async () => {
+    if (records.length === 0) {
+      setMessage(null);
+      setError("Belum ada data kelompok binaan untuk diunduh.");
+      return;
+    }
+
+    setExportingPdf(true);
+    setMessage(null);
+    setError(null);
+    try {
+      const doc = await buildSitekadApprovalPdf(records);
+      const printedAt = new Date().toISOString().slice(0, 10);
+
+      doc.save(`lembar-pengesahan-kelompok-binaan-sitekad-${printedAt}.pdf`);
+      setMessage("Lembar pengesahan PDF berhasil dibuat.");
+    } catch (downloadError) {
+      console.error(downloadError);
+      setError("Lembar pengesahan PDF gagal dibuat. Coba ulangi kembali.");
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   return (
     <main className="space-y-6">
       <PageHero
@@ -385,14 +419,26 @@ export default function SitekadDataPage() {
           </Badge>
         }
         aside={
-          <Button
-            type="button"
-            className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            onClick={openCreateForm}
-          >
-            <Plus className="h-4 w-4" />
-            Tambah Data
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-xl border-pbd-navy/20 bg-white text-pbd-navy hover:bg-blue-50"
+              disabled={loading || exportingPdf || records.length === 0}
+              onClick={handleDownloadPdf}
+            >
+              <Download className="h-4 w-4" />
+              {exportingPdf ? "Membuat PDF..." : "Download PDF"}
+            </Button>
+            <Button
+              type="button"
+              className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              onClick={openCreateForm}
+            >
+              <Plus className="h-4 w-4" />
+              Tambah Data
+            </Button>
+          </div>
         }
       />
 
@@ -1179,4 +1225,562 @@ function formatCurrency(value: number) {
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+type PdfTextAlign = "left" | "center" | "right";
+
+type PdfTableColumn = {
+  header: string;
+  width: number;
+  align?: PdfTextAlign;
+  maxLines?: number;
+  value: (record: SitekadPotensiKampung, index: number) => string;
+};
+
+async function buildSitekadApprovalPdf(records: SitekadPotensiKampung[]) {
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4",
+  });
+  const logoDataUrl = await loadImageDataUrl("/logo-pbd.png");
+  const printedAt = new Date();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 12;
+  const tableBottom = pageHeight - 20;
+  const generatedCode = `SITEKAD/${formatDateForDocumentCode(printedAt)}`;
+  const totalMembers = records.reduce(
+    (total, record) => total + (Number(record.jumlahAnggota) || 0),
+    0,
+  );
+  const totalBudget = records.reduce(
+    (total, record) => total + (Number(record.danaAlokasi) || 0),
+    0,
+  );
+  const totalKabupaten = new Set(
+    records.map((record) => normalizeKabupatenName(record.kabupatenKota)),
+  ).size;
+  const columns: PdfTableColumn[] = [
+    {
+      header: "No.",
+      width: 8,
+      align: "center",
+      value: (_record, index) => String(index + 1),
+    },
+    {
+      header: "Kode",
+      width: 20,
+      maxLines: 2,
+      value: (record) => record.kode,
+    },
+    {
+      header: "Kabupaten",
+      width: 28,
+      maxLines: 2,
+      value: (record) => record.kabupatenKota,
+    },
+    {
+      header: "Distrik",
+      width: 25,
+      maxLines: 2,
+      value: (record) => record.distrik || "-",
+    },
+    {
+      header: "Kampung",
+      width: 25,
+      maxLines: 2,
+      value: (record) => record.kampung || "-",
+    },
+    {
+      header: "Nama Kelompok",
+      width: 34,
+      maxLines: 3,
+      value: (record) => record.namaKelompok || record.kode,
+    },
+    {
+      header: "Kategori",
+      width: 24,
+      maxLines: 2,
+      value: (record) => record.kategoriUsaha,
+    },
+    {
+      header: "Jenis Usaha",
+      width: 32,
+      maxLines: 3,
+      value: (record) => record.jenisUsaha || "-",
+    },
+    {
+      header: "Komoditas",
+      width: 30,
+      maxLines: 3,
+      value: (record) => record.komoditas || "-",
+    },
+    {
+      header: "Anggota",
+      width: 14,
+      align: "center",
+      value: (record) => String(record.jumlahAnggota || 0),
+    },
+    {
+      header: "Dana Alokasi",
+      width: 33,
+      align: "right",
+      maxLines: 2,
+      value: (record) => formatPdfCurrency(record.danaAlokasi),
+    },
+  ];
+
+  addPdfLetterhead(doc, logoDataUrl, margin, pageWidth);
+  let cursorY = addPdfDocumentIntro(doc, {
+    margin,
+    pageWidth,
+    printedAt,
+    generatedCode,
+    totalGroups: records.length,
+    totalKabupaten,
+    totalMembers,
+    totalBudget,
+  });
+  cursorY = addPdfTableHeader(doc, columns, margin, cursorY + 5);
+
+  records.forEach((record, index) => {
+    const row = preparePdfRow(doc, columns, record, index);
+    const rowHeight = getPdfRowHeight(row);
+
+    if (cursorY + rowHeight > tableBottom) {
+      doc.addPage("a4", "landscape");
+      addPdfCompactHeader(doc, margin, pageWidth, printedAt);
+      cursorY = addPdfTableHeader(doc, columns, margin, 31);
+    }
+
+    drawPdfTableRow(doc, columns, row, margin, cursorY, rowHeight);
+    cursorY += rowHeight;
+  });
+
+  addPdfSignatureBlock(doc, {
+    margin,
+    pageWidth,
+    pageHeight,
+    cursorY,
+    printedAt,
+  });
+  addPdfFooters(doc, margin, pageWidth, pageHeight, printedAt);
+
+  return doc;
+}
+
+async function loadImageDataUrl(src: string) {
+  try {
+    const response = await fetch(src);
+    if (!response.ok) {
+      return null;
+    }
+
+    const blob = await response.blob();
+
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  } catch (loadError) {
+    console.error(loadError);
+    return null;
+  }
+}
+
+function addPdfLetterhead(
+  doc: jsPDF,
+  logoDataUrl: string | null,
+  margin: number,
+  pageWidth: number,
+) {
+  const logoSize = 20;
+
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, "PNG", margin, 10, logoSize, logoSize);
+  }
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("PEMERINTAH PROVINSI PAPUA BARAT DAYA", pageWidth / 2, 13, {
+    align: "center",
+  });
+  doc.setFontSize(13);
+  doc.text(SITEKAD_OFFICE_NAME.toUpperCase(), pageWidth / 2, 19, {
+    align: "center",
+  });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text(SITEKAD_OFFICE_ADDRESS, pageWidth / 2, 25, {
+    align: "center",
+  });
+  doc.text("Kota Sorong, Papua Barat Daya", pageWidth / 2, 29, {
+    align: "center",
+  });
+
+  doc.setDrawColor(15, 23, 42);
+  doc.setLineWidth(0.5);
+  doc.line(margin, 33, pageWidth - margin, 33);
+  doc.setLineWidth(0.15);
+  doc.line(margin, 34.5, pageWidth - margin, 34.5);
+}
+
+function addPdfDocumentIntro(
+  doc: jsPDF,
+  {
+    margin,
+    pageWidth,
+    printedAt,
+    generatedCode,
+    totalGroups,
+    totalKabupaten,
+    totalMembers,
+    totalBudget,
+  }: {
+    margin: number;
+    pageWidth: number;
+    printedAt: Date;
+    generatedCode: string;
+    totalGroups: number;
+    totalKabupaten: number;
+    totalMembers: number;
+    totalBudget: number;
+  },
+) {
+  let cursorY = 42;
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("LEMBAR PENGESAHAN", pageWidth / 2, cursorY, {
+    align: "center",
+  });
+  cursorY += 6;
+  doc.setFontSize(10);
+  doc.text(
+    "DAFTAR KELOMPOK BINAAN PROGRAM TRANSFORMASI EKONOMI KAMPUNG TERPADU (TEKAD)",
+    pageWidth / 2,
+    cursorY,
+    { align: "center" },
+  );
+  cursorY += 7;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text(
+    "Dokumen ini merupakan lembar pengesahan daftar kelompok binaan yang tercatat dalam SITEKAD sampai dengan tanggal cetak.",
+    pageWidth / 2,
+    cursorY,
+    { align: "center" },
+  );
+  cursorY += 8;
+
+  const leftX = margin;
+  const rightX = pageWidth / 2 + 8;
+  const labelWidth = 31;
+  const rows = [
+    ["Nomor Dokumen", generatedCode, "Tanggal Cetak", formatLongDate(printedAt)],
+    [
+      "Unit Kerja",
+      SITEKAD_OFFICE_NAME,
+      "Tahun Anggaran",
+      String(printedAt.getFullYear()),
+    ],
+    [
+      "Wilayah",
+      SITEKAD_PROVINCE_NAME,
+      "Sumber Data",
+      "Sistem Informasi TEKAD (SITEKAD)",
+    ],
+  ];
+
+  rows.forEach(([leftLabel, leftValue, rightLabel, rightValue]) => {
+    drawPdfMetadataRow(doc, leftX, cursorY, labelWidth, leftLabel, leftValue);
+    drawPdfMetadataRow(doc, rightX, cursorY, labelWidth, rightLabel, rightValue);
+    cursorY += 5;
+  });
+
+  cursorY += 2;
+  const summaryCardWidth = (pageWidth - margin * 2 - 9) / 4;
+  const summaryCards = [
+    ["Total Kelompok", `${totalGroups} kelompok`],
+    ["Kabupaten/Kota", `${totalKabupaten} wilayah`],
+    ["Total Anggota", `${totalMembers} orang`],
+    ["Total Dana", formatPdfCurrency(totalBudget)],
+  ];
+
+  summaryCards.forEach(([label, value], index) => {
+    const x = margin + index * (summaryCardWidth + 3);
+    doc.setFillColor(241, 245, 249);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(x, cursorY, summaryCardWidth, 15, 1.5, 1.5, "FD");
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.setFontSize(6.8);
+    doc.text(label, x + 3, cursorY + 5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(index === 3 ? 8 : 9);
+    doc.text(value, x + 3, cursorY + 11);
+  });
+
+  return cursorY + 17;
+}
+
+function drawPdfMetadataRow(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  labelWidth: number,
+  label: string,
+  value: string,
+) {
+  doc.setFontSize(7.3);
+  doc.setTextColor(71, 85, 105);
+  doc.setFont("helvetica", "bold");
+  doc.text(label, x, y);
+  doc.text(":", x + labelWidth, y);
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "normal");
+  doc.text(value, x + labelWidth + 3, y, {
+    maxWidth: 86,
+  });
+}
+
+function addPdfCompactHeader(
+  doc: jsPDF,
+  margin: number,
+  pageWidth: number,
+  printedAt: Date,
+) {
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text(SITEKAD_OFFICE_NAME.toUpperCase(), margin, 14);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.text(
+    `Lanjutan daftar kelompok binaan SITEKAD | Dicetak ${formatLongDate(printedAt)}`,
+    margin,
+    19,
+  );
+  doc.setDrawColor(203, 213, 225);
+  doc.line(margin, 23, pageWidth - margin, 23);
+}
+
+function addPdfTableHeader(
+  doc: jsPDF,
+  columns: PdfTableColumn[],
+  startX: number,
+  startY: number,
+) {
+  let cursorX = startX;
+  const headerHeight = 9;
+
+  doc.setFillColor(15, 23, 42);
+  doc.setDrawColor(51, 65, 85);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.6);
+
+  columns.forEach((column) => {
+    doc.rect(cursorX, startY, column.width, headerHeight, "FD");
+    doc.text(column.header, cursorX + column.width / 2, startY + 5.8, {
+      align: "center",
+      maxWidth: column.width - 2,
+    });
+    cursorX += column.width;
+  });
+
+  return startY + headerHeight;
+}
+
+function preparePdfRow(
+  doc: jsPDF,
+  columns: PdfTableColumn[],
+  record: SitekadPotensiKampung,
+  index: number,
+) {
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.4);
+
+  return columns.map((column) => ({
+    align: column.align ?? "left",
+    lines: fitPdfTextLines(
+      doc,
+      column.value(record, index),
+      column.width - 2,
+      column.maxLines ?? 2,
+    ),
+  }));
+}
+
+function getPdfRowHeight(
+  row: Array<{ lines: string[]; align: PdfTextAlign }>,
+) {
+  const maxLineCount = Math.max(...row.map((cell) => cell.lines.length));
+  return Math.max(8, maxLineCount * 3.3 + 3);
+}
+
+function drawPdfTableRow(
+  doc: jsPDF,
+  columns: PdfTableColumn[],
+  row: Array<{ lines: string[]; align: PdfTextAlign }>,
+  startX: number,
+  startY: number,
+  rowHeight: number,
+) {
+  let cursorX = startX;
+
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.1);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.4);
+  doc.setTextColor(30, 41, 59);
+
+  row.forEach((cell, index) => {
+    const column = columns[index];
+    doc.rect(cursorX, startY, column.width, rowHeight);
+
+    const textX =
+      cell.align === "right"
+        ? cursorX + column.width - 1.5
+        : cell.align === "center"
+          ? cursorX + column.width / 2
+          : cursorX + 1.5;
+
+    doc.text(cell.lines, textX, startY + 4, {
+      align: cell.align,
+      baseline: "top",
+      maxWidth: column.width - 3,
+    });
+    cursorX += column.width;
+  });
+}
+
+function addPdfSignatureBlock(
+  doc: jsPDF,
+  {
+    margin,
+    pageWidth,
+    pageHeight,
+    cursorY,
+    printedAt,
+  }: {
+    margin: number;
+    pageWidth: number;
+    pageHeight: number;
+    cursorY: number;
+    printedAt: Date;
+  },
+) {
+  let signatureY = cursorY + 11;
+
+  if (signatureY + 58 > pageHeight - 13) {
+    doc.addPage("a4", "landscape");
+    addPdfCompactHeader(doc, margin, pageWidth, printedAt);
+    signatureY = 38;
+  }
+
+  const signatureX = pageWidth - margin - 82;
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text("Disahkan di Sorong", signatureX, signatureY);
+  doc.text(`Pada tanggal ${formatLongDate(printedAt)}`, signatureX, signatureY + 5);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("KEPALA DINAS KEPENDUDUKAN DAN PENCATATAN SIPIL", signatureX, signatureY + 14);
+  doc.text(
+    "DAN PEMBERDAYAAN MASYARAKAT DAN KAMPUNG",
+    signatureX,
+    signatureY + 19,
+  );
+  doc.text(SITEKAD_PROVINCE_NAME.toUpperCase(), signatureX, signatureY + 24);
+
+  doc.setFontSize(8.5);
+  doc.text(SITEKAD_HEAD_NAME.toUpperCase(), signatureX, signatureY + 47);
+  doc.setLineWidth(0.2);
+  doc.setDrawColor(15, 23, 42);
+  doc.line(signatureX, signatureY + 49, signatureX + 76, signatureY + 49);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.text(`NIP. ${SITEKAD_HEAD_NIP}`, signatureX, signatureY + 54);
+}
+
+function addPdfFooters(
+  doc: jsPDF,
+  margin: number,
+  pageWidth: number,
+  pageHeight: number,
+  printedAt: Date,
+) {
+  const pageCount = doc.getNumberOfPages();
+
+  for (let page = 1; page <= pageCount; page += 1) {
+    doc.setPage(page);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, pageHeight - 13, pageWidth - margin, pageHeight - 13);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(
+      `Dokumen dicetak dari SITEKAD pada ${formatLongDate(printedAt)} dan berlaku sebagai arsip pengesahan data binaan.`,
+      margin,
+      pageHeight - 8,
+    );
+    doc.text(`Halaman ${page} dari ${pageCount}`, pageWidth - margin, pageHeight - 8, {
+      align: "right",
+    });
+  }
+}
+
+function fitPdfTextLines(
+  doc: jsPDF,
+  value: string,
+  maxWidth: number,
+  maxLines: number,
+) {
+  const normalizedValue = value?.trim() || "-";
+  const lines = doc.splitTextToSize(normalizedValue, maxWidth) as string[];
+
+  if (lines.length <= maxLines) {
+    return lines;
+  }
+
+  const visibleLines = lines.slice(0, maxLines);
+  const lastLine = visibleLines[maxLines - 1] ?? "";
+  visibleLines[maxLines - 1] =
+    lastLine.length > 3 ? `${lastLine.slice(0, -3)}...` : `${lastLine}...`;
+
+  return visibleLines;
+}
+
+function formatPdfCurrency(value: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
+}
+
+function formatLongDate(value: Date) {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(value);
+}
+
+function formatDateForDocumentCode(value: Date) {
+  const date = String(value.getDate()).padStart(2, "0");
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const year = value.getFullYear();
+
+  return `${year}/${month}/${date}`;
 }
