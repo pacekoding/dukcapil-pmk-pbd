@@ -27,7 +27,6 @@ import { SectionHeader } from "@/components/website/section-header";
 import { getWebsiteDataWilayah } from "@/lib/api/data-wilayah";
 import { getWebsiteHome, getWebsiteProfile } from "@/lib/api/website";
 import {
-  defaultRegionData,
   formatNumber,
   getProvinceTotals,
 } from "@/lib/data-wilayah";
@@ -62,8 +61,8 @@ const services = [
 export default function HomePage() {
   const [home, setHome] = useState<WebsiteHomeResponse | null>(null);
   const [profile, setProfile] = useState<WebsiteProfileResponse | null>(null);
-  const [regions, setRegions] = useState<RegionData[]>(defaultRegionData);
-  const [wilayahSummaryYear, setWilayahSummaryYear] = useState("2026");
+  const [regions, setRegions] = useState<RegionData[]>([]);
+  const [wilayahSummaryYear, setWilayahSummaryYear] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -111,7 +110,11 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <HeroSection home={home} />
-      <DataSection totals={totals} tahunAnggaran={wilayahSummaryYear} />
+      <DataSection
+        totals={totals}
+        tahunAnggaran={wilayahSummaryYear}
+        hasData={regions.length > 0}
+      />
       <ServicesSection highlights={home?.highlights ?? []} />
       <ContactSection contacts={profile?.contacts ?? []} />
     </div>
@@ -172,32 +175,34 @@ function HeroSection({ home }: { home: WebsiteHomeResponse | null }) {
 function DataSection({
   totals,
   tahunAnggaran,
+  hasData,
 }: {
   totals: ReturnType<typeof getProvinceTotals>;
   tahunAnggaran: string;
+  hasData: boolean;
 }) {
   const stats = [
     {
       label: "Total Penduduk",
-      value: `${formatNumber(totals.totalJiwa)} Orang`,
+      value: hasData ? `${formatNumber(totals.totalJiwa)} Orang` : "—",
       description: "Akumulasi data kabupaten/kota.",
       icon: Users,
     },
     {
       label: "Total OAP",
-      value: `${formatNumber(totals.totalOap)} Orang`,
+      value: hasData ? `${formatNumber(totals.totalOap)} Orang` : "—",
       description: "Orang Asli Papua dalam data wilayah.",
       icon: ShieldCheck,
     },
     {
       label: "KTP-EL",
-      value: formatNumber(totals.totalKtpEl),
+      value: hasData ? formatNumber(totals.totalKtpEl) : "—",
       description: "Pencetakan KTP elektronik tercatat.",
       icon: Fingerprint,
     },
     {
       label: "Desa IDM",
-      value: formatNumber(totals.totalDesaIdm),
+      value: hasData ? formatNumber(totals.totalDesaIdm) : "—",
       description: "Desa/kampung pada data IDM.",
       icon: Database,
     },
@@ -209,7 +214,7 @@ function DataSection({
         <SectionHeader
           eyebrow="Data Wilayah"
           title="Ringkasan data Papua Barat Daya"
-          description={`Data utama tahun ${tahunAnggaran} ditampilkan sebagai gambaran awal. Detail per kabupaten/kota tersedia pada halaman Data Wilayah.`}
+          description={`Data utama tahun ${tahunAnggaran || "terbaru"} ditampilkan sebagai gambaran awal. Detail per kabupaten/kota tersedia pada halaman Data Wilayah.`}
           action={
             <Button asChild variant="outline">
               <Link href="/data-wilayah">

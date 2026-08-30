@@ -46,7 +46,6 @@ import {
   getWebsiteDataWilayahSettings,
 } from "@/lib/api/data-wilayah";
 import {
-  defaultRegionData,
   formatArea,
   formatNumber,
   getProvinceTotals,
@@ -261,10 +260,11 @@ const updateUrlState = ({
 };
 
 export default function DataWilayahPage() {
-  const [regions, setRegions] = useState<RegionData[]>(defaultRegionData);
+  const [regions, setRegions] = useState<RegionData[]>([]);
   const [tahunAnggaran, setTahunAnggaran] = useState("");
   const [tahunAnggaranOptions, setTahunAnggaranOptions] = useState<string[]>([]);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [hoveredRegionId, setHoveredRegionId] = useState<string | null>(null);
@@ -331,6 +331,7 @@ export default function DataWilayahPage() {
       } catch (error) {
         console.error(error);
         if (mounted) {
+          setDataLoading(false);
           setDataError("Pengaturan periode data gagal dimuat.");
         }
       }
@@ -351,6 +352,7 @@ export default function DataWilayahPage() {
     let mounted = true;
 
     const loadDataWilayah = async () => {
+      setDataLoading(true);
       try {
         const data = await getWebsiteDataWilayahByYear(tahunAnggaran);
         if (!mounted) {
@@ -358,25 +360,28 @@ export default function DataWilayahPage() {
         }
 
         setUpdatedAt(data.updatedAt ?? null);
-        if (data.regions.length > 0) {
-          setRegions(data.regions);
-          setSelectedRegionId((currentRegionId) => {
-            if (!currentRegionId) {
-              return null;
-            }
-            const currentRegionExists = data.regions.some(
-              (region) => region.id === currentRegionId,
-            );
-            return currentRegionExists ? currentRegionId : null;
-          });
-          setTahunAnggaran(data.tahunAnggaran);
-          setDataError(null);
-        }
+        setRegions(data.regions);
+        setSelectedRegionId((currentRegionId) => {
+          if (!currentRegionId) {
+            return null;
+          }
+          const currentRegionExists = data.regions.some(
+            (region) => region.id === currentRegionId,
+          );
+          return currentRegionExists ? currentRegionId : null;
+        });
+        setTahunAnggaran(data.tahunAnggaran);
+        setDataError(null);
       } catch (error) {
         console.error(error);
         if (mounted) {
           setUpdatedAt(null);
+          setRegions([]);
           setDataError("Data wilayah gagal dimuat.");
+        }
+      } finally {
+        if (mounted) {
+          setDataLoading(false);
         }
       }
     };
@@ -451,6 +456,7 @@ export default function DataWilayahPage() {
         <ProvinceMetrics
           totals={totals}
           bumdesAvailable={regions.some((region) => getTotalBumdes(region.bumdes) > 0)}
+          loading={dataLoading}
         />
 
         {!selectedRegionExists ? (
@@ -589,41 +595,43 @@ function DataWilayahHeader({
 function ProvinceMetrics({
   totals,
   bumdesAvailable,
+  loading,
 }: {
   totals: ReturnType<typeof getProvinceTotals>;
   bumdesAvailable: boolean;
+  loading: boolean;
 }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       <MetricCard
         icon={Users}
         label="Total Penduduk"
-        value={`${formatNumber(totals.totalJiwa)} jiwa`}
+        value={loading ? "..." : `${formatNumber(totals.totalJiwa)} jiwa`}
         sourceLabel="Dukcapil"
         emphasis
       />
       <MetricCard
         icon={ShieldCheck}
         label="Penduduk OAP"
-        value={`${formatNumber(totals.totalOap)} jiwa`}
+        value={loading ? "..." : `${formatNumber(totals.totalOap)} jiwa`}
         sourceLabel="Dukcapil"
       />
       <MetricCard
         icon={Fingerprint}
         label="Cetak KTP-el"
-        value={formatNumber(totals.totalKtpEl)}
+        value={loading ? "..." : formatNumber(totals.totalKtpEl)}
         sourceLabel="Dukcapil"
       />
       <MetricCard
         icon={Home}
         label="Desa/Kampung IDM"
-        value={`${formatNumber(totals.totalDesaIdm)} kampung`}
+        value={loading ? "..." : `${formatNumber(totals.totalDesaIdm)} kampung`}
         sourceLabel="PMK"
       />
       <MetricCard
         icon={Building2}
         label="BUMDes/BUMKam"
-        value={bumdesAvailable ? formatNumber(totals.totalBumdes) : null}
+        value={loading ? "..." : bumdesAvailable ? formatNumber(totals.totalBumdes) : null}
         sourceLabel="PMK"
       />
     </div>

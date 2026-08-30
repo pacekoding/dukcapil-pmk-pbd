@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
-  FileText,
   Sparkles,
 } from "lucide-react";
 
