@@ -69,20 +69,13 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	dataWilayahRepo := repository.NewDataWilayahRepository(db)
-	ssdRepo := repository.NewSSDRepository(db)
-	subkegiatanRepo := repository.NewSubkegiatanRepository(db)
-	pelaksanaanDocumentRepo := repository.NewPelaksanaanDocumentRepository(db)
 	arsipPegawaiRepo := repository.NewArsipPegawaiRepository(db)
 	bumKampungRepo := repository.NewBumKampungRepository(db)
 	sikampungRepo := repository.NewSikampungRepository(db)
 	sitekadRepo := repository.NewSitekadRepository(db)
-	aspirasikuRepo := repository.NewAspirasikuRepository(db)
-	macekuPkkRepo := repository.NewMacekuPKKRepository(db)
-	optimaInfoRepo := repository.NewOptimaInfoRepository(db)
 	storedFileRepo := repository.NewStoredFileRepository(db)
 	kabKotaRepo := repository.NewKabKotaRepository(db)
 	portalAppRepo := repository.NewPortalAppRepository(db)
-	outgoingLetterRepo := repository.NewOutgoingLetterRepository(db)
 	tokenManager := security.NewManager(env("JWT_SECRET", "dev-secret-change-me"), 24*time.Hour)
 	authMiddleware := authmiddleware.NewAuthMiddleware(tokenManager)
 
@@ -92,22 +85,15 @@ func main() {
 		Health:          controller.NewHealthController(db),
 		Auth:            controller.NewAuthController(userRepo, tokenManager),
 		DataWilayah:     controller.NewDataWilayahController(dataWilayahRepo),
-		SSD:             controller.NewSSDController(ssdRepo),
-		Subkegiatan:     controller.NewSubkegiatanController(subkegiatanRepo),
-		Documents:       controller.NewPelaksanaanDocumentController(pelaksanaanDocumentRepo, fileService),
 		ArsipPegawai:    controller.NewArsipPegawaiController(arsipPegawaiRepo, fileService),
 		BumKampung:      controller.NewBumKampungController(bumKampungRepo),
 		Sikampung:       controller.NewSikampungController(sikampungRepo),
 		Sitekad:         controller.NewSitekadController(sitekadRepo, fileService),
-		Aspirasiku:      controller.NewAspirasikuController(aspirasikuRepo),
-		MacekuPKK:       controller.NewMacekuPKKController(macekuPkkRepo, fileService),
-		OptimaInfo:      controller.NewOptimaInfoController(optimaInfoRepo, fileService),
 		StoredFiles:     controller.NewStoredFileController(storedFileRepo, storageService),
 		KabKota:         controller.NewKabKotaController(kabKotaRepo),
 		Users:           controller.NewUserController(userRepo),
 		Website:         controller.NewWebsiteController(),
 		PortalApps:      controller.NewPortalAppController(portalAppRepo),
-		OutgoingLetters: controller.NewOutgoingLetterController(outgoingLetterRepo),
 		AuthMiddleware:  authMiddleware,
 	})
 

@@ -14,7 +14,6 @@ Mencakup cara memahami project, menjalankan service, aturan perubahan, checks wa
 - Untuk UI, ikuti `/docs/01_UI_UX_RULES_SHADCN.md`.
 - Untuk backend Go Echo, ikuti `/docs/02_GO_ECHO_PERFORMANCE_BEST_PRACTICES.md`.
 - Untuk perubahan schema, selalu cek `/docs/05_DATABASE_DESIGN_POSTGRESQL.md`.
-- Jangan menghidupkan kembali route/page `realisasi-subkegiatan`; sistem dokumen berdiri sendiri pada arsip dokumen.
 
 ## Local Development
 
@@ -63,19 +62,12 @@ npm run build
 
 ## Implementation Examples
 
-Upload dokumen dari frontend harus memakai `FormData`, bukan JSON base64:
+Upload file dari frontend harus memakai `FormData`, bukan JSON base64:
 
 ```ts
 const formData = new FormData();
 formData.append("file", file);
-formData.append("subkegiatan_id", String(subkegiatanId));
-formData.append("is_dokumen_sdd", String(isDokumenDssd));
-```
-
-Route arsip dokumen harus tetap menjadi entry point utama:
-
-```txt
-/dashboard/arsip-dokumen-realisasi
+formData.append("category", category);
 ```
 
 ## Migration Notes

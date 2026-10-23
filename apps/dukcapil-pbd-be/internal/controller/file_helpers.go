@@ -2,8 +2,10 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"mime"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -52,7 +54,6 @@ func serveManagedStoredFile(
 	mimeType string,
 	originalName string,
 	disposition string,
-	public bool,
 ) error {
 	if files == nil || files.Storage() == nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "storage file belum dikonfigurasi")
@@ -88,17 +89,50 @@ func serveManagedStoredFile(
 	response.Header().Set(echo.HeaderContentDisposition, documentContentDisposition(disposition, originalName))
 	response.Header().Set("X-Content-Type-Options", "nosniff")
 	response.Header().Set("Accept-Ranges", "bytes")
-	if public {
-		response.Header().Set("Cache-Control", "public, max-age=0, must-revalidate")
-	} else {
-		response.Header().Set("Cache-Control", "private, no-store")
-	}
+	response.Header().Set("Cache-Control", "private, no-store")
 	modified := metadata.Modified
 	if modified.IsZero() {
 		modified = time.Unix(0, 0)
 	}
 	http.ServeContent(response, c.Request(), originalName, modified, reader)
 	return nil
+}
+
+func documentContentDisposition(disposition string, fileName string) string {
+	safeName := fileasset.SanitizeFilename(fileName)
+	asciiName := strings.Map(func(character rune) rune {
+		switch {
+		case character == '"' || character == '\\':
+			return -1
+		case character >= 0x20 && character <= 0x7e:
+			return character
+		default:
+			return '_'
+		}
+	}, safeName)
+	if strings.TrimSpace(asciiName) == "" {
+		asciiName = "file"
+	}
+	encodedName := strings.ReplaceAll(url.PathEscape(safeName), "+", "%20")
+	return fmt.Sprintf(
+		`%s; filename="%s"; filename*=UTF-8''%s`,
+		disposition,
+		asciiName,
+		encodedName,
+	)
+}
+
+func documentRequestDisposition(c echo.Context, fallback string) string {
+	switch strings.ToLower(strings.TrimSpace(c.QueryParam("disposition"))) {
+	case "inline":
+		return "inline"
+	case "attachment":
+		return "attachment"
+	}
+	if strings.TrimSpace(fallback) == "" {
+		return "attachment"
+	}
+	return fallback
 }
 
 func normalizeManagedStorageKey(value string) (string, error) {

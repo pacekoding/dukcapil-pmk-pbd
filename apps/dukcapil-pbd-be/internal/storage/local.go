@@ -63,7 +63,7 @@ func (l *Local) Save(ctx context.Context, request SaveRequest) (Object, error) {
 	}
 
 	visibility, err := normalizeSegment(request.Visibility)
-	if err != nil || (visibility != "public" && visibility != "private") {
+	if err != nil || visibility != "private" {
 		return Object{}, ErrInvalidKey
 	}
 	module, err := normalizeSegment(request.Module)

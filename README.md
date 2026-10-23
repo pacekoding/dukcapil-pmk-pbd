@@ -110,13 +110,9 @@ Endpoint file baru menggunakan ID metadata:
 ```txt
 GET /api/backend/files/{file_id}/preview
 GET /api/backend/files/{file_id}/download
-GET /api/backend/website/files/{file_id}/preview
-GET /api/backend/website/files/{file_id}/download
 ```
 
-Endpoint tanpa `/website` memerlukan login dan pemeriksaan scope. Endpoint
-website hanya dapat membuka file OPTIMA yang metadata-nya public dan artikel
-induknya sedang Published dalam periode tayang.
+Endpoint file memerlukan login dan pemeriksaan hak akses.
 
 Panduan arsitektur, migrasi volume lama, backup, dan restore tersedia di
 [`docs/02_FILE_UPLOAD_STORAGE_RULES.md`](docs/02_FILE_UPLOAD_STORAGE_RULES.md).

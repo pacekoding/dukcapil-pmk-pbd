@@ -21,83 +21,16 @@ export default function proxy(
   const pathname =
     request.nextUrl.pathname;
 
-  const isPortal =
-    pathname === "/portal";
-
-  const isPortalTypo =
-    pathname === "/protal";
-
-  const isDashboard =
-    pathname === "/dashboard";
-
-  const isDashboardSubpath =
+  const isInternal =
+    pathname === "/internal" ||
     pathname.startsWith(
-      "/dashboard/"
+      "/internal/"
     );
 
-  const isSibum =
+  const isInternalSettings =
+    pathname === "/internal/pengaturan" ||
     pathname.startsWith(
-      "/sibum"
-    );
-
-  const isMacekuPkk =
-    pathname.startsWith(
-      "/maceku-pkk"
-    );
-
-  const isSidoka =
-    pathname.startsWith(
-      "/sidoka"
-    );
-
-  const isSidak =
-    pathname.startsWith(
-      "/sidak"
-    );
-
-  const isSiber =
-    pathname.startsWith(
-      "/siber"
-    );
-
-  const isSisurat =
-    pathname.startsWith(
-      "/sisurat"
-    );
-
-  const isSimonev =
-    pathname.startsWith(
-      "/simonev"
-    );
-
-  const isSikampung =
-    pathname.startsWith(
-      "/sikampung"
-    );
-
-  const isSitekad =
-    pathname.startsWith(
-      "/sitekad"
-    );
-
-  const isAspirasiku =
-    pathname.startsWith(
-      "/aspirasiku"
-    );
-
-  const isArsipPegawai =
-    pathname.startsWith(
-      "/arsipku"
-    );
-
-  const isOptimaInfo =
-    pathname.startsWith(
-      "/optima-info"
-    );
-
-  const isSettings =
-    pathname.startsWith(
-      "/settings"
+      "/internal/pengaturan/"
     );
 
   const isLoginPage =
@@ -106,47 +39,12 @@ export default function proxy(
   const isSuperAdmin =
     role?.toLowerCase().replace(/[^a-z0-9]/g, "") === "superadmin";
 
-  const settingsRedirectPath =
-    dashboardPathFromSettingsPath(pathname);
-
-  const legacySubkegiatanPath =
-    pathname === "/dashboard/Subkegiatan" ||
-    pathname.startsWith("/dashboard/Subkegiatan/")
-      ? pathname.replace("/dashboard/Subkegiatan", "/dashboard/subkegiatan")
-      : "";
-
-  if (
-    isPortalTypo
-  ) {
-    return NextResponse.redirect(
-      new URL(
-        "/portal",
-        request.url
-      )
-    );
-  }
-
   /* =========================
-     PROTECT DASHBOARD
+     PROTECT INTERNAL AREA
   ========================= */
 
   if (
-    (isPortal ||
-      isDashboard ||
-      isDashboardSubpath ||
-      isSibum ||
-      isMacekuPkk ||
-      isSidoka ||
-      isSidak ||
-      isSiber ||
-      isSisurat ||
-      isSimonev ||
-      isSikampung ||
-      isSitekad ||
-      isAspirasiku ||
-      isArsipPegawai ||
-      isOptimaInfo ||
-      isSettings) &&
+    isInternal &&
     !token
   ) {
     return NextResponse.redirect(
@@ -158,35 +56,12 @@ export default function proxy(
   }
 
   if (
-    (isDashboardSubpath ||
-      isSettings) &&
+    isInternalSettings &&
     !isSuperAdmin
   ) {
     return NextResponse.redirect(
       new URL(
-        "/portal",
-        request.url
-      )
-    );
-  }
-
-  if (
-    settingsRedirectPath
-  ) {
-    return NextResponse.redirect(
-      new URL(
-        settingsRedirectPath,
-        request.url
-      )
-    );
-  }
-
-  if (
-    legacySubkegiatanPath
-  ) {
-    return NextResponse.redirect(
-      new URL(
-        legacySubkegiatanPath,
+        "/internal/dashboard",
         request.url
       )
     );
@@ -202,7 +77,7 @@ export default function proxy(
   ) {
     return NextResponse.redirect(
       new URL(
-        "/portal",
+        "/internal/dashboard",
         request.url
       )
     );
@@ -217,52 +92,8 @@ export default function proxy(
 
 export const config = {
   matcher: [
-    "/portal",
-    "/protal",
-    "/dashboard",
-    "/dashboard/:path*",
-    "/sibum/:path*",
-    "/maceku-pkk/:path*",
-    "/sidoka/:path*",
-    "/sidak/:path*",
-    "/siber/:path*",
-    "/sisurat",
-    "/sisurat/:path*",
-    "/simonev",
-    "/simonev/:path*",
-    "/sikampung/:path*",
-    "/sitekad/:path*",
-    "/aspirasiku/:path*",
-    "/optima-info/:path*",
-    "/arsipku",
-    "/arsipku/:path*",
-    "/settings",
-    "/settings/:path*",
+    "/internal",
+    "/internal/:path*",
     "/login",
   ],
 };
-
-function dashboardPathFromSettingsPath(pathname: string) {
-  if (pathname === "/settings") {
-    return "/dashboard";
-  }
-  if (pathname === "/settings/users" || pathname.startsWith("/settings/users/")) {
-    return pathname.replace("/settings/users", "/dashboard/users");
-  }
-  if (
-    pathname === "/settings/kab-kota" ||
-    pathname.startsWith("/settings/kab-kota/")
-  ) {
-    return pathname.replace("/settings/kab-kota", "/dashboard/kab-kota");
-  }
-  if (pathname === "/settings/SDD" || pathname.startsWith("/settings/SDD/")) {
-    return pathname.replace("/settings/SDD", "/dashboard/SDD");
-  }
-  if (
-    pathname === "/settings/Subkegiatan" ||
-    pathname.startsWith("/settings/Subkegiatan/")
-  ) {
-    return pathname.replace("/settings/Subkegiatan", "/dashboard/subkegiatan");
-  }
-  return "";
-}

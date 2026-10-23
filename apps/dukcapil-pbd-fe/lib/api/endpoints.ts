@@ -1,42 +1,16 @@
 import { API_PREFIX } from "@/lib/api/http";
 
 export const apiEndpoints = {
-  ssd: `${API_PREFIX}/ssd`,
-  ssdImport: `${API_PREFIX}/ssd/import`,
-  ssdDetail: (id: number) => `${API_PREFIX}/ssd/${id}`,
-  ssdStatus: (id: number) => `${API_PREFIX}/ssd/${id}/status`,
-  subkegiatan: `${API_PREFIX}/subkegiatan`,
-  subkegiatanImport: `${API_PREFIX}/subkegiatan/import`,
-  subkegiatanDetail: (id: number) => `${API_PREFIX}/subkegiatan/${id}`,
   bumKampung: `${API_PREFIX}/bum-kampung`,
   bumKampungDetail: (id: number) => `${API_PREFIX}/bum-kampung/${id}`,
   sikampung: `${API_PREFIX}/sikampung`,
   sikampungDetail: (id: number) => `${API_PREFIX}/sikampung/${id}`,
-  macekuPkk: `${API_PREFIX}/maceku-pkk`,
-  macekuPkkOptions: `${API_PREFIX}/maceku-pkk/options`,
-  macekuPkkDetail: (id: number) => `${API_PREFIX}/maceku-pkk/${id}`,
-  macekuPkkLogo: (id: number) => `${API_PREFIX}/maceku-pkk/${id}/logo`,
-  macekuPkkArchiveList: (id: number) => `${API_PREFIX}/maceku-pkk/${id}/archives`,
-  macekuPkkArchiveDetail: (id: number, archiveId: number) =>
-    `${API_PREFIX}/maceku-pkk/${id}/archives/${archiveId}`,
-  macekuPkkArchiveDownload: (id: number, archiveId: number) =>
-    `${API_PREFIX}/maceku-pkk/${id}/archives/${archiveId}/download`,
-  macekuPkkArchivePreview: (id: number, archiveId: number) =>
-    `${API_PREFIX}/maceku-pkk/${id}/archives/${archiveId}/preview`,
   sitekad: `${API_PREFIX}/sitekad`,
   sitekadOptions: `${API_PREFIX}/sitekad/options`,
   sitekadDetail: (id: number) => `${API_PREFIX}/sitekad/${id}`,
   sitekadCapaianKendala: `${API_PREFIX}/sitekad/capaian-kendala`,
   sitekadCapaianKendalaDetail: (id: number) =>
     `${API_PREFIX}/sitekad/capaian-kendala/${id}`,
-  aspirasiku: `${API_PREFIX}/aspirasiku`,
-  aspirasikuDetail: (id: number) => `${API_PREFIX}/aspirasiku/${id}`,
-  aspirasikuStatus: (id: number) => `${API_PREFIX}/aspirasiku/${id}/status`,
-  outgoingLetters: `${API_PREFIX}/outgoing-letters`,
-  outgoingLetterDetail: (id: number) => `${API_PREFIX}/outgoing-letters/${id}`,
-  outgoingLetterPreview: (id: number) =>
-    `${API_PREFIX}/outgoing-letters/${id}/preview`,
-  outgoingLetterPdf: (id: number) => `${API_PREFIX}/outgoing-letters/${id}/pdf`,
   users: `${API_PREFIX}/users`,
   userDetail: (id: number) => `${API_PREFIX}/users/${id}`,
   userResetPassword: (id: number) => `${API_PREFIX}/users/${id}/reset-password`,
@@ -49,22 +23,6 @@ export const apiEndpoints = {
   siberDataWilayahSettings: `${API_PREFIX}/siber/data-wilayah/settings`,
   siberDataWilayahDetail: (id: string) =>
     `${API_PREFIX}/siber/data-wilayah/${encodeURIComponent(id)}`,
-  pelaksanaanDocuments: `${API_PREFIX}/pelaksanaan-documents`,
-  pelaksanaanDocumentDetail: (id: number) =>
-    `${API_PREFIX}/pelaksanaan-documents/${id}`,
-  pelaksanaanDocumentPreview: (id: number) =>
-    `${API_PREFIX}/pelaksanaan-documents/${id}/preview`,
-  pelaksanaanDocumentDownload: (id: number) =>
-    `${API_PREFIX}/pelaksanaan-documents/${id}/download`,
-  optimaInfo: `${API_PREFIX}/optima-info`,
-  optimaInfoDetail: (id: number) => `${API_PREFIX}/optima-info/${id}`,
-  optimaInfoPreview: (id: number) => `${API_PREFIX}/optima-info/${id}/preview`,
-  optimaInfoPublish: (id: number) => `${API_PREFIX}/optima-info/${id}/publish`,
-  optimaInfoUnpublish: (id: number) => `${API_PREFIX}/optima-info/${id}/unpublish`,
-  optimaInfoArchive: (id: number) => `${API_PREFIX}/optima-info/${id}/archive`,
-  optimaInfoImages: (id: number) => `${API_PREFIX}/optima-info/${id}/images`,
-  optimaInfoImageDetail: (id: number, fileId: number) =>
-    `${API_PREFIX}/optima-info/${id}/images/${fileId}`,
   arsipPegawai: `${API_PREFIX}/arsipku`,
   arsipPegawaiDetail: (id: number) => `${API_PREFIX}/arsipku/${id}`,
   arsipPegawaiPhoto: (id: number) =>
@@ -77,10 +35,6 @@ export const apiEndpoints = {
     `${API_PREFIX}/arsipku/${pegawaiId}/documents/${documentId}/download`,
   websiteHome: `${API_PREFIX}/website/home`,
   websitePortalApps: `${API_PREFIX}/website/portal-apps`,
-  websiteAspirasiku: `${API_PREFIX}/website/aspirasiku`,
-  websiteInformasi: `${API_PREFIX}/website/informasi`,
-  websiteInformasiDetail: (slug: string) =>
-    `${API_PREFIX}/website/informasi/${encodeURIComponent(slug)}`,
   websiteDataWilayah: `${API_PREFIX}/website/data-wilayah`,
   websiteDataWilayahSettings: `${API_PREFIX}/website/data-wilayah/settings`,
   websiteProfile: `${API_PREFIX}/website/profile`,

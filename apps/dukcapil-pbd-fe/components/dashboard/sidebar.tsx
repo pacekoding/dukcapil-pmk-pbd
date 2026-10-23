@@ -37,20 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 import {
-  arsipPegawaiMenus,
-  aspirasikuMenus,
-  dashboardMenus,
-  macekuPkkMenus,
-  optimaInfoMenus,
-  settingsMenus,
-  sidakMenus,
-  sidokaMenus,
-  siberMenus,
-  simonevMenus,
-  sisuratMenus,
-  sitekadMenus,
-  sikampungMenus,
-  sibumMenus,
+  internalMenus,
   type DashboardMenuGroup,
   type DashboardMenuIcon,
   type DashboardMenuItem,
@@ -102,40 +89,22 @@ function isMenuGroup(item: DashboardMenuItem): item is DashboardMenuGroup {
 }
 
 function systemAccessForHref(href: string) {
-  if (href.startsWith("/maceku-pkk")) {
-    return "maceku_pkk";
-  }
-  if (href.startsWith("/sibum")) {
+  if (href.startsWith("/internal/sibumkam")) {
     return "sibum";
   }
-  if (href.startsWith("/sikampung")) {
+  if (href.startsWith("/internal/sikampung")) {
     return "sikampung";
   }
-  if (href.startsWith("/sitekad")) {
+  if (href.startsWith("/internal/sitekad")) {
     return "sitekad";
   }
-  if (href.startsWith("/aspirasiku")) {
-    return "aspirasiku";
-  }
-  if (href.startsWith("/sidoka")) {
-    return "sidoka";
-  }
-  if (href.startsWith("/sidak")) {
-    return "sidak";
-  }
-  if (href.startsWith("/siber")) {
+  if (href.startsWith("/internal/dukcapil")) {
     return "siber";
   }
-  if (href.startsWith("/sisurat")) {
-    return "sisurat";
-  }
-  if (href.startsWith("/simonev")) {
-    return "simonev";
-  }
-  if (href.startsWith("/optima-info")) {
-    return "optima_info";
-  }
-  if (href.startsWith("/arsipku")) {
+  if (
+    href.startsWith("/internal/pegawai") ||
+    href.startsWith("/internal/arsip")
+  ) {
     return "arsip_pegawai";
   }
   return "";
@@ -144,9 +113,7 @@ function systemAccessForHref(href: string) {
 function canAccessHref(href: string, role: string, systemAccess: string[]) {
   if (
     role === "superadmin" ||
-    href === "/dashboard" ||
-    href.startsWith("/settings") ||
-    href === "/portal"
+    href === "/internal/dashboard"
   ) {
     return true;
   }
@@ -158,16 +125,8 @@ function canAccessHref(href: string, role: string, systemAccess: string[]) {
 function isActiveMenu(pathname: string, href: string) {
   const normalizedHref = href.split("#")[0];
 
-  if (normalizedHref === "/portal") {
-    return pathname === normalizedHref;
-  }
-
-  if (normalizedHref === "/dashboard") {
-    return pathname === "/dashboard" || pathname === "/settings";
-  }
-
-  if (normalizedHref === "/settings") {
-    return pathname === normalizedHref;
+  if (normalizedHref === "/internal/dashboard") {
+    return pathname === "/internal/dashboard";
   }
 
   return (
@@ -175,159 +134,57 @@ function isActiveMenu(pathname: string, href: string) {
   );
 }
 
-function getSidebarMenus(pathname: string) {
-  if (pathname.startsWith("/dashboard")) {
-    return settingsMenus;
-  }
-
-  if (pathname.startsWith("/sibum")) {
-    return sibumMenus;
-  }
-
-  if (pathname.startsWith("/maceku-pkk")) {
-    return macekuPkkMenus;
-  }
-
-  if (pathname.startsWith("/sikampung")) {
-    return sikampungMenus;
-  }
-
-  if (pathname.startsWith("/sitekad")) {
-    return sitekadMenus;
-  }
-
-  if (pathname.startsWith("/aspirasiku")) {
-    return aspirasikuMenus;
-  }
-
-  if (pathname.startsWith("/sidoka")) {
-    return sidokaMenus;
-  }
-
-  if (pathname.startsWith("/sidak")) {
-    return sidakMenus;
-  }
-
-  if (pathname.startsWith("/siber")) {
-    return siberMenus;
-  }
-
-  if (pathname.startsWith("/sisurat")) {
-    return sisuratMenus;
-  }
-
-  if (pathname.startsWith("/simonev")) {
-    return simonevMenus;
-  }
-
-  if (pathname.startsWith("/optima-info")) {
-    return optimaInfoMenus;
-  }
-
-  if (pathname.startsWith("/arsipku")) {
-    return arsipPegawaiMenus;
-  }
-
-  if (pathname.startsWith("/settings")) {
-    return settingsMenus;
-  }
-
-  return dashboardMenus;
+function getSidebarMenus() {
+  return internalMenus;
 }
 
 function getSidebarBrand(pathname: string) {
-  if (pathname.startsWith("/sibum")) {
+  if (pathname.startsWith("/internal/sibumkam")) {
     return {
       title: "SIBUM Kampung",
       subtitle: "Data BUMKam",
     };
   }
 
-  if (pathname.startsWith("/maceku-pkk")) {
-    return {
-      title: "MACEKU PKK",
-      subtitle: "Profil & Arsip PKK",
-    };
-  }
-
-  if (pathname.startsWith("/sikampung")) {
+  if (pathname.startsWith("/internal/sikampung")) {
     return {
       title: "SIKAMPUNG",
       subtitle: "Data Kampung IDM",
     };
   }
 
-  if (pathname.startsWith("/sitekad")) {
+  if (pathname.startsWith("/internal/sitekad")) {
     return {
       title: "SITEKAD",
       subtitle: "Program TEKAD",
     };
   }
 
-  if (pathname.startsWith("/aspirasiku")) {
-    return {
-      title: "ASPIRASIKU",
-      subtitle: "Aspirasi Anonim",
-    };
-  }
-
-  if (pathname.startsWith("/sidoka")) {
-    return {
-      title: "SIDOKA",
-      subtitle: "Dokumen Kegiatan",
-    };
-  }
-
-  if (pathname.startsWith("/sidak")) {
-    return {
-      title: "SIDAK",
-      subtitle: "Data Kegiatan Dukcapil",
-    };
-  }
-
-  if (pathname.startsWith("/siber")) {
+  if (pathname.startsWith("/internal/dukcapil")) {
     return {
       title: "SIRBE",
       subtitle: "Dashboard Data Dukcapil",
     };
   }
 
-  if (pathname.startsWith("/sisurat")) {
-    return {
-      title: "SISURAT DUKCAPIL",
-      subtitle: "Surat Keluar Dukcapil",
-    };
-  }
-
-  if (pathname.startsWith("/simonev")) {
-    return {
-      title: "SIMONEV DUKCAPIL",
-      subtitle: "Monitoring Evaluasi SSD",
-    };
-  }
-
-  if (pathname.startsWith("/optima-info")) {
-    return {
-      title: "OPTIMA-INFO",
-      subtitle: "Informasi Website",
-    };
-  }
-
-  if (pathname.startsWith("/arsipku")) {
+  if (
+    pathname.startsWith("/internal/pegawai") ||
+    pathname.startsWith("/internal/arsip")
+  ) {
     return {
       title: "ARSIPKU",
       subtitle: "Dokumen Kepegawaian",
     };
   }
 
-  if (pathname === "/dashboard") {
+  if (pathname === "/internal/dashboard") {
     return {
       title: "Dashboard Internal",
       subtitle: "Data Agregat Prioritas",
     };
   }
 
-  if (pathname.startsWith("/dashboard/") || pathname.startsWith("/settings")) {
+  if (pathname.startsWith("/internal/pengaturan")) {
     return {
       title: "Pengaturan",
       subtitle: "Super Admin",
@@ -363,7 +220,7 @@ function SidebarContent({
   systemAccess: string[];
 }) {
   const pathname = usePathname();
-  const menuItems = getSidebarMenus(pathname);
+  const menuItems = getSidebarMenus();
   const brand = getSidebarBrand(pathname);
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<string, boolean>>(
     {},
@@ -400,10 +257,10 @@ function SidebarContent({
     [menuItems, role, systemAccess],
   );
 
-  const toggleMenuGroup = (title: string) => {
+  const toggleMenuGroup = (title: string, defaultOpen: boolean) => {
     setOpenMenuGroups((current) => ({
       ...current,
-      [title]: !current[title],
+      [title]: !(current[title] ?? defaultOpen),
     }));
   };
 
@@ -432,10 +289,10 @@ function SidebarContent({
         {!collapsed ? (
           <div className="flex items-start gap-4">
             <Link
-              href="/portal"
+              href="/internal/dashboard"
               onClick={onClose}
-              aria-label="Kembali ke Portal Aplikasi"
-              title="Kembali ke Portal Aplikasi"
+              aria-label="Kembali ke Dashboard"
+              title="Kembali ke Dashboard"
               className="relative h-12 w-12 shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pbd-blue/30"
             >
               <Image
@@ -462,10 +319,10 @@ function SidebarContent({
           </div>
         ) : (
           <Link
-            href="/portal"
+            href="/internal/dashboard"
             onClick={onClose}
-            aria-label="Kembali ke Portal Aplikasi"
-            title="Kembali ke Portal Aplikasi"
+            aria-label="Kembali ke Dashboard"
+            title="Kembali ke Dashboard"
             className="relative h-12 w-12 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pbd-blue/30"
           >
             <Image
@@ -525,14 +382,14 @@ function SidebarContent({
               );
               const groupOpen = collapsed
                 ? true
-                : openMenuGroups[menu.title] === true;
+                : (openMenuGroups[menu.title] ?? groupActive);
 
               return (
                 <div key={menu.title} className="space-y-1">
                   {!collapsed ? (
                     <button
                       type="button"
-                      onClick={() => toggleMenuGroup(menu.title)}
+                      onClick={() => toggleMenuGroup(menu.title, groupActive)}
                       aria-expanded={groupOpen}
                       className={cn(
                         "flex w-full items-center gap-2 rounded-md px-4 py-2 text-left text-[11px] font-bold uppercase tracking-wide transition-colors hover:bg-slate-100",

@@ -1,4 +1,4 @@
-export type FileVisibility = "public" | "private";
+export type FileVisibility = "private";
 
 export type StoredFileMetadata = {
   id: number;
@@ -14,8 +14,6 @@ export type StoredFileMetadata = {
   visibility: FileVisibility;
   previewUrl: string;
   downloadUrl: string;
-  publicPreviewUrl?: string;
-  publicDownloadUrl?: string;
   createdAt: string;
   updatedAt: string;
 };

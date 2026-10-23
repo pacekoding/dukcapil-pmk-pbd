@@ -21,7 +21,6 @@ import (
 
 type StoredFileStore interface {
 	AuthorizedByID(ctx context.Context, id int64, claims security.Claims) (model.StoredFile, bool, error)
-	PublicByID(ctx context.Context, id int64) (model.StoredFile, bool, error)
 }
 
 type StoredFileController struct {
@@ -41,14 +40,6 @@ func (s *StoredFileController) Download(c echo.Context) error {
 	return s.serveProtected(c, "attachment")
 }
 
-func (s *StoredFileController) PublicPreview(c echo.Context) error {
-	return s.servePublic(c, "inline")
-}
-
-func (s *StoredFileController) PublicDownload(c echo.Context) error {
-	return s.servePublic(c, "attachment")
-}
-
 func (s *StoredFileController) serveProtected(c echo.Context, disposition string) error {
 	claims, ok := authmiddleware.ClaimsFromContext(c)
 	if !ok {
@@ -65,25 +56,10 @@ func (s *StoredFileController) serveProtected(c echo.Context, disposition string
 	if !found {
 		return echo.NewHTTPError(http.StatusNotFound, "file tidak ditemukan")
 	}
-	return s.serve(c, file, disposition, false)
+	return s.serve(c, file, disposition)
 }
 
-func (s *StoredFileController) servePublic(c echo.Context, disposition string) error {
-	id, err := storedFileID(c)
-	if err != nil {
-		return err
-	}
-	file, found, err := s.files.PublicByID(c.Request().Context(), id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "file publik gagal dimuat")
-	}
-	if !found {
-		return echo.NewHTTPError(http.StatusNotFound, "file tidak ditemukan")
-	}
-	return s.serve(c, file, disposition, true)
-}
-
-func (s *StoredFileController) serve(c echo.Context, file model.StoredFile, disposition string, public bool) error {
+func (s *StoredFileController) serve(c echo.Context, file model.StoredFile, disposition string) error {
 	if s == nil || s.storage == nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "storage file belum dikonfigurasi")
 	}
@@ -119,11 +95,7 @@ func (s *StoredFileController) serve(c echo.Context, file model.StoredFile, disp
 	if file.ChecksumSHA256 != "" {
 		response.Header().Set("ETag", fmt.Sprintf(`"sha256-%s"`, file.ChecksumSHA256))
 	}
-	if public {
-		response.Header().Set("Cache-Control", "public, max-age=0, must-revalidate")
-	} else {
-		response.Header().Set("Cache-Control", "private, no-store")
-	}
+	response.Header().Set("Cache-Control", "private, no-store")
 
 	modified := metadata.Modified
 	if modified.IsZero() {

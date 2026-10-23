@@ -90,57 +90,6 @@ CREATE TABLE IF NOT EXISTS data_wilayah_public_settings (
 	CONSTRAINT data_wilayah_public_settings_featured_check CHECK (featured_tahun_anggaran ~ '^\d{4}$')
 );
 
-CREATE TABLE IF NOT EXISTS subkegiatan (
-	id BIGSERIAL PRIMARY KEY,
-	tahun_anggaran VARCHAR(4) NOT NULL,
-	kode VARCHAR(64) NOT NULL,
-	nama TEXT NOT NULL,
-	bidang VARCHAR(16) NOT NULL,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	CONSTRAINT subkegiatan_tahun_anggaran_check CHECK (tahun_anggaran ~ '^\d{4}$'),
-	CONSTRAINT subkegiatan_bidang_check CHECK (bidang IN ('dukcapil', 'pmk', 'umum')),
-	CONSTRAINT subkegiatan_kode_not_blank_check CHECK (BTRIM(kode) <> ''),
-	CONSTRAINT subkegiatan_nama_not_blank_check CHECK (BTRIM(nama) <> '')
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_subkegiatan_tahun_kode_unique ON subkegiatan(tahun_anggaran, LOWER(kode));
-CREATE UNIQUE INDEX IF NOT EXISTS idx_subkegiatan_tahun_id_unique ON subkegiatan(tahun_anggaran, id);
-CREATE INDEX IF NOT EXISTS idx_subkegiatan_tahun_bidang ON subkegiatan(tahun_anggaran, bidang);
-
-CREATE TABLE IF NOT EXISTS ssd (
-	id BIGSERIAL PRIMARY KEY,
-	tahun_anggaran VARCHAR(4) NOT NULL,
-	kode VARCHAR(64) NOT NULL,
-	uraian TEXT NOT NULL,
-	satuan VARCHAR(120) NOT NULL DEFAULT '',
-	definisi_operasional TEXT NOT NULL DEFAULT '',
-	is_active BOOLEAN NOT NULL DEFAULT FALSE,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	CONSTRAINT ssd_tahun_anggaran_check CHECK (tahun_anggaran ~ '^\d{4}$'),
-	CONSTRAINT ssd_kode_not_blank_check CHECK (BTRIM(kode) <> ''),
-	CONSTRAINT ssd_uraian_not_blank_check CHECK (BTRIM(uraian) <> '')
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_ssd_tahun_kode_unique ON ssd(tahun_anggaran, LOWER(kode));
-CREATE UNIQUE INDEX IF NOT EXISTS idx_ssd_tahun_id_unique ON ssd(tahun_anggaran, id);
-CREATE INDEX IF NOT EXISTS idx_ssd_tahun_active ON ssd(tahun_anggaran, is_active);
-
-CREATE TABLE IF NOT EXISTS subkegiatan_ssd (
-	subkegiatan_id BIGINT NOT NULL,
-	ssd_id BIGINT NOT NULL,
-	tahun_anggaran VARCHAR(4) NOT NULL,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-	PRIMARY KEY (subkegiatan_id, ssd_id),
-	CONSTRAINT subkegiatan_ssd_tahun_anggaran_check CHECK (tahun_anggaran ~ '^\d{4}$'),
-	CONSTRAINT subkegiatan_ssd_subkegiatan_fk FOREIGN KEY (tahun_anggaran, subkegiatan_id) REFERENCES subkegiatan(tahun_anggaran, id) ON DELETE CASCADE,
-	CONSTRAINT subkegiatan_ssd_ssd_fk FOREIGN KEY (tahun_anggaran, ssd_id) REFERENCES ssd(tahun_anggaran, id) ON DELETE RESTRICT
-);
-
-CREATE INDEX IF NOT EXISTS idx_subkegiatan_ssd_tahun_subkegiatan ON subkegiatan_ssd(tahun_anggaran, subkegiatan_id);
-CREATE INDEX IF NOT EXISTS idx_subkegiatan_ssd_tahun_ssd ON subkegiatan_ssd(tahun_anggaran, ssd_id);
-
 CREATE TABLE IF NOT EXISTS arsip_pegawai (
 	id BIGSERIAL PRIMARY KEY,
 	nip VARCHAR(32) NOT NULL,
@@ -170,35 +119,30 @@ CREATE TABLE IF NOT EXISTS arsip (
 	tahun_anggaran VARCHAR(4) NOT NULL,
 	sumber_aplikasi VARCHAR(32) NOT NULL,
 	bidang VARCHAR(16) NOT NULL,
-	subkegiatan_id BIGINT,
 	pegawai_id BIGINT,
 	nama TEXT NOT NULL,
 	original_name TEXT NOT NULL,
 	mime_type TEXT NOT NULL,
 	size BIGINT NOT NULL DEFAULT 0,
 	url TEXT NOT NULL,
-	is_dokumen_dssd BOOLEAN NOT NULL DEFAULT FALSE,
 	kategori TEXT NOT NULL DEFAULT '',
 	nomor_dokumen TEXT NOT NULL DEFAULT '',
 	tahun_dokumen VARCHAR(4) NOT NULL DEFAULT '',
 	status_verifikasi VARCHAR(32) NOT NULL DEFAULT 'Lengkap',
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	CONSTRAINT arsip_tahun_anggaran_check CHECK (tahun_anggaran ~ '^\d{4}$'),
-	CONSTRAINT arsip_sumber_aplikasi_check CHECK (sumber_aplikasi IN ('sidoka', 'sidak', 'arsip_pegawai')),
+	CONSTRAINT arsip_sumber_aplikasi_check CHECK (sumber_aplikasi = 'arsip_pegawai'),
 	CONSTRAINT arsip_bidang_check CHECK (bidang IN ('sekretariat', 'dukcapil', 'pmk')),
 	CONSTRAINT arsip_nama_not_blank_check CHECK (BTRIM(nama) <> ''),
 	CONSTRAINT arsip_original_name_not_blank_check CHECK (BTRIM(original_name) <> ''),
 	CONSTRAINT arsip_size_non_negative_check CHECK (size >= 0),
 	CONSTRAINT arsip_status_verifikasi_check CHECK (status_verifikasi IN ('Lengkap', 'Perlu Verifikasi')),
-	CONSTRAINT arsip_subkegiatan_fk FOREIGN KEY (tahun_anggaran, subkegiatan_id) REFERENCES subkegiatan(tahun_anggaran, id) ON DELETE SET NULL (subkegiatan_id),
 	CONSTRAINT arsip_pegawai_fk FOREIGN KEY (pegawai_id) REFERENCES arsip_pegawai(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_arsip_tahun_created ON arsip(tahun_anggaran, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_arsip_sumber_bidang ON arsip(tahun_anggaran, sumber_aplikasi, bidang);
-CREATE INDEX IF NOT EXISTS idx_arsip_subkegiatan ON arsip(tahun_anggaran, subkegiatan_id);
 CREATE INDEX IF NOT EXISTS idx_arsip_pegawai ON arsip(pegawai_id);
-CREATE INDEX IF NOT EXISTS idx_arsip_is_dssd ON arsip(tahun_anggaran, is_dokumen_dssd);
 
 CREATE TABLE IF NOT EXISTS bum_kampung (
 	id BIGSERIAL PRIMARY KEY,
@@ -245,7 +189,7 @@ INSERT INTO admin_users (
 	'superadmin',
 	'Super Admin',
 	'superadmin',
-	ARRAY['sibum', 'sikampung', 'sidoka', 'sidak', 'optima_info', 'arsip_pegawai']::TEXT[],
+	ARRAY['sibum', 'sikampung', 'sitekad', 'siber', 'arsip_pegawai']::TEXT[],
 	'$2a$10$3dHI5XvIZcE4b8BLaZgxyem2NYo1a1WaNfPS4yptzzv8ipjIUxMbi',
 	TRUE
 )

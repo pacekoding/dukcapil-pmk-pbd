@@ -1,2 +1,0 @@
-DROP TABLE IF EXISTS arsip;
-DROP TABLE IF EXISTS arsip_pegawai;

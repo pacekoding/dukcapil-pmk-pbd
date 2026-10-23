@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 
 import DashboardSidebar from "@/components/dashboard/sidebar";
 import DashboardTopbar from "@/components/dashboard/topbar";
@@ -10,28 +11,29 @@ type DashboardShellProps = {
   children: React.ReactNode;
   theme?:
     | "default"
-    | "maceku"
     | "sibum"
     | "sikampung"
     | "sitekad"
-    | "aspirasiku"
-    | "sidoka"
-    | "sidak"
-    | "simonev"
-    | "optimaInfo"
     | "arsip"
     | "settings";
 };
 
 export function DashboardShell({
   children,
-  theme = "default",
+  theme,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const pathname = usePathname();
+  const resolvedTheme = theme ?? getInternalTheme(pathname);
 
   return (
-    <div className={cn("min-h-screen bg-pbd-bg", `dashboard-theme-${theme}`)}>
+    <div
+      className={cn(
+        "min-h-screen bg-pbd-bg",
+        `dashboard-theme-${resolvedTheme}`,
+      )}
+    >
       <DashboardSidebar
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
@@ -53,4 +55,29 @@ export function DashboardShell({
       </div>
     </div>
   );
+}
+
+function getInternalTheme(pathname: string): NonNullable<DashboardShellProps["theme"]> {
+  if (pathname.startsWith("/internal/sibumkam")) {
+    return "sibum";
+  }
+  if (pathname.startsWith("/internal/sikampung")) {
+    return "sikampung";
+  }
+  if (pathname.startsWith("/internal/sitekad")) {
+    return "sitekad";
+  }
+  if (
+    pathname.startsWith("/internal/pegawai") ||
+    pathname.startsWith("/internal/arsip")
+  ) {
+    return "arsip";
+  }
+  if (
+    pathname.startsWith("/internal/dashboard") ||
+    pathname.startsWith("/internal/pengaturan")
+  ) {
+    return "settings";
+  }
+  return "default";
 }

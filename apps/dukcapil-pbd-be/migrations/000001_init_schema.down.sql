@@ -1,9 +1,6 @@
 DROP TABLE IF EXISTS bum_kampung;
 DROP TABLE IF EXISTS arsip;
 DROP TABLE IF EXISTS arsip_pegawai;
-DROP TABLE IF EXISTS subkegiatan_ssd;
-DROP TABLE IF EXISTS ssd;
-DROP TABLE IF EXISTS subkegiatan;
 DROP TABLE IF EXISTS data_wilayah_public_settings;
 DROP TABLE IF EXISTS data_wilayah;
 DROP TABLE IF EXISTS kab_kota;

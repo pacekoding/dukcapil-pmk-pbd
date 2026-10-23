@@ -19,7 +19,6 @@ import (
 type storedFileStoreStub struct {
 	file            model.StoredFile
 	authorizedFound bool
-	publicFound     bool
 }
 
 func (s storedFileStoreStub) AuthorizedByID(
@@ -28,10 +27,6 @@ func (s storedFileStoreStub) AuthorizedByID(
 	_ security.Claims,
 ) (model.StoredFile, bool, error) {
 	return s.file, s.authorizedFound, nil
-}
-
-func (s storedFileStoreStub) PublicByID(_ context.Context, _ int64) (model.StoredFile, bool, error) {
-	return s.file, s.publicFound, nil
 }
 
 func TestStoredFilePreviewRequiresAuthentication(t *testing.T) {
@@ -46,18 +41,6 @@ func TestStoredFilePreviewRequiresAuthentication(t *testing.T) {
 	assertHTTPErrorCode(t, err, http.StatusUnauthorized)
 }
 
-func TestStoredFilePublicPreviewRejectsUnavailableParent(t *testing.T) {
-	local, err := storage.NewLocal(t.TempDir())
-	if err != nil {
-		t.Fatalf("storage.NewLocal() error = %v", err)
-	}
-	controller := NewStoredFileController(storedFileStoreStub{publicFound: false}, local)
-	context := storedFileTestContext(http.MethodGet)
-
-	err = controller.PublicPreview(context)
-	assertHTTPErrorCode(t, err, http.StatusNotFound)
-}
-
 func TestStoredFileServesPrivatePDFWithSecureHeaders(t *testing.T) {
 	local, err := storage.NewLocal(t.TempDir())
 	if err != nil {
@@ -66,8 +49,8 @@ func TestStoredFileServesPrivatePDFWithSecureHeaders(t *testing.T) {
 	content := []byte("%PDF-1.4\nprivate")
 	object, err := local.Save(context.Background(), storage.SaveRequest{
 		Visibility: "private",
-		Module:     "maceku-pkk",
-		Category:   "lkpj",
+		Module:     "arsip-pegawai",
+		Category:   "dokumen",
 		Year:       "2026",
 		Extension:  "pdf",
 		Reader:     bytes.NewReader(content),

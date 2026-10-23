@@ -19,15 +19,14 @@ type Manager struct {
 }
 
 type Claims struct {
-	UserID        int64                 `json:"userId"`
-	Username      string                `json:"username"`
-	Name          string                `json:"name"`
-	Role          model.Role            `json:"role"`
-	SystemAccess  []string              `json:"systemAccess"`
-	RegionScope   model.UserRegionScope `json:"regionScope"`
-	TahunAnggaran string                `json:"tahunAnggaran"`
-	IssuedAt      int64                 `json:"iat"`
-	ExpiresAt     int64                 `json:"exp"`
+	UserID        int64      `json:"userId"`
+	Username      string     `json:"username"`
+	Name          string     `json:"name"`
+	Role          model.Role `json:"role"`
+	SystemAccess  []string   `json:"systemAccess"`
+	TahunAnggaran string     `json:"tahunAnggaran"`
+	IssuedAt      int64      `json:"iat"`
+	ExpiresAt     int64      `json:"exp"`
 }
 
 func NewManager(secret string, ttl time.Duration) *Manager {
@@ -53,7 +52,6 @@ func (m *Manager) Issue(user model.User, tahunAnggaran string) (string, error) {
 		Name:          user.Name,
 		Role:          user.Role,
 		SystemAccess:  user.SystemAccess,
-		RegionScope:   user.RegionScope,
 		TahunAnggaran: tahunAnggaran,
 		IssuedAt:      now.Unix(),
 		ExpiresAt:     now.Add(m.ttl).Unix(),

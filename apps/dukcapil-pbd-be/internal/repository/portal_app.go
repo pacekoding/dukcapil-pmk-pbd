@@ -14,15 +14,8 @@ var defaultPortalAppStatuses = []model.PortalAppStatusUpdateItem{
 	{AccessKey: "sibum", Status: model.PortalAppStatusActive},
 	{AccessKey: "sikampung", Status: model.PortalAppStatusMaintenance},
 	{AccessKey: "sitekad", Status: model.PortalAppStatusActive},
-	{AccessKey: "aspirasiku", Status: model.PortalAppStatusActive},
-	{AccessKey: "sidoka", Status: model.PortalAppStatusMaintenance},
-	{AccessKey: "sidak", Status: model.PortalAppStatusMaintenance},
 	{AccessKey: "siber", Status: model.PortalAppStatusActive},
-	{AccessKey: "sisurat", Status: model.PortalAppStatusActive},
-	{AccessKey: "simonev", Status: model.PortalAppStatusActive},
-	{AccessKey: "optima_info", Status: model.PortalAppStatusActive},
 	{AccessKey: "arsip_pegawai", Status: model.PortalAppStatusMaintenance},
-	{AccessKey: "maceku_pkk", Status: model.PortalAppStatusActive},
 }
 
 type PortalAppRepository struct {

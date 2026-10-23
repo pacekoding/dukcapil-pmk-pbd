@@ -41,7 +41,7 @@ func (s *SikampungController) List(c echo.Context) error {
 }
 
 func (s *SikampungController) Create(c echo.Context) error {
-	tahunAnggaran, err := subkegiatanTahunAnggaran(c)
+	tahunAnggaran, err := authenticatedTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (s *SikampungController) Create(c echo.Context) error {
 }
 
 func (s *SikampungController) Update(c echo.Context) error {
-	tahunAnggaran, err := subkegiatanTahunAnggaran(c)
+	tahunAnggaran, err := authenticatedTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (s *SikampungController) Update(c echo.Context) error {
 }
 
 func (s *SikampungController) Delete(c echo.Context) error {
-	tahunAnggaran, err := subkegiatanTahunAnggaran(c)
+	tahunAnggaran, err := authenticatedTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func sikampungListTahunAnggaran(c echo.Context) (string, error) {
 		tahunAnggaran = strings.TrimSpace(c.QueryParam("tahun_anggaran"))
 	}
 	if tahunAnggaran == "" {
-		return subkegiatanTahunAnggaran(c)
+		return authenticatedTahunAnggaran(c)
 	}
 	if tahunAnggaran != "2025" && tahunAnggaran != "2026" {
 		return "", echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran SIKAMPUNG tidak valid")

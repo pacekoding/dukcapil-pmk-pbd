@@ -80,7 +80,6 @@ func (a *AuthController) Me(c echo.Context) error {
 			Name:         claims.Name,
 			Role:         claims.Role,
 			SystemAccess: claims.SystemAccess,
-			RegionScope:  claims.RegionScope,
 		},
 		TahunAnggaran: claims.TahunAnggaran,
 	})
@@ -108,7 +107,6 @@ func (a *AuthController) SwitchTahunAnggaran(c echo.Context) error {
 		Name:         claims.Name,
 		Role:         claims.Role,
 		SystemAccess: claims.SystemAccess,
-		RegionScope:  claims.RegionScope,
 	}
 	token, err := a.tokens.Issue(user, request.TahunAnggaran)
 	if err != nil {

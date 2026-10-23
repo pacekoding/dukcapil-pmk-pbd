@@ -70,7 +70,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/portal");
+      router.push("/internal/dashboard");
       router.refresh();
     } catch (loginError) {
       console.error(loginError);
@@ -101,7 +101,7 @@ export default function LoginPage() {
         className="absolute left-4 top-4 z-20 inline-flex h-10 items-center gap-2 rounded-xl border border-white/25 bg-white/5 px-4 text-sm font-bold text-white/90 backdrop-blur transition hover:bg-white/10 sm:left-8 sm:top-8 sm:h-12 sm:px-5 lg:left-12"
       >
         <ArrowLeft className="h-4 w-4" />
-        Kembali ke Portal
+        Kembali ke Beranda
       </Link>
 
       <section className="relative z-10 mx-auto grid h-svh w-full max-w-[1440px] items-center gap-8 px-4 pt-16 pb-5 sm:px-8 sm:pt-20 sm:pb-7 lg:grid-cols-[minmax(0,1fr)_minmax(420px,560px)] lg:px-12 lg:py-8 xl:gap-14">

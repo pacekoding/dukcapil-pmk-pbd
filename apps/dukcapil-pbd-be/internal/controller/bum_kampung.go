@@ -27,7 +27,7 @@ func NewBumKampungController(bumKampung BumKampungStore) *BumKampungController {
 }
 
 func (b *BumKampungController) List(c echo.Context) error {
-	tahunAnggaran, err := subkegiatanTahunAnggaran(c)
+	tahunAnggaran, err := authenticatedTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (b *BumKampungController) List(c echo.Context) error {
 }
 
 func (b *BumKampungController) Create(c echo.Context) error {
-	tahunAnggaran, err := subkegiatanTahunAnggaran(c)
+	tahunAnggaran, err := authenticatedTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (b *BumKampungController) Create(c echo.Context) error {
 }
 
 func (b *BumKampungController) Update(c echo.Context) error {
-	tahunAnggaran, err := subkegiatanTahunAnggaran(c)
+	tahunAnggaran, err := authenticatedTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (b *BumKampungController) Update(c echo.Context) error {
 }
 
 func (b *BumKampungController) Delete(c echo.Context) error {
-	tahunAnggaran, err := subkegiatanTahunAnggaran(c)
+	tahunAnggaran, err := authenticatedTahunAnggaran(c)
 	if err != nil {
 		return err
 	}

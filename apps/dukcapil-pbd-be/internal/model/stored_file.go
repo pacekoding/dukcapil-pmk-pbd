@@ -5,7 +5,6 @@ import "time"
 type FileVisibility string
 
 const (
-	FileVisibilityPublic  FileVisibility = "public"
 	FileVisibilityPrivate FileVisibility = "private"
 )
 
@@ -39,8 +38,6 @@ type StoredFile struct {
 	UploadedBy        *int64         `json:"uploadedBy,omitempty" gorm:"column:uploaded_by"`
 	PreviewURL        string         `json:"previewUrl" gorm:"-"`
 	DownloadURL       string         `json:"downloadUrl" gorm:"-"`
-	PublicPreviewURL  string         `json:"publicPreviewUrl,omitempty" gorm:"-"`
-	PublicDownloadURL string         `json:"publicDownloadUrl,omitempty" gorm:"-"`
 	CreatedAt         time.Time      `json:"createdAt" gorm:"column:created_at"`
 	UpdatedAt         time.Time      `json:"updatedAt" gorm:"column:updated_at"`
 	DeletedAt         *time.Time     `json:"-" gorm:"column:deleted_at"`

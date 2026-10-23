@@ -61,7 +61,7 @@ func (r *SitekadRepository) CreateCapaianKendala(ctx context.Context, payload mo
 			if err != nil {
 				return err
 			}
-			documentationURLs = append(documentationURLs, finalizeStoredFile(file, false).PreviewURL)
+			documentationURLs = append(documentationURLs, finalizeStoredFile(file).PreviewURL)
 		}
 		record.DokumentasiURLs = pq.StringArray(normalizeSitekadDocumentationURLs(documentationURLs))
 		return tx.Model(&record).Update("dokumentasi_urls", record.DokumentasiURLs).Error
@@ -111,7 +111,7 @@ func (r *SitekadRepository) UpdateCapaianKendala(ctx context.Context, id int64, 
 			if err != nil {
 				return err
 			}
-			documentationURLs = append(documentationURLs, finalizeStoredFile(file, false).PreviewURL)
+			documentationURLs = append(documentationURLs, finalizeStoredFile(file).PreviewURL)
 		}
 		documentationURLs = normalizeSitekadDocumentationURLs(documentationURLs)
 		updates["dokumentasi_urls"] = pq.StringArray(documentationURLs)

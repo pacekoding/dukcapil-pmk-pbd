@@ -360,18 +360,6 @@
   --sidebar-accent-foreground: #14532d;
 }
 
-.dashboard-theme-maceku {
-  --color-pbd-navy: #29434e;
-  --color-pbd-blue: #4f6f75;
-  --color-pbd-bg: #f4f8f7;
-  --color-pbd-line: #d8e4e1;
-  --primary: #29434e;
-  --ring: #4f6f75;
-  --sidebar-primary: #29434e;
-  --sidebar-accent: #edf4f2;
-  --sidebar-accent-foreground: #29434e;
-}
-
 .dashboard-theme-sikampung {
   --color-pbd-navy: #164e63;
   --color-pbd-blue: #0891b2;
@@ -394,54 +382,6 @@
   --sidebar-primary: #134e4a;
   --sidebar-accent: #ecfdf5;
   --sidebar-accent-foreground: #134e4a;
-}
-
-.dashboard-theme-aspirasiku {
-  --color-pbd-navy: #1e1b4b;
-  --color-pbd-blue: #4f46e5;
-  --color-pbd-bg: #f7f7ff;
-  --color-pbd-line: #dcdcff;
-  --primary: #1e1b4b;
-  --ring: #4f46e5;
-  --sidebar-primary: #1e1b4b;
-  --sidebar-accent: #eef2ff;
-  --sidebar-accent-foreground: #1e1b4b;
-}
-
-.dashboard-theme-sidoka {
-  --color-pbd-navy: #3730a3;
-  --color-pbd-blue: #4f46e5;
-  --color-pbd-bg: #f6f7ff;
-  --color-pbd-line: #d8dcff;
-  --primary: #3730a3;
-  --ring: #4f46e5;
-  --sidebar-primary: #3730a3;
-  --sidebar-accent: #eef2ff;
-  --sidebar-accent-foreground: #3730a3;
-}
-
-.dashboard-theme-sidak {
-  --color-pbd-navy: #1e3a8a;
-  --color-pbd-blue: #2563eb;
-  --color-pbd-bg: #f5f9ff;
-  --color-pbd-line: #cfe0ff;
-  --primary: #1e3a8a;
-  --ring: #2563eb;
-  --sidebar-primary: #1e3a8a;
-  --sidebar-accent: #eff6ff;
-  --sidebar-accent-foreground: #1e3a8a;
-}
-
-.dashboard-theme-optimaInfo {
-  --color-pbd-navy: #0f3f4a;
-  --color-pbd-blue: #0f766e;
-  --color-pbd-bg: #f3fbfb;
-  --color-pbd-line: #cbe6e5;
-  --primary: #0f3f4a;
-  --ring: #0f766e;
-  --sidebar-primary: #0f3f4a;
-  --sidebar-accent: #ecfdf5;
-  --sidebar-accent-foreground: #0f3f4a;
 }
 
 .dashboard-theme-arsip {
@@ -470,22 +410,6 @@
 
 .dashboard-theme-sibum .bg-blue-50 {
   background-color: #ecfdf3;
-}
-
-.dashboard-theme-maceku .bg-blue-50 {
-  background-color: #edf4f2;
-}
-
-.dashboard-theme-maceku .text-blue-700 {
-  color: #3f6268;
-}
-
-.dashboard-theme-maceku .ring-blue-100 {
-  --tw-ring-color: #cdded9;
-}
-
-.dashboard-theme-maceku .border-blue-100 {
-  border-color: #cdded9;
 }
 
 .dashboard-theme-sibum .text-blue-700 {
@@ -532,86 +456,6 @@
   border-color: #99f6e4;
 }
 
-.dashboard-theme-aspirasiku .bg-blue-50 {
-  background-color: #eef2ff;
-}
-
-.dashboard-theme-aspirasiku .text-blue-700 {
-  color: #4338ca;
-}
-
-.dashboard-theme-aspirasiku .ring-blue-100 {
-  --tw-ring-color: #c7d2fe;
-}
-
-.dashboard-theme-aspirasiku .border-blue-100 {
-  border-color: #c7d2fe;
-}
-
-.dashboard-theme-sidoka .bg-blue-50 {
-  background-color: #eef2ff;
-}
-
-.dashboard-theme-sidoka .text-blue-700 {
-  color: #4338ca;
-}
-
-.dashboard-theme-sidoka .ring-blue-100 {
-  --tw-ring-color: #c7d2fe;
-}
-
-.dashboard-theme-sidoka .border-blue-100 {
-  border-color: #c7d2fe;
-}
-
-.dashboard-theme-sidak .bg-blue-50 {
-  background-color: #eff6ff;
-}
-
-.dashboard-theme-sidak .text-blue-700 {
-  color: #1d4ed8;
-}
-
-.dashboard-theme-sidak .ring-blue-100 {
-  --tw-ring-color: #bfdbfe;
-}
-
-.dashboard-theme-sidak .border-blue-100 {
-  border-color: #bfdbfe;
-}
-
-.dashboard-theme-simonev .bg-blue-50 {
-  background-color: #ecfdf5;
-}
-
-.dashboard-theme-simonev .text-blue-700 {
-  color: #047857;
-}
-
-.dashboard-theme-simonev .ring-blue-100 {
-  --tw-ring-color: #a7f3d0;
-}
-
-.dashboard-theme-simonev .border-blue-100 {
-  border-color: #a7f3d0;
-}
-
-.dashboard-theme-optimaInfo .bg-blue-50 {
-  background-color: #ecfdf5;
-}
-
-.dashboard-theme-optimaInfo .text-blue-700 {
-  color: #0f766e;
-}
-
-.dashboard-theme-optimaInfo .ring-blue-100 {
-  --tw-ring-color: #99f6e4;
-}
-
-.dashboard-theme-optimaInfo .border-blue-100 {
-  border-color: #99f6e4;
-}
-
 .dashboard-theme-arsip .bg-blue-50 {
   background-color: #f7f4e5;
 }
@@ -647,11 +491,6 @@
 .dashboard-theme-sibum .text-pbd-navy,
 .dashboard-theme-sikampung .text-pbd-navy,
 .dashboard-theme-sitekad .text-pbd-navy,
-.dashboard-theme-aspirasiku .text-pbd-navy,
-.dashboard-theme-sidoka .text-pbd-navy,
-.dashboard-theme-sidak .text-pbd-navy,
-.dashboard-theme-simonev .text-pbd-navy,
-.dashboard-theme-optimaInfo .text-pbd-navy,
 .dashboard-theme-arsip .text-pbd-navy,
 .dashboard-theme-settings .text-pbd-navy {
   color: #10243f;
@@ -660,11 +499,6 @@
 .dashboard-theme-sibum .hover\:text-pbd-navy:hover,
 .dashboard-theme-sikampung .hover\:text-pbd-navy:hover,
 .dashboard-theme-sitekad .hover\:text-pbd-navy:hover,
-.dashboard-theme-aspirasiku .hover\:text-pbd-navy:hover,
-.dashboard-theme-sidoka .hover\:text-pbd-navy:hover,
-.dashboard-theme-sidak .hover\:text-pbd-navy:hover,
-.dashboard-theme-simonev .hover\:text-pbd-navy:hover,
-.dashboard-theme-optimaInfo .hover\:text-pbd-navy:hover,
 .dashboard-theme-arsip .hover\:text-pbd-navy:hover,
 .dashboard-theme-settings .hover\:text-pbd-navy:hover {
   color: #10243f;
@@ -673,60 +507,4 @@
 .app-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #b7c4d4 transparent;
-}
-
-@page {
-  size: A4 portrait;
-  margin: 0;
-}
-
-@media print {
-  html,
-  body {
-    background: #ffffff !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  body * {
-    visibility: hidden;
-  }
-
-  .sisurat-print-area,
-  .sisurat-print-area *,
-  .simonev-print-area,
-  .simonev-print-area * {
-    visibility: visible;
-  }
-
-  .sisurat-print-area {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    overflow: visible !important;
-  }
-
-  .simonev-print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    box-sizing: border-box !important;
-    min-height: auto !important;
-    width: 210mm !important;
-    max-width: 210mm !important;
-    padding: 10mm 12mm !important;
-    overflow: visible !important;
-    box-shadow: none !important;
-  }
-
-  .simonev-print-area *,
-  .simonev-print-area *::before,
-  .simonev-print-area *::after {
-    box-sizing: border-box !important;
-  }
-
-  .sisurat-document-sheet {
-    margin: 0 auto !important;
-    box-shadow: none !important;
-  }
 }

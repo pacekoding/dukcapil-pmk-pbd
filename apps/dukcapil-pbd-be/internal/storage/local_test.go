@@ -22,8 +22,8 @@ func TestLocalSavePersistsChecksumAndDoesNotOverwrite(t *testing.T) {
 
 	first, err := local.Save(context.Background(), SaveRequest{
 		Visibility: "private",
-		Module:     "maceku-pkk",
-		Category:   "lkpj",
+		Module:     "arsip-pegawai",
+		Category:   "dokumen",
 		Year:       "2026",
 		Extension:  "pdf",
 		Reader:     bytes.NewReader(content),
@@ -34,8 +34,8 @@ func TestLocalSavePersistsChecksumAndDoesNotOverwrite(t *testing.T) {
 	}
 	second, err := local.Save(context.Background(), SaveRequest{
 		Visibility: "private",
-		Module:     "maceku-pkk",
-		Category:   "lkpj",
+		Module:     "arsip-pegawai",
+		Category:   "dokumen",
 		Year:       "2026",
 		Extension:  "pdf",
 		Reader:     bytes.NewReader(content),
@@ -47,7 +47,7 @@ func TestLocalSavePersistsChecksumAndDoesNotOverwrite(t *testing.T) {
 	if first.Key == second.Key {
 		t.Fatalf("storage keys collided: %q", first.Key)
 	}
-	if !strings.HasPrefix(first.Key, "private/maceku-pkk/lkpj/2026/") {
+	if !strings.HasPrefix(first.Key, "private/arsip-pegawai/dokumen/2026/") {
 		t.Fatalf("storage key = %q", first.Key)
 	}
 	checksum := sha256.Sum256(content)

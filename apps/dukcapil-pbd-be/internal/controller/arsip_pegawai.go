@@ -132,7 +132,7 @@ func (a *ArsipPegawaiController) UploadPhoto(c echo.Context) error {
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "session login tidak valid")
 	}
-	tahunAnggaran, err := pelaksanaanDocumentTahunAnggaran(c)
+	tahunAnggaran, err := authenticatedTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func (a *ArsipPegawaiController) Delete(c echo.Context) error {
 }
 
 func (a *ArsipPegawaiController) UploadDocument(c echo.Context) error {
-	tahunAnggaran, err := pelaksanaanDocumentTahunAnggaran(c)
+	tahunAnggaran, err := authenticatedTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -338,7 +338,6 @@ func (a *ArsipPegawaiController) serveDocument(c echo.Context, disposition strin
 		document.MimeType,
 		document.StoredFileName,
 		documentRequestDisposition(c, disposition),
-		false,
 	)
 }
 
@@ -401,6 +400,15 @@ func validateArsipPegawaiPayload(request *model.ArsipPegawaiPayload) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "status pegawai tidak valid")
 	}
 	return nil
+}
+
+func validateArsipBidang(value string) error {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "sekretariat", "dukcapil", "pmk":
+		return nil
+	default:
+		return echo.NewHTTPError(http.StatusBadRequest, "bidang arsip tidak valid")
+	}
 }
 
 func validateArsipPegawaiDocumentPayload(payload *model.ArsipPegawaiDocumentPayload) error {

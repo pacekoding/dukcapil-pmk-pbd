@@ -1,0 +1,966 @@
+"use client";
+
+import Link from "next/link";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type Ref,
+} from "react";
+import {
+  Archive,
+  ArrowRight,
+  Camera,
+  Edit,
+  FileCheck2,
+  FileDown,
+  IdCard,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+  UsersRound,
+  X,
+} from "lucide-react";
+
+import { EmployeePhoto } from "@/components/arsipku/employee-photo";
+import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
+import { formatFileSize } from "@/components/dashboard/document-utils";
+import { PageHero } from "@/components/dashboard/page-hero";
+import { SectionCard } from "@/components/dashboard/section-card";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { ErrorState, SuccessState } from "@/components/dashboard/state";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  createArsipPegawai,
+  deleteArsipPegawai,
+  getArsipPegawai,
+  uploadArsipPegawaiPhoto,
+  updateArsipPegawai,
+} from "@/lib/api/arsipku";
+import {
+  IMAGE_FILE_ACCEPT,
+  validateClientUpload,
+} from "@/lib/api/file-policy";
+import { cn } from "@/lib/utils";
+import { downloadXlsx } from "@/lib/xlsx";
+import type { PegawaiArchive } from "@/types/arsipku";
+
+type PegawaiForm = {
+  nip: string;
+  nik: string;
+  name: string;
+  birthPlace: string;
+  birthDate: string;
+  position: string;
+  bidang: string;
+  unit: string;
+  rank: string;
+  email: string;
+  phone: string;
+  bankAccount: string;
+  address: string;
+  status: PegawaiArchive["status"];
+};
+
+const photoColors = [
+  "bg-blue-100 text-blue-700",
+  "bg-cyan-100 text-cyan-700",
+  "bg-indigo-100 text-indigo-700",
+  "bg-emerald-100 text-emerald-700",
+  "bg-amber-100 text-amber-700",
+];
+
+export default function PegawaiPage() {
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const firstEmployeeInputRef = useRef<HTMLInputElement | null>(null);
+  const [pegawaiRecords, setPegawaiRecords] = useState<PegawaiArchive[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PegawaiArchive | null>(null);
+  const [form, setForm] = useState<PegawaiForm>(() => createEmptyPegawaiForm());
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadPegawai = async () => {
+      setLoading(true);
+      try {
+        const records = await getArsipPegawai();
+        if (mounted) {
+          setPegawaiRecords(Array.isArray(records) ? records : []);
+          setError(null);
+        }
+      } catch (loadError) {
+        console.error(loadError);
+        if (mounted) {
+          setPegawaiRecords([]);
+          setError("Data pegawai gagal dimuat.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadPegawai();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!formOpen) {
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      firstEmployeeInputRef.current?.focus();
+      firstEmployeeInputRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+  }, [formOpen]);
+
+  const filteredPegawai = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return pegawaiRecords;
+    }
+
+    return pegawaiRecords.filter((pegawai) =>
+      [
+        pegawai.name,
+        pegawai.nip,
+        pegawai.nik,
+        pegawai.position,
+        pegawai.birthPlace,
+        pegawai.birthDate,
+        pegawai.bidang,
+        pegawai.unit,
+        pegawai.rank,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  }, [pegawaiRecords, query]);
+
+  const totalDocuments = pegawaiRecords.reduce(
+    (total, pegawai) => total + pegawai.documents.length,
+    0,
+  );
+  const needsVerification = pegawaiRecords.reduce(
+    (total, pegawai) =>
+      total +
+      pegawai.documents.filter(
+        (document) => document.status === "Perlu Verifikasi",
+      ).length,
+    0,
+  );
+
+  const editingPegawai = editingId
+    ? pegawaiRecords.find((pegawai) => pegawai.id === editingId)
+    : null;
+
+  const openCreateForm = () => {
+    setEditingId(null);
+    setForm(createEmptyPegawaiForm());
+    resetPhotoInput();
+    setFormOpen(true);
+  };
+
+  const openEditForm = (pegawai: PegawaiArchive) => {
+    setEditingId(pegawai.id);
+    setForm({
+      nip: pegawai.nip,
+      nik: pegawai.nik,
+      name: pegawai.name,
+      birthPlace: pegawai.birthPlace,
+      birthDate: pegawai.birthDate,
+      position: pegawai.position,
+      bidang: pegawai.bidang,
+      unit: pegawai.unit,
+      rank: pegawai.rank,
+      email: pegawai.email,
+      phone: pegawai.phone,
+      bankAccount: pegawai.bankAccount,
+      address: pegawai.address,
+      status: pegawai.status === "Aktif" ? "Aktif" : "Nonaktif",
+    });
+    resetPhotoInput();
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingId(null);
+    setForm(createEmptyPegawaiForm());
+    resetPhotoInput();
+  };
+
+  const resetPhotoInput = () => {
+    setSelectedPhoto(null);
+    setPhotoError(null);
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
+  };
+
+  const handlePhotoChange = (photo: File | null) => {
+    setSelectedPhoto(photo);
+    setPhotoError(null);
+    if (!photo) {
+      if (photoInputRef.current) {
+        photoInputRef.current.value = "";
+      }
+      return;
+    }
+
+    try {
+      validateClientUpload(photo, "image");
+    } catch (validationError) {
+      setPhotoError(
+        validationError instanceof Error
+          ? validationError.message
+          : "Foto pegawai tidak valid.",
+      );
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (photoError) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      if (editingId) {
+        const current = pegawaiRecords.find(
+          (pegawai) => pegawai.id === editingId,
+        );
+        let updated = await updateArsipPegawai(editingId, {
+          ...form,
+          photoColor: current?.photoColor ?? photoColors[0],
+        });
+        setPegawaiRecords((currentRecords) =>
+          currentRecords.map((pegawai) =>
+            pegawai.id === editingId ? updated : pegawai,
+          ),
+        );
+        if (selectedPhoto) {
+          try {
+            updated = await uploadArsipPegawaiPhoto(editingId, selectedPhoto);
+            setPegawaiRecords((currentRecords) =>
+              currentRecords.map((pegawai) =>
+                pegawai.id === editingId ? updated : pegawai,
+              ),
+            );
+          } catch (photoUploadError) {
+            console.error(photoUploadError);
+            setMessage(`${updated.name} berhasil diperbarui tanpa foto baru.`);
+            setError(
+              photoUploadError instanceof Error
+                ? photoUploadError.message
+                : "Foto pegawai gagal diunggah.",
+            );
+            closeForm();
+            return;
+          }
+        }
+        setMessage(`${updated.name} berhasil diperbarui.`);
+      } else {
+        let created = await createArsipPegawai({
+          ...form,
+          photoColor: photoColors[pegawaiRecords.length % photoColors.length],
+        });
+        setPegawaiRecords((currentRecords) => [created, ...currentRecords]);
+        if (selectedPhoto) {
+          try {
+            created = await uploadArsipPegawaiPhoto(created.id, selectedPhoto);
+            setPegawaiRecords((currentRecords) =>
+              currentRecords.map((pegawai) =>
+                pegawai.id === created.id ? created : pegawai,
+              ),
+            );
+          } catch (photoUploadError) {
+            console.error(photoUploadError);
+            setMessage(`${created.name} berhasil ditambahkan tanpa foto.`);
+            setError(
+              photoUploadError instanceof Error
+                ? photoUploadError.message
+                : "Foto pegawai gagal diunggah.",
+            );
+            closeForm();
+            return;
+          }
+        }
+        setMessage(`${created.name} berhasil ditambahkan.`);
+      }
+
+      closeForm();
+    } catch (submitError) {
+      console.error(submitError);
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Data pegawai gagal disimpan.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+
+    setDeleting(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await deleteArsipPegawai(deleteTarget.id);
+      setPegawaiRecords((currentRecords) =>
+        currentRecords.filter((pegawai) => pegawai.id !== deleteTarget.id),
+      );
+      setMessage(`${deleteTarget.name} berhasil dihapus.`);
+      setDeleteTarget(null);
+    } catch (deleteError) {
+      console.error(deleteError);
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Data pegawai gagal dihapus.",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleExportRecap = () => {
+    const reportRows = pegawaiRecords.flatMap((pegawai) =>
+      (pegawai.documents.length > 0 ? pegawai.documents : [null]).map(
+        (document) => [
+          pegawai.nip,
+          pegawai.nik,
+          pegawai.name,
+          pegawai.birthPlace,
+          pegawai.birthDate,
+          pegawai.position,
+          pegawai.bidang,
+          pegawai.unit,
+          pegawai.rank,
+          pegawai.email,
+          pegawai.phone,
+          pegawai.bankAccount,
+          pegawai.address,
+          pegawai.status,
+          pegawai.documents.length,
+          document?.title ?? "",
+          document?.category ?? "",
+          document?.bidang ?? "",
+          document?.number ?? "",
+          document?.year ?? "",
+          document?.status ?? "",
+          document?.storedFileName ?? "",
+          document ? formatReportDate(document.uploadedAt) : "",
+        ],
+      ),
+    );
+
+    downloadXlsx({
+      fileName: `rekap-arsipku-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      sheetName: "Rekap ARSIPKU",
+      columns: [
+        { width: 24 },
+        { width: 24 },
+        { width: 34 },
+        { width: 24 },
+        { width: 18 },
+        { width: 28 },
+        { width: 24 },
+        { width: 24 },
+        { width: 24 },
+        { width: 30 },
+        { width: 20 },
+        { width: 24 },
+        { width: 42 },
+        { width: 16 },
+        { width: 18 },
+        { width: 36 },
+        { width: 20 },
+        { width: 18 },
+        { width: 24 },
+        { width: 14 },
+        { width: 20 },
+        { width: 36 },
+        { width: 18 },
+      ],
+      rows: [
+        [
+          "NIP",
+          "NIK",
+          "Nama Pegawai",
+          "Tempat Lahir",
+          "Tanggal Lahir",
+          "Jabatan",
+          "Bidang",
+          "Seksi",
+          "Pangkat/Golongan",
+          "Email",
+          "Telepon",
+          "No Rekening",
+          "Alamat",
+          "Status Pegawai",
+          "Jumlah Dokumen",
+          "Nama Dokumen",
+          "Kategori",
+          "Bidang",
+          "Nomor Dokumen",
+          "Tahun Dokumen",
+          "Status Verifikasi",
+          "Nama File",
+          "Tanggal Upload",
+        ],
+        ...reportRows,
+      ],
+    });
+  };
+
+  return (
+    <main className="space-y-6">
+      <PageHero
+        icon={Archive}
+        eyebrow="Sistem ARSIPKU"
+        title="Data Pegawai"
+        description="Kelola daftar pegawai dan arsip dokumen kepegawaian seperti ijazah, SK, SPMT, sertifikat, dan dokumen pendukung lainnya."
+        meta={
+          <Badge className="h-8 rounded-full bg-blue-50 px-4 text-sm font-bold text-pbd-blue">
+            {pegawaiRecords.length} pegawai
+          </Badge>
+        }
+        aside={
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-xl"
+              disabled={loading || pegawaiRecords.length === 0}
+              onClick={handleExportRecap}
+            >
+              <FileDown className="h-4 w-4" />
+              Ekspor Rekap
+            </Button>
+            <Button
+              type="button"
+              className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              onClick={openCreateForm}
+            >
+              <Plus className="h-4 w-4" />
+              Tambah Pegawai
+            </Button>
+          </div>
+        }
+      />
+
+      <section className="grid gap-4 md:grid-cols-3">
+        <StatCard
+          label="Pegawai"
+          value={String(pegawaiRecords.length)}
+          description="Data pegawai terarsip"
+          icon={UsersRound}
+          tone="blue"
+        />
+        <StatCard
+          label="Dokumen"
+          value={String(totalDocuments)}
+          description="Total file kepegawaian"
+          icon={FileCheck2}
+          tone="emerald"
+        />
+        <StatCard
+          label="Perlu Verifikasi"
+          value={String(needsVerification)}
+          description="File menunggu pemeriksaan"
+          icon={IdCard}
+          tone="amber"
+        />
+      </section>
+
+      {message ? <SuccessState message={message} /> : null}
+      {error ? <ErrorState message={error} /> : null}
+
+      {formOpen ? (
+        <SectionCard
+          title={editingPegawai ? "Edit Pegawai" : "Tambah Pegawai"}
+          description="Lengkapi data pegawai untuk sistem arsip kepegawaian."
+        >
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormInput
+                label="NIP"
+                value={form.nip}
+                placeholder="Contoh: 198501012010011001"
+                inputRef={firstEmployeeInputRef}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, nip: value }))
+                }
+              />
+              <FormInput
+                label="NIK"
+                value={form.nik}
+                placeholder="Contoh: 9201010101850001"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, nik: value }))
+                }
+              />
+              <FormInput
+                label="Nama"
+                value={form.name}
+                placeholder="Nama lengkap pegawai"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, name: value }))
+                }
+              />
+              <FormInput
+                label="Tempat Lahir"
+                value={form.birthPlace}
+                placeholder="Contoh: Sorong"
+                required={false}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, birthPlace: value }))
+                }
+              />
+              <FormInput
+                label="Tanggal Lahir"
+                value={form.birthDate}
+                placeholder=""
+                type="date"
+                required={false}
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, birthDate: value }))
+                }
+              />
+              <FormInput
+                label="Jabatan"
+                value={form.position}
+                placeholder="Contoh: Analis Kebijakan"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, position: value }))
+                }
+              />
+              <FormInput
+                label="Bidang"
+                value={form.bidang}
+                placeholder="Contoh: Bidang Pemerintahan dan Otonomi Khusus"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, bidang: value }))
+                }
+              />
+              <FormInput
+                label="Seksi"
+                value={form.unit}
+                placeholder="Contoh: Seksi Data dan Informasi"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, unit: value }))
+                }
+              />
+              <FormInput
+                label="Pangkat/Golongan"
+                value={form.rank}
+                placeholder="Contoh: Penata Tk. I / III.d"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, rank: value }))
+                }
+              />
+              <FormInput
+                label="Email"
+                value={form.email}
+                placeholder="email@papuabaratdaya.go.id"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, email: value }))
+                }
+              />
+              <FormInput
+                label="Telepon"
+                value={form.phone}
+                placeholder="Contoh: 0812-0000-0000"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, phone: value }))
+                }
+              />
+              <FormInput
+                label="No Rekening"
+                value={form.bankAccount}
+                placeholder="Contoh: 1234567890"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, bankAccount: value }))
+                }
+              />
+              <div className="grid gap-2">
+                <span className="text-sm font-bold text-pbd-navy">
+                  Status Pegawai
+                </span>
+                <div className="flex h-10 items-center justify-between rounded-md border border-input px-3">
+                  <span className="text-sm font-semibold text-slate-700">
+                    {form.status === "Aktif" ? "Aktif" : "Nonaktif"}
+                  </span>
+                  <Switch
+                    checked={form.status === "Aktif"}
+                    disabled={saving}
+                    onCheckedChange={(checked) =>
+                      setForm((current) => ({
+                        ...current,
+                        status: checked ? "Aktif" : "Nonaktif",
+                      }))
+                    }
+                    aria-label="Status aktif pegawai"
+                  />
+                </div>
+              </div>
+              <FormInput
+                label="Alamat"
+                value={form.address}
+                placeholder="Alamat domisili pegawai"
+                className="md:col-span-2"
+                onChange={(value) =>
+                  setForm((current) => ({ ...current, address: value }))
+                }
+              />
+              <div className="grid gap-2 md:col-span-2">
+                <span className="text-sm font-bold text-pbd-navy">
+                  Foto Pegawai
+                </span>
+                <Input
+                  ref={photoInputRef}
+                  type="file"
+                  accept={IMAGE_FILE_ACCEPT}
+                  disabled={saving}
+                  onChange={(event) =>
+                    handlePhotoChange(event.target.files?.[0] ?? null)
+                  }
+                />
+                <p className="text-xs leading-5 text-slate-500">
+                  Format JPG, PNG, atau WebP. Foto baru akan menggantikan foto
+                  sebelumnya.
+                </p>
+                {selectedPhoto ? (
+                  <div
+                    className={cn(
+                      "flex items-center justify-between gap-3 rounded-lg border px-3 py-3 text-sm",
+                      photoError
+                        ? "border-red-200 bg-red-50 text-red-700"
+                        : "border-slate-200 bg-slate-50 text-slate-600",
+                    )}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Camera className="h-5 w-5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">
+                          {selectedPhoto.name}
+                        </p>
+                        <p className="text-xs">
+                          {formatFileSize(selectedPhoto.size)}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={saving}
+                      onClick={() => handlePhotoChange(null)}
+                      aria-label="Hapus foto yang dipilih"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : editingPegawai?.photoOriginalName ? (
+                  <p className="text-sm text-slate-600">
+                    Foto saat ini:{" "}
+                    <span className="font-semibold">
+                      {editingPegawai.photoOriginalName}
+                    </span>
+                  </p>
+                ) : null}
+                {photoError ? (
+                  <p className="text-sm font-medium text-red-600">
+                    {photoError}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={closeForm}>
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving}
+                className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
+              >
+                {saving
+                  ? "Menyimpan..."
+                  : editingPegawai
+                    ? "Simpan Perubahan"
+                    : "Tambah Data"}
+              </Button>
+            </div>
+          </form>
+        </SectionCard>
+      ) : null}
+
+      <SectionCard
+        title="Data Pegawai"
+        description="Klik nama pegawai untuk membuka foto, biodata singkat, dan daftar file arsip."
+        action={
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <div className="relative w-full sm:w-80">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="pl-9"
+                placeholder="Cari nama, NIP, jabatan..."
+              />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-lg"
+              onClick={openCreateForm}
+            >
+              <Plus className="h-4 w-4" />
+              Tambah Pegawai
+            </Button>
+          </div>
+        }
+        contentClassName="p-0"
+      >
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nama Pegawai</TableHead>
+              <TableHead>NIP</TableHead>
+              <TableHead>Bidang</TableHead>
+              <TableHead>Seksi</TableHead>
+              <TableHead>Jabatan</TableHead>
+              <TableHead>Dokumen</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="py-10 text-center text-sm font-medium text-slate-500"
+                >
+                  Memuat data pegawai...
+                </TableCell>
+              </TableRow>
+            ) : filteredPegawai.length > 0 ? (
+              filteredPegawai.map((pegawai) => (
+                <TableRow key={pegawai.id} className="group">
+                  <TableCell className="min-w-[260px] whitespace-normal">
+                    <Link
+                      href={`/internal/pegawai/${pegawai.id}`}
+                      className="flex items-center gap-3"
+                    >
+                      <EmployeePhoto
+                        employee={pegawai}
+                        className="h-11 w-11 shrink-0 rounded-lg text-sm"
+                        sizes="44px"
+                      />
+                      <div>
+                        <p className="font-bold text-pbd-navy group-hover:text-pbd-blue">
+                          {pegawai.name}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          NIK {pegawai.nik}
+                        </p>
+                      </div>
+                    </Link>
+                  </TableCell>
+                  <TableCell className="font-semibold text-slate-700">
+                    {pegawai.nip}
+                  </TableCell>
+                  <TableCell>{pegawai.bidang || "-"}</TableCell>
+                  <TableCell>{pegawai.unit || "-"}</TableCell>
+                  <TableCell>{pegawai.position}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="bg-slate-50">
+                      {pegawai.documents.length} file
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        pegawai.status === "Aktif"
+                          ? "border border-emerald-100 bg-emerald-50 text-emerald-700"
+                          : "border border-slate-200 bg-slate-100 text-slate-600"
+                      }
+                    >
+                      {pegawai.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Buka aksi untuk ${pegawai.name}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/internal/pegawai/${pegawai.id}`}>
+                            <ArrowRight className="h-4 w-4" />
+                            Buka Detail
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditForm(pegawai)}>
+                          <Edit className="h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteTarget(pegawai)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Hapus
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="py-10 text-center text-sm font-medium text-slate-500"
+                >
+                  Tidak ada pegawai yang sesuai dengan pencarian.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </SectionCard>
+
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        title="Hapus Data Pegawai?"
+        description={`Data ${deleteTarget?.name ?? "pegawai"} akan dihapus dari Arsipku dan tidak dapat dikembalikan.`}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleDelete}
+        loading={deleting}
+      />
+    </main>
+  );
+}
+
+function FormInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  className,
+  inputRef,
+  required = true,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  type?: string;
+  className?: string;
+  inputRef?: Ref<HTMLInputElement>;
+  required?: boolean;
+}) {
+  return (
+    <label className={cn("grid gap-2", className)}>
+      <span className="text-sm font-bold text-pbd-navy">{label}</span>
+      <Input
+        ref={inputRef}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        type={type}
+        required={required}
+      />
+    </label>
+  );
+}
+
+function formatReportDate(value: string) {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function createEmptyPegawaiForm(): PegawaiForm {
+  return {
+    nip: "",
+    nik: "",
+    name: "",
+    birthPlace: "",
+    birthDate: "",
+    position: "",
+    bidang: "",
+    unit: "",
+    rank: "",
+    email: "",
+    phone: "",
+    bankAccount: "",
+    address: "",
+    status: "Aktif",
+  };
+}

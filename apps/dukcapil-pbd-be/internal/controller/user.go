@@ -20,15 +20,8 @@ var validSystemAccess = map[string]bool{
 	"sibum":         true,
 	"sikampung":     true,
 	"sitekad":       true,
-	"aspirasiku":    true,
-	"sidoka":        true,
-	"sidak":         true,
 	"siber":         true,
-	"sisurat":       true,
-	"simonev":       true,
-	"optima_info":   true,
 	"arsip_pegawai": true,
-	"maceku_pkk":    true,
 }
 
 type AdminUserStore interface {
@@ -197,9 +190,6 @@ func validateCreateAdminUser(request model.CreateAdminUserRequest) error {
 	if err := validateSystemAccess(request.SystemAccess); err != nil {
 		return err
 	}
-	if err := validateRegionScope(request.RegionScope); err != nil {
-		return err
-	}
 	return validatePassword(request.Password)
 }
 
@@ -210,7 +200,7 @@ func validateUpdateAdminUser(request model.UpdateAdminUserRequest) error {
 	if err := validateSystemAccess(request.SystemAccess); err != nil {
 		return err
 	}
-	return validateRegionScope(request.RegionScope)
+	return nil
 }
 
 func validateAdminUserFields(username, name string, role model.Role) error {
@@ -246,20 +236,6 @@ func validateSystemAccess(values []string) error {
 		if !validSystemAccess[normalized] {
 			return echo.NewHTTPError(http.StatusBadRequest, "hak akses sistem tidak valid")
 		}
-	}
-	return nil
-}
-
-func validateRegionScope(scope model.UserRegionScope) error {
-	scope.KabupatenKota = strings.TrimSpace(scope.KabupatenKota)
-	scope.Distrik = strings.TrimSpace(scope.Distrik)
-	scope.Kampung = strings.TrimSpace(scope.Kampung)
-
-	if scope.Distrik != "" && scope.KabupatenKota == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "scope distrik membutuhkan scope kabupaten/kota")
-	}
-	if scope.Kampung != "" && (scope.KabupatenKota == "" || scope.Distrik == "") {
-		return echo.NewHTTPError(http.StatusBadRequest, "scope kampung membutuhkan scope kabupaten/kota dan distrik")
 	}
 	return nil
 }

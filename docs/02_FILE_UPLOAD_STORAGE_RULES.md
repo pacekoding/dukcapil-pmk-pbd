@@ -7,11 +7,8 @@ penghapusan, migrasi, dan backup file portal DUKCAPIL-PBD.
 
 ## Cakupan
 
-Storage persisten dipakai oleh:
-
-- dokumen pelaksanaan dan arsip pegawai;
-- logo serta arsip MACEKU PKK;
-- thumbnail, gambar isi, dan lampiran OPTIMA INFO.
+Storage persisten dipakai oleh arsip pegawai dan modul aktif lain yang menyimpan
+lampiran secara persisten.
 
 Import XLSX yang hanya diproses sementara bukan arsip persisten dan tidak masuk
 ke tabel `stored_files`.
@@ -31,11 +28,7 @@ ke tabel `stored_files`.
 Contoh path file baru:
 
 ```txt
-private/arsip/sidoka-pmk/2026/{uuid}.pdf
-private/maceku-pkk/lkpj/2026/{uuid}.pdf
-private/maceku-pkk/kepengurusan/2026/{uuid}.webp
-public/optima-info/images/2026/{uuid}.jpg
-public/optima-info/documents/2026/{uuid}.pdf
+private/arsip-pegawai/dokumen/2026/{uuid}.pdf
 ```
 
 `storage_key` di database selalu relatif terhadap `STORAGE_ROOT`. Path absolut,
@@ -66,7 +59,7 @@ Tabel `stored_files` menyimpan:
 - module, related entity type, related entity ID, dan category;
 - original filename dan UUID stored filename;
 - storage key, MIME, file size, dan SHA-256;
-- visibility `private` atau `public`;
+- visibility `private`;
 - uploaded user, created/updated time, dan soft-delete time.
 
 Nama asli hanya digunakan sebagai metadata dan `Content-Disposition`. Nama asli
@@ -74,7 +67,7 @@ disanitasi, tetapi Unicode dan spasi yang aman tetap dipertahankan.
 
 ## Urutan Upload
 
-1. Validasi login, role, system access, wilayah, tahun anggaran, dan metadata.
+1. Validasi login, role, system access, tahun anggaran, dan metadata.
 2. Validasi ukuran, ekstensi, MIME, dan magic bytes.
 3. Buat path server dari allowlist segment dan UUID v4.
 4. Stream ke file sementara di direktori tujuan sambil menghitung SHA-256.
@@ -95,22 +88,11 @@ GET|HEAD /api/v1/files/{file_id}/preview
 GET|HEAD /api/v1/files/{file_id}/download
 ```
 
-Endpoint public:
-
-```txt
-GET|HEAD /api/v1/website/files/{file_id}/preview
-GET|HEAD /api/v1/website/files/{file_id}/download
-```
-
 Frontend mengakses endpoint tersebut melalui proxy same-origin
 `/api/backend/...`.
 
 Aturan akses:
 
-- OPTIMA dashboard memerlukan system access `optima_info`.
-- File OPTIMA public hanya tersedia jika visibility public, artikel induk
-  berstatus `Published`, dan tanggal tayang aktif.
-- MACEKU memerlukan system access `maceku_pkk` dan scope wilayah yang sesuai.
 - Arsip private dibatasi oleh tahun anggaran pada token user.
 - Super Admin tetap melalui endpoint terproteksi untuk file private.
 - Storage key tidak dikirim ke response JSON.
@@ -174,9 +156,9 @@ Nama volume dapat diperiksa dengan `docker volume ls`. Setelah aplikasi baru
 aktif, bandingkan jumlah file dan checksum file penting sebelum mempertimbangkan
 penghapusan volume lama.
 
-Migrasi SQL `000011_persistent_file_storage` membackfill metadata dan foreign key
-untuk path legacy `/uploads/...`. Row legacy yang binary-nya sudah hilang tetap
-tidak dapat direkonstruksi; file tersebut harus diunggah ulang.
+Migrasi SQL `000011_persistent_file_storage` membentuk metadata penyimpanan
+persisten. Row legacy yang binary-nya sudah hilang tidak dapat direkonstruksi;
+file tersebut harus diunggah ulang.
 
 ## Backup dan Restore
 

@@ -45,161 +45,76 @@ const menuTitles: Record<
     description: string;
   }
 > = {
-  "/portal": {
-    title: "Portal Aplikasi",
-    description: "Pilih sistem internal yang ingin digunakan",
-  },
-
-  "/dashboard": {
+  "/internal/dashboard": {
     title: "Dashboard",
     description: "Ringkasan data agregat prioritas Dukcapil dan PMK",
   },
 
-  "/settings": {
+  "/internal/pengaturan": {
     title: "Dashboard",
     description: "Pusat pengaturan super admin",
   },
 
-  "/sibum/dashboard": {
-    title: "SIBUM Kampung",
-    description: "Sistem Informasi BUM Kampung",
-  },
-
-  "/maceku-pkk/dashboard": {
-    title: "MACEKU PKK",
-    description: "Manajemen profil organisasi dan arsip PKK",
-  },
-
-  "/maceku-pkk/data": {
-    title: "Profil PKK",
-    description: "Kelola profil organisasi PKK beserta wilayah dan arsipnya",
-  },
-
-  "/sibum/data": {
+  "/internal/sibumkam/data": {
     title: "Data BUMKam",
     description:
       "Kelola data BUM Kampung berdasarkan kabupaten/kota, distrik, kampung, kategori, dan status verifikasi.",
   },
 
-  "/sikampung/dashboard": {
-    title: "SIKAMPUNG",
-    description: "Sistem Informasi Kampung IDM",
-  },
-
-  "/sikampung/data": {
+  "/internal/sikampung/data": {
     title: "Data Kampung IDM",
     description: "Kelola IKS, IKE, IKL, nilai IDM, dan status IDM",
   },
 
-  "/sitekad/dashboard": {
-    title: "SITEKAD",
-    description: "Sistem Informasi Terpadu Program TEKAD",
-  },
-
-  "/sitekad/data": {
+  "/internal/sitekad/data": {
     title: "Data Kelompok Binaan",
     description: "Kelola data kelompok binaan pada lokus Program TEKAD",
   },
 
-  "/sitekad/capaian-kendala": {
+  "/internal/sitekad/capaian-kendala": {
     title: "Capaian & Kendala",
     description: "Kelola riwayat capaian dan kendala kelompok binaan Program TEKAD",
   },
 
-  "/aspirasiku/dashboard": {
-    title: "ASPIRASIKU",
-    description: "Sistem aspirasi anonim",
-  },
-
-  "/aspirasiku/data": {
-    title: "Data Aspirasi",
-    description: "Kelola pesan aspirasi anonim dari website",
-  },
-
-  "/dashboard/SDD": {
-    title: "SSD",
-    description: "Kelola master SSD melalui import XLSX dan pemutakhiran data",
-  },
-
-  "/dashboard/subkegiatan": {
-    title: "Subkegiatan",
-    description: "Kelola master subkegiatan berdasarkan tahun anggaran",
-  },
-
-  "/sidoka/data": {
-    title: "Data Pelaksanaan",
-    description: "Kelola dokumen pelaksanaan kegiatan dan relasi DSSD",
-  },
-
-  "/sidoka/dashboard": {
-    title: "SIDOKA",
-    description: "Sistem Informasi Dokumen Kegiatan",
-  },
-
-  "/sidak/dashboard": {
-    title: "SIDAK",
-    description: "Sistem Informasi Data Kegiatan Dukcapil",
-  },
-
-  "/sidak/data": {
-    title: "Data Pelaksanaan",
-    description: "Kelola dokumen pelaksanaan kegiatan Dukcapil dan relasi DSSD",
-  },
-
-  "/siber/dashboard": {
-    title: "SIRBE",
-    description: "Dashboard Data Dukcapil",
-  },
-
-  "/siber/data": {
-    title: "Data Dukcapil",
+  "/internal/dukcapil/kependudukan": {
+    title: "Data Kependudukan",
     description:
-      "Kelola data kependudukan, pencatatan sipil, dan OAP per kabupaten/kota",
+      "Kelola data kependudukan dan OAP per kabupaten/kota",
   },
 
-  "/simonev/dashboard": {
-    title: "SIMONEV DUKCAPIL",
-    description: "Sistem informasi monitoring dan evaluasi data SSD",
+  "/internal/dukcapil/pencatatan-sipil": {
+    title: "Data Pencatatan Sipil",
+    description: "Kelola data pencatatan sipil per kabupaten/kota",
   },
 
-  "/simonev/data": {
-    title: "Form Monev SSD",
-    description: "Buat dan cetak formulir monitoring evaluasi data SSD",
-  },
-
-  "/optima-info/dashboard": {
-    title: "OPTIMA-INFO",
-    description: "Kelola informasi aktif yang tampil di website publik",
-  },
-
-  "/optima-info/create": {
-    title: "Tambah Informasi",
-    description: "Buat draft informasi baru untuk website publik",
-  },
-
-  "/arsipku/dashboard": {
-    title: "Dashboard ARSIPKU",
-    description: "Ringkasan data pegawai dan dokumen kepegawaian",
-  },
-
-  "/arsipku/data-pegawai": {
+  "/internal/pegawai": {
     title: "Data Pegawai",
     description: "Kelola biodata dan status pegawai",
   },
 
-  "/arsipku/data-arsip": {
+  "/internal/arsip": {
     title: "Data Arsip",
     description: "Cari dan filter seluruh dokumen kepegawaian",
   },
 
-  "/dashboard/users": {
-    title: "User",
+  "/internal/pengaturan/pengguna": {
+    title: "Pengguna Portal",
     description: "Kelola pengguna internal dan role akses",
   },
 
-  "/dashboard/kab-kota": {
+  "/internal/pengaturan/status-portal": {
+    title: "Status Portal",
+    description: "Kelola status ketersediaan sistem internal",
+  },
+
+  "/internal/pengaturan/kab-kota": {
     title: "Data Kab/Kota",
     description: "Kelola master data kabupaten/kota",
+  },
+
+  "/internal/pengaturan/data-wilayah-release": {
+    title: "Release Data Wilayah",
+    description: "Atur tahun data wilayah yang ditampilkan ke publik",
   },
 };
 
@@ -208,145 +123,52 @@ function getPageInfo(pathname: string) {
     return menuTitles[pathname];
   }
 
-  if (pathname.startsWith("/portal")) {
-    return menuTitles["/portal"];
+  if (pathname === "/internal/dashboard") {
+    return menuTitles["/internal/dashboard"];
   }
 
-  if (pathname === "/dashboard") {
-    return menuTitles["/dashboard"];
+  if (pathname === "/internal/pengaturan") {
+    return menuTitles["/internal/pengaturan"];
   }
 
-  if (pathname === "/settings") {
-    return menuTitles["/settings"];
+  if (pathname.startsWith("/internal/sibumkam/data")) {
+    return menuTitles["/internal/sibumkam/data"];
   }
 
-  if (pathname.startsWith("/sibum/dashboard")) {
-    return menuTitles["/sibum/dashboard"];
+  if (pathname.startsWith("/internal/sikampung/data")) {
+    return menuTitles["/internal/sikampung/data"];
   }
 
-  if (pathname.startsWith("/maceku-pkk/dashboard")) {
-    return menuTitles["/maceku-pkk/dashboard"];
+  if (pathname.startsWith("/internal/sitekad/data")) {
+    return menuTitles["/internal/sitekad/data"];
   }
 
-  if (
-    pathname.startsWith("/maceku-pkk/data") ||
-    pathname.startsWith("/maceku-pkk/")
-  ) {
-    return menuTitles["/maceku-pkk/data"];
+  if (pathname.startsWith("/internal/sitekad/capaian-kendala")) {
+    return menuTitles["/internal/sitekad/capaian-kendala"];
   }
 
-  if (pathname.startsWith("/sibum/data")) {
-    return menuTitles["/sibum/data"];
+  if (pathname.startsWith("/internal/pengaturan/pengguna")) {
+    return menuTitles["/internal/pengaturan/pengguna"];
   }
 
-  if (pathname.startsWith("/sikampung/dashboard")) {
-    return menuTitles["/sikampung/dashboard"];
+  if (pathname.startsWith("/internal/pengaturan/kab-kota")) {
+    return menuTitles["/internal/pengaturan/kab-kota"];
   }
 
-  if (pathname.startsWith("/sikampung/data")) {
-    return menuTitles["/sikampung/data"];
+  if (pathname.startsWith("/internal/dukcapil/kependudukan")) {
+    return menuTitles["/internal/dukcapil/kependudukan"];
   }
 
-  if (pathname.startsWith("/sitekad/dashboard")) {
-    return menuTitles["/sitekad/dashboard"];
+  if (pathname.startsWith("/internal/dukcapil/pencatatan-sipil")) {
+    return menuTitles["/internal/dukcapil/pencatatan-sipil"];
   }
 
-  if (pathname.startsWith("/sitekad/data")) {
-    return menuTitles["/sitekad/data"];
+  if (pathname.startsWith("/internal/pegawai")) {
+    return menuTitles["/internal/pegawai"];
   }
 
-  if (pathname.startsWith("/sitekad/capaian-kendala")) {
-    return menuTitles["/sitekad/capaian-kendala"];
-  }
-
-  if (pathname.startsWith("/aspirasiku/dashboard")) {
-    return menuTitles["/aspirasiku/dashboard"];
-  }
-
-  if (pathname.startsWith("/aspirasiku/data")) {
-    return menuTitles["/aspirasiku/data"];
-  }
-
-  if (pathname.startsWith("/dashboard/users")) {
-    return menuTitles["/dashboard/users"];
-  }
-
-  if (pathname.startsWith("/dashboard/kab-kota")) {
-    return menuTitles["/dashboard/kab-kota"];
-  }
-
-  if (pathname.startsWith("/sidoka/data")) {
-    return menuTitles["/sidoka/data"];
-  }
-
-  if (pathname.startsWith("/sidoka/dashboard")) {
-    return menuTitles["/sidoka/dashboard"];
-  }
-
-  if (pathname.startsWith("/sidak/dashboard")) {
-    return menuTitles["/sidak/dashboard"];
-  }
-
-  if (pathname.startsWith("/sidak/data")) {
-    return menuTitles["/sidak/data"];
-  }
-
-  if (pathname.startsWith("/siber/dashboard")) {
-    return menuTitles["/siber/dashboard"];
-  }
-
-  if (pathname.startsWith("/siber/data")) {
-    return menuTitles["/siber/data"];
-  }
-
-  if (pathname.startsWith("/simonev/dashboard")) {
-    return menuTitles["/simonev/dashboard"];
-  }
-
-  if (pathname.startsWith("/simonev/data")) {
-    return menuTitles["/simonev/data"];
-  }
-
-  if (pathname.startsWith("/optima-info/dashboard")) {
-    return menuTitles["/optima-info/dashboard"];
-  }
-
-  if (pathname.startsWith("/optima-info/create")) {
-    return menuTitles["/optima-info/create"];
-  }
-
-  if (pathname.startsWith("/optima-info/preview")) {
-    return {
-      title: "Preview Informasi",
-      description: "Pratinjau informasi dengan viewer publik",
-    };
-  }
-
-  if (pathname.startsWith("/optima-info/") && pathname.endsWith("/edit")) {
-    return {
-      title: "Edit Informasi",
-      description: "Perbarui draft atau informasi yang sudah diterbitkan",
-    };
-  }
-
-  if (pathname.startsWith("/arsipku/data-pegawai")) {
-    return menuTitles["/arsipku/data-pegawai"];
-  }
-
-  if (pathname.startsWith("/arsipku/data-arsip")) {
-    return menuTitles["/arsipku/data-arsip"];
-  }
-
-  if (pathname.startsWith("/arsipku")) {
-    return menuTitles["/arsipku/dashboard"];
-  }
-
-  if (pathname.startsWith("/dashboard/subkegiatan")) {
-    return menuTitles["/dashboard/subkegiatan"];
-  }
-
-  if (pathname.startsWith("/dashboard/SDD")) {
-    return menuTitles["/dashboard/SDD"];
+  if (pathname.startsWith("/internal/arsip")) {
+    return menuTitles["/internal/arsip"];
   }
 
   return {
@@ -476,7 +298,7 @@ export default function DashboardTopbar({
       }
 
       setTahunAnggaran(result?.tahunAnggaran ?? pendingTahunAnggaran);
-      window.location.href = "/portal";
+      window.location.href = "/internal/dashboard";
     } catch (error) {
       console.error(error);
       setSwitchYearError(

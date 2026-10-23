@@ -301,7 +301,7 @@ func (r *ArsipPegawaiRepository) CreateDocument(ctx context.Context, payload mod
 	}
 
 	pegawaiID := payload.PegawaiID
-	record := model.PelaksanaanDocumentEntity{
+	record := model.ArsipPegawaiDocumentEntity{
 		TahunAnggaran:    strings.TrimSpace(payload.TahunAnggaran),
 		SumberAplikasi:   "arsip_pegawai",
 		Bidang:           strings.TrimSpace(payload.Bidang),
@@ -433,7 +433,7 @@ func (r *ArsipPegawaiRepository) DeleteDocument(ctx context.Context, pegawaiID i
 		}
 		result := tx.Table("arsip").
 			Where("sumber_aplikasi = ? AND pegawai_id = ? AND id = ?", "arsip_pegawai", pegawaiID, id).
-			Delete(&model.PelaksanaanDocumentEntity{})
+			Delete(&model.ArsipPegawaiDocumentEntity{})
 		if result.Error != nil {
 			return result.Error
 		}
@@ -560,7 +560,7 @@ func finalizeArsipPegawaiDocument(record model.ArsipPegawaiDocument) model.Arsip
 	if filepath.Ext(typeSource) == "" {
 		typeSource = storedName
 	}
-	record.FileType = strings.ToUpper(pelaksanaanDocumentFileType(typeSource, record.MimeType))
+	record.FileType = strings.ToUpper(arsipPegawaiDocumentFileType(typeSource, record.MimeType))
 	if record.FileID != nil && *record.FileID > 0 {
 		record.DownloadURL = fmt.Sprintf("/api/backend/files/%d/download", *record.FileID)
 		record.PreviewURL = fmt.Sprintf("/api/backend/files/%d/preview", *record.FileID)
@@ -569,6 +569,32 @@ func finalizeArsipPegawaiDocument(record model.ArsipPegawaiDocument) model.Arsip
 		record.PreviewURL = fmt.Sprintf("/api/backend/arsipku/%d/documents/%d/download?disposition=inline", record.PegawaiID, record.ID)
 	}
 	return record
+}
+
+func arsipPegawaiDocumentFileType(fileName string, mimeType string) string {
+	switch strings.ToLower(filepath.Ext(fileName)) {
+	case ".pdf":
+		return "pdf"
+	case ".doc", ".docx":
+		return "word"
+	case ".xls", ".xlsx":
+		return "excel"
+	case ".png", ".jpg", ".jpeg", ".webp":
+		return "image"
+	}
+
+	switch strings.ToLower(strings.TrimSpace(mimeType)) {
+	case "application/pdf":
+		return "pdf"
+	case "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+		return "word"
+	case "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+		return "excel"
+	case "image/png", "image/jpeg", "image/webp":
+		return "image"
+	default:
+		return "unknown"
+	}
 }
 
 func pegawaiEntityFromPayload(payload model.ArsipPegawaiPayload) model.ArsipPegawaiEntity {

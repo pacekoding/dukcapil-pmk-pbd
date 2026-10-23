@@ -18,10 +18,9 @@ const methodsWithoutBody = new Set(["GET", "HEAD"]);
 
 async function proxyRequest(request: Request, context: RouteContext) {
   const { path } = await context.params;
-  const upstreamPath = normalizeBackendPath(path);
   const requestUrl = new URL(request.url);
   const upstreamUrl = new URL(
-    `${API_BASE_URL}${API_PREFIX}/${upstreamPath.join("/")}`,
+    `${API_BASE_URL}${API_PREFIX}/${path.join("/")}`,
   );
   upstreamUrl.search = requestUrl.search;
 
@@ -74,10 +73,3 @@ export const POST = proxyRequest;
 export const PUT = proxyRequest;
 export const PATCH = proxyRequest;
 export const DELETE = proxyRequest;
-
-function normalizeBackendPath(path: string[]) {
-  if (path[0] === "op_info") {
-    return ["optima-info", ...path.slice(1)];
-  }
-  return path;
-}

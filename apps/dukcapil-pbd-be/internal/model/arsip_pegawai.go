@@ -132,3 +132,26 @@ type ArsipPegawaiEntity struct {
 func (ArsipPegawaiEntity) TableName() string {
 	return "arsip_pegawai"
 }
+
+type ArsipPegawaiDocumentEntity struct {
+	ID               int64     `gorm:"primaryKey;column:id"`
+	TahunAnggaran    string    `gorm:"column:tahun_anggaran"`
+	SumberAplikasi   string    `gorm:"column:sumber_aplikasi"`
+	Bidang           string    `gorm:"column:bidang"`
+	PegawaiID        *int64    `gorm:"column:pegawai_id"`
+	Nama             string    `gorm:"column:nama"`
+	OriginalName     string    `gorm:"column:original_name"`
+	MimeType         string    `gorm:"column:mime_type"`
+	Size             int64     `gorm:"column:size"`
+	URL              string    `gorm:"column:url"`
+	FileID           *int64    `gorm:"column:file_id"`
+	Kategori         string    `gorm:"column:kategori"`
+	NomorDokumen     string    `gorm:"column:nomor_dokumen"`
+	TahunDokumen     string    `gorm:"column:tahun_dokumen"`
+	StatusVerifikasi string    `gorm:"column:status_verifikasi"`
+	CreatedAt        time.Time `gorm:"column:created_at"`
+}
+
+func (ArsipPegawaiDocumentEntity) TableName() string {
+	return "arsip"
+}
