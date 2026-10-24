@@ -11,15 +11,9 @@ export type DashboardMenuIcon =
   | "building2"
   | "fileText"
   | "folderArchive"
+  | "globe"
   | "listChecks"
-  | "clipboardCheck"
-  | "messageSquare"
-  | "calendarClock"
-  | "monitorPlay"
-  | "toggle"
-  | "trophy"
   | "users"
-  | "keyRound"
   | "settings";
 
 export type DashboardMenuLink = {
@@ -30,6 +24,7 @@ export type DashboardMenuLink = {
 };
 
 export type DashboardMenuGroup = {
+  href?: string;
   title: string;
   icon: DashboardMenuIcon;
   roles?: string[];
@@ -68,8 +63,9 @@ export const internalMenus: DashboardMenuItem[] = [
     icon: "home",
   },
   {
-    title: "Umum",
+    title: "UMUM",
     icon: "users",
+    roles: ["superadmin", "admin_sekretariat"],
     children: [
       {
         title: "Pegawai",
@@ -86,37 +82,118 @@ export const internalMenus: DashboardMenuItem[] = [
   {
     title: "Dukcapil",
     icon: "database",
+    roles: ["superadmin", "admin_dukcapil"],
     children: [
       {
-        title: "Data Kependudukan",
-        href: "/internal/dukcapil/kependudukan",
+        title: "Pendaftaran Penduduk",
+        href: "/internal/dukcapil/pendaftaran-penduduk",
         icon: "database",
       },
       {
-        title: "Data Pencatatan Sipil",
+        title: "Pencatatan Sipil",
         href: "/internal/dukcapil/pencatatan-sipil",
         icon: "fileText",
       },
     ],
   },
   {
-    title: "Pemberdayaan",
+    title: "PMK",
     icon: "building2",
+    roles: ["superadmin", "admin_pmk"],
     children: [
       {
         title: "BUM Kampung",
-        href: "/internal/sibumkam/data",
+        href: "/internal/pmk/bum-kampung",
         icon: "building2",
       },
       {
         title: "Potensi Kampung",
-        href: "/internal/sitekad/data",
+        href: "/internal/pmk/kelompok-binaan",
         icon: "listChecks",
       },
       {
         title: "Data Kampung",
-        href: "/internal/sikampung/data",
+        href: "/internal/pmk/data-kampung",
         icon: "map",
+      },
+    ],
+  },
+  {
+    title: "Pelaksanaan Kegiatan",
+    href: "/internal/pelaksanaan-kegiatan",
+    icon: "fileText",
+    children: [
+      {
+        title: "Surat Tugas",
+        href: "/internal/pelaksanaan-kegiatan/surat-tugas",
+        icon: "fileText",
+      },
+      {
+        title: "Surat Perjalanan Dinas",
+        href: "/internal/pelaksanaan-kegiatan/spd",
+        icon: "fileText",
+      },
+      {
+        title: "Surat Undangan",
+        href: "/internal/pelaksanaan-kegiatan/surat-undangan",
+        icon: "fileText",
+      },
+      {
+        title: "Daftar Hadir",
+        href: "/internal/pelaksanaan-kegiatan/daftar-hadir",
+        icon: "users",
+      },
+      {
+        title: "Notula",
+        href: "/internal/pelaksanaan-kegiatan/notula",
+        icon: "fileText",
+      },
+      {
+        title: "Berita Acara",
+        href: "/internal/pelaksanaan-kegiatan/berita-acara",
+        icon: "fileText",
+      },
+      {
+        title: "Laporan Kegiatan",
+        href: "/internal/pelaksanaan-kegiatan/laporan",
+        icon: "fileText",
+      },
+      {
+        title: "Dokumentasi",
+        href: "/internal/pelaksanaan-kegiatan/dokumentasi",
+        icon: "folderArchive",
+      },
+    ],
+  },
+  {
+    title: "Pengaturan",
+    icon: "settings",
+    roles: ["superadmin"],
+    children: [
+      {
+        title: "Struktur Organisasi",
+        href: "/internal/pengaturan/struktur-organisasi",
+        icon: "building2",
+      },
+      {
+        title: "Subkegiatan",
+        href: "/internal/pengaturan/subkegiatan",
+        icon: "listChecks",
+      },
+      {
+        title: "Pengguna",
+        href: "/internal/pengaturan/pengguna",
+        icon: "users",
+      },
+      {
+        title: "Kab/Kota",
+        href: "/internal/pengaturan/kab-kota",
+        icon: "map",
+      },
+      {
+        title: "Publikasi Website",
+        href: "/internal/pengaturan/data-wilayah-release",
+        icon: "globe",
       },
     ],
   },
