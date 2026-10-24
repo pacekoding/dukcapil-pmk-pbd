@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 
 import DashboardSidebar from "@/components/dashboard/sidebar";
@@ -18,14 +18,39 @@ type DashboardShellProps = {
     | "settings";
 };
 
+const sidebarStorageKey = "internal-sidebar-collapsed";
+const sidebarChangeEvent = "internal-sidebar-change";
+
+function subscribeToSidebarPreference(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener(sidebarChangeEvent, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(sidebarChangeEvent, callback);
+  };
+}
+
+function getSidebarPreference() {
+  return window.localStorage.getItem(sidebarStorageKey) === "true";
+}
+
 export function DashboardShell({
   children,
   theme,
 }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = useSyncExternalStore(
+    subscribeToSidebarPreference,
+    getSidebarPreference,
+    () => false,
+  );
   const pathname = usePathname();
   const resolvedTheme = theme ?? getInternalTheme(pathname);
+
+  const updateCollapsed = (value: boolean) => {
+    window.localStorage.setItem(sidebarStorageKey, String(value));
+    window.dispatchEvent(new Event(sidebarChangeEvent));
+  };
 
   return (
     <div
@@ -38,7 +63,7 @@ export function DashboardShell({
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         collapsed={collapsed}
-        setCollapsed={setCollapsed}
+        setCollapsed={updateCollapsed}
       />
 
       <div
@@ -58,13 +83,22 @@ export function DashboardShell({
 }
 
 function getInternalTheme(pathname: string): NonNullable<DashboardShellProps["theme"]> {
-  if (pathname.startsWith("/internal/sibumkam")) {
+  if (
+    pathname.startsWith("/internal/pmk/bum-kampung") ||
+    pathname.startsWith("/internal/sibumkam")
+  ) {
     return "sibum";
   }
-  if (pathname.startsWith("/internal/sikampung")) {
+  if (
+    pathname.startsWith("/internal/pmk/data-kampung") ||
+    pathname.startsWith("/internal/sikampung")
+  ) {
     return "sikampung";
   }
-  if (pathname.startsWith("/internal/sitekad")) {
+  if (
+    pathname.startsWith("/internal/pmk/kelompok-binaan") ||
+    pathname.startsWith("/internal/sitekad")
+  ) {
     return "sitekad";
   }
   if (

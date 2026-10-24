@@ -43,12 +43,6 @@ export function getSiberDataWilayah() {
   return apiRequest<DataWilayahResponse>(apiEndpoints.siberDataWilayah);
 }
 
-export function getSiberDataWilayahSettings() {
-  return apiRequest<DataWilayahAdminSettings>(
-    apiEndpoints.siberDataWilayahSettings,
-  );
-}
-
 export function updateSiberDataWilayah(
   id: string,
   payload: SiberDataWilayahPayload,

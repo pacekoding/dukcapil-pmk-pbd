@@ -1,5 +1,9 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- legacy inline form is kept inert during route migration */
+
+import Link from "next/link";
+
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Building2,
@@ -68,6 +72,7 @@ const initialFormState: BumKampungPayload = {
 };
 
 const pageSizeOptions = [10, 25, 50, 100] as const;
+const legacyInlineCrudEnabled: boolean = false;
 
 export default function SibumkamDataPage() {
   const [records, setRecords] = useState<BumKampung[]>([]);
@@ -104,7 +109,7 @@ export default function SibumkamDataPage() {
       } catch (loadError) {
         console.error(loadError);
         if (mounted) {
-          setError("Data BUMKam gagal dimuat.");
+          setError("Data BUM Kampung gagal dimuat.");
         }
       } finally {
         if (mounted) {
@@ -235,7 +240,7 @@ export default function SibumkamDataPage() {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : "Data BUMKam gagal disimpan.",
+          : "Data BUM Kampung gagal disimpan.",
       );
     } finally {
       setSaving(false);
@@ -255,14 +260,14 @@ export default function SibumkamDataPage() {
       setRecords((currentRecords) =>
         currentRecords.filter((record) => record.id !== deleteTarget.id),
       );
-      setMessage("Data BUMKam berhasil dihapus.");
+      setMessage("Data BUM Kampung berhasil dihapus.");
       setDeleteTarget(null);
     } catch (deleteError) {
       console.error(deleteError);
       setError(
         deleteError instanceof Error
           ? deleteError.message
-          : "Data BUMKam gagal dihapus.",
+          : "Data BUM Kampung gagal dihapus.",
       );
     } finally {
       setDeleting(false);
@@ -277,29 +282,27 @@ export default function SibumkamDataPage() {
     <main className="space-y-6">
       <PageHero
         icon={Database}
-        eyebrow="SIBUM Kampung"
-        title="Data BUMKam"
+        eyebrow="BUM Kampung"
+        title="Data BUM Kampung"
         description="Kelola data BUM Kampung berdasarkan kabupaten/kota, distrik, kampung, kategori, dan status verifikasi."
         meta={
           <Badge className="h-8 rounded-full bg-blue-50 px-4 text-sm font-bold text-pbd-blue">
-            {records.length} data BUMKam - {tahunAnggaran}
+            {records.length} data BUM Kampung - {tahunAnggaran}
           </Badge>
         }
         aside={
-          <Button
-            type="button"
-            className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            onClick={openCreateForm}
-          >
+          <Button asChild className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90">
+            <Link href="/internal/pmk/bum-kampung/add">
             <Plus className="h-4 w-4" />
-            Tambah BUMKam
+            Tambah BUM Kampung
+            </Link>
           </Button>
         }
       />
 
-      {formOpen ? (
+      {legacyInlineCrudEnabled && formOpen ? (
         <SectionCard
-          title={editingRecord ? "Edit Data BUMKam" : "Tambah Data BUMKam"}
+          title={editingRecord ? "Edit Data BUM Kampung" : "Tambah Data BUM Kampung"}
           description="Lengkapi identitas BUM Kampung sesuai wilayah administrasi."
         >
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -391,7 +394,7 @@ export default function SibumkamDataPage() {
       ) : null}
 
       <SectionCard
-        title="Daftar BUMKam"
+        title="Daftar BUM Kampung"
         description="Data tersimpan ke database berdasarkan tahun anggaran aktif."
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
@@ -476,7 +479,7 @@ export default function SibumkamDataPage() {
                   colSpan={7}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
-                  Memuat data BUMKam...
+                  Memuat data BUM Kampung...
                 </TableCell>
               </TableRow>
             ) : paginatedRecords.length > 0 ? (
@@ -514,9 +517,14 @@ export default function SibumkamDataPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEditForm(record)}>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/internal/pmk/bum-kampung/${record.id}/preview`}>Lihat</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/internal/pmk/bum-kampung/${record.id}/edit`}>
                           <Edit className="h-4 w-4" />
                           Edit
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           variant="destructive"
@@ -554,8 +562,8 @@ export default function SibumkamDataPage() {
 
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
-        title="Hapus Data BUMKam?"
-        description={`Data ${deleteTarget?.namaBumKampung ?? "BUMKam"} akan dihapus dan tidak dapat dikembalikan.`}
+        title="Hapus Data BUM Kampung?"
+        description={`Data ${deleteTarget?.namaBumKampung ?? "BUM Kampung"} akan dihapus dan tidak dapat dikembalikan.`}
         loading={deleting}
         onOpenChange={(open) => {
           if (!open) {
@@ -695,7 +703,7 @@ function downloadBumKamXlsx(records: BumKampung[]) {
       content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
-    <sheet name="Data BUMKam" sheetId="1" r:id="rId1"/>
+    <sheet name="Data BUM Kampung" sheetId="1" r:id="rId1"/>
   </sheets>
 </workbook>`,
     },
@@ -740,7 +748,7 @@ function downloadBumKamXlsx(records: BumKampung[]) {
   const anchor = document.createElement("a");
 
   anchor.href = downloadUrl;
-  anchor.download = `data-bumkam-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  anchor.download = `data-bum-kampung-${new Date().toISOString().slice(0, 10)}.xlsx`;
   anchor.click();
   URL.revokeObjectURL(downloadUrl);
 }

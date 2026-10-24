@@ -1,0 +1,1 @@
+import { notFound } from "next/navigation";import { KampungRecordPage } from "@/components/master/village-record-pages";export default async function Page({params}:{params:Promise<{id:string}>}){const {id}=await params;if(!/^\d+$/.test(id)||Number(id)<1)notFound();return <KampungRecordPage mode="preview" id={Number(id)}/>}

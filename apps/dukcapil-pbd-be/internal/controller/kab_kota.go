@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -45,7 +46,7 @@ func (k *KabKotaController) Create(c echo.Context) error {
 
 	item, err := k.kabKota.Create(c.Request().Context(), payload)
 	if err != nil {
-		if strings.Contains(err.Error(), repository.ErrUsernameAlreadyExists.Error()) {
+		if errors.Is(err, repository.ErrKabKotaAlreadyExists) {
 			return echo.NewHTTPError(http.StatusConflict, "kode wilayah atau nama kabupaten/kota sudah digunakan")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "data kabupaten/kota gagal dibuat")
@@ -69,7 +70,7 @@ func (k *KabKotaController) Update(c echo.Context) error {
 
 	item, found, err := k.kabKota.Update(c.Request().Context(), id, payload)
 	if err != nil {
-		if strings.Contains(err.Error(), repository.ErrUsernameAlreadyExists.Error()) {
+		if errors.Is(err, repository.ErrKabKotaAlreadyExists) {
 			return echo.NewHTTPError(http.StatusConflict, "kode wilayah atau nama kabupaten/kota sudah digunakan")
 		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "data kabupaten/kota gagal diperbarui")

@@ -39,4 +39,7 @@ export type SikampungPayload = {
 export type SikampungListResponse = {
   tahunAnggaran: string;
   items: SikampungData[];
+  page: number;
+  pageSize: number;
+  total: number;
 };

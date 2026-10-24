@@ -8,12 +8,6 @@ export type ContactItem = {
   content: string;
 };
 
-export type WebsiteStat = {
-  label: string;
-  value: string;
-  description: string;
-};
-
 export type WebsiteHighlight = {
   title: string;
   description: string;
@@ -25,12 +19,7 @@ export type WebsiteHomeResponse = {
     title: string;
     description: string;
   };
-  stats: WebsiteStat[];
   highlights: WebsiteHighlight[];
-  profileSummary: {
-    title: string;
-    description: string;
-  };
 };
 
 export type WebsiteProfileResponse = {

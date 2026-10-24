@@ -10,24 +10,18 @@ import { usePathname } from "next/navigation";
 
 import {
   Building2,
-  CalendarClock,
-  ClipboardCheck,
   ChevronDown,
   Database,
   Home,
   IdCard,
-  KeyRound,
   ListChecks,
   MapPinned,
-  MessageSquareText,
-  MonitorPlay,
   FileText,
   FolderArchive,
+  Globe2,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
-  ToggleLeft,
-  Trophy,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -42,6 +36,7 @@ import {
   type DashboardMenuIcon,
   type DashboardMenuItem,
 } from "@/lib/navigation";
+import { canAccessInternalHref } from "@/lib/internal-access";
 
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
@@ -68,15 +63,9 @@ const dashboardMenuIconMap: Record<DashboardMenuIcon, LucideIcon> = {
   building2: Building2,
   fileText: FileText,
   folderArchive: FolderArchive,
+  globe: Globe2,
   listChecks: ListChecks,
-  clipboardCheck: ClipboardCheck,
-  messageSquare: MessageSquareText,
-  calendarClock: CalendarClock,
-  monitorPlay: MonitorPlay,
-  toggle: ToggleLeft,
-  trophy: Trophy,
   users: UsersRound,
-  keyRound: KeyRound,
   settings: Settings,
 };
 
@@ -86,40 +75,6 @@ function canShowMenuItem(item: { roles?: string[] }, role: string) {
 
 function isMenuGroup(item: DashboardMenuItem): item is DashboardMenuGroup {
   return "children" in item;
-}
-
-function systemAccessForHref(href: string) {
-  if (href.startsWith("/internal/sibumkam")) {
-    return "sibum";
-  }
-  if (href.startsWith("/internal/sikampung")) {
-    return "sikampung";
-  }
-  if (href.startsWith("/internal/sitekad")) {
-    return "sitekad";
-  }
-  if (href.startsWith("/internal/dukcapil")) {
-    return "siber";
-  }
-  if (
-    href.startsWith("/internal/pegawai") ||
-    href.startsWith("/internal/arsip")
-  ) {
-    return "arsip_pegawai";
-  }
-  return "";
-}
-
-function canAccessHref(href: string, role: string, systemAccess: string[]) {
-  if (
-    role === "superadmin" ||
-    href === "/internal/dashboard"
-  ) {
-    return true;
-  }
-
-  const accessKey = systemAccessForHref(href);
-  return !accessKey || systemAccess.includes(accessKey);
 }
 
 function isActiveMenu(pathname: string, href: string) {
@@ -134,36 +89,41 @@ function isActiveMenu(pathname: string, href: string) {
   );
 }
 
-function getSidebarMenus() {
-  return internalMenus;
-}
-
 function getSidebarBrand(pathname: string) {
-  if (pathname.startsWith("/internal/sibumkam")) {
+  if (
+    pathname.startsWith("/internal/pmk/bum-kampung") ||
+    pathname.startsWith("/internal/sibumkam")
+  ) {
     return {
-      title: "SIBUM Kampung",
-      subtitle: "Data BUMKam",
+      title: "BUM Kampung",
+      subtitle: "Data Badan Usaha Kampung",
     };
   }
 
-  if (pathname.startsWith("/internal/sikampung")) {
+  if (
+    pathname.startsWith("/internal/pmk/data-kampung") ||
+    pathname.startsWith("/internal/sikampung")
+  ) {
     return {
-      title: "SIKAMPUNG",
-      subtitle: "Data Kampung IDM",
+      title: "Data Kampung",
+      subtitle: "Indeks Desa Membangun",
     };
   }
 
-  if (pathname.startsWith("/internal/sitekad")) {
+  if (
+    pathname.startsWith("/internal/pmk/kelompok-binaan") ||
+    pathname.startsWith("/internal/sitekad")
+  ) {
     return {
-      title: "SITEKAD",
+      title: "Kelompok Binaan",
       subtitle: "Program TEKAD",
     };
   }
 
   if (pathname.startsWith("/internal/dukcapil")) {
     return {
-      title: "SIRBE",
-      subtitle: "Dashboard Data Dukcapil",
+      title: "Administrasi Kependudukan",
+      subtitle: "Data Layanan Dukcapil",
     };
   }
 
@@ -172,8 +132,18 @@ function getSidebarBrand(pathname: string) {
     pathname.startsWith("/internal/arsip")
   ) {
     return {
-      title: "ARSIPKU",
-      subtitle: "Dokumen Kepegawaian",
+      title: "Pegawai dan Arsip",
+      subtitle: "Data Kepegawaian",
+    };
+  }
+
+  if (
+    pathname.startsWith("/internal/perjalanan-dinas") ||
+    pathname.startsWith("/internal/pelaksanaan-kegiatan")
+  ) {
+    return {
+      title: "Pelaksanaan Kegiatan",
+      subtitle: "Dokumen dan Realisasi Kegiatan",
     };
   }
 
@@ -208,7 +178,6 @@ function SidebarContent({
 
   onClose,
   role,
-  systemAccess,
 }: {
   collapsed: boolean;
 
@@ -217,14 +186,20 @@ function SidebarContent({
   onClose?: () => void;
 
   role: string;
-  systemAccess: string[];
 }) {
   const pathname = usePathname();
-  const menuItems = getSidebarMenus();
+  const menuItems = internalMenus;
   const brand = getSidebarBrand(pathname);
-  const [openMenuGroups, setOpenMenuGroups] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [menuGroupState, setMenuGroupState] = useState(() => ({
+    pathname,
+    title:
+      menuItems.find(
+        (menu) =>
+          isMenuGroup(menu) &&
+          (menu.children.some((child) => isActiveMenu(pathname, child.href)) ||
+            Boolean(menu.href && isActiveMenu(pathname, menu.href))),
+      )?.title ?? null,
+  }));
 
   const visibleMenus = useMemo(
     () =>
@@ -235,13 +210,13 @@ function SidebarContent({
           }
 
           if (!isMenuGroup(menu)) {
-            return canAccessHref(menu.href, role, systemAccess) ? menu : null;
+            return canAccessInternalHref(menu.href, role) ? menu : null;
           }
 
           const children = menu.children.filter(
             (child) =>
               canShowMenuItem(child, role) &&
-              canAccessHref(child.href, role, systemAccess),
+              canAccessInternalHref(child.href, role),
           );
 
           if (children.length === 0) {
@@ -254,14 +229,43 @@ function SidebarContent({
           };
         })
         .filter((menu): menu is DashboardMenuItem => Boolean(menu)),
-    [menuItems, role, systemAccess],
+    [menuItems, role],
   );
 
-  const toggleMenuGroup = (title: string, defaultOpen: boolean) => {
-    setOpenMenuGroups((current) => ({
-      ...current,
-      [title]: !(current[title] ?? defaultOpen),
-    }));
+  const activeHref = useMemo(() => {
+    const links = visibleMenus.flatMap((menu) =>
+      isMenuGroup(menu) ? menu.children : [menu],
+    );
+
+    return (
+      links
+        .filter((link) => isActiveMenu(pathname, link.href))
+        .sort((left, right) => right.href.length - left.href.length)[0]?.href ??
+      null
+    );
+  }, [pathname, visibleMenus]);
+
+  const activeGroupTitle = useMemo(
+    () =>
+      visibleMenus.find(
+        (menu) =>
+          isMenuGroup(menu) &&
+          (menu.children.some((child) => child.href === activeHref) ||
+            Boolean(menu.href && isActiveMenu(pathname, menu.href))),
+      )?.title ?? null,
+    [activeHref, visibleMenus, pathname],
+  );
+
+  const openMenuGroup =
+    menuGroupState.pathname === pathname
+      ? menuGroupState.title
+      : activeGroupTitle;
+
+  const toggleMenuGroup = (title: string) => {
+    setMenuGroupState({
+      pathname,
+      title: openMenuGroup === title ? null : title,
+    });
   };
 
   return (
@@ -339,6 +343,8 @@ function SidebarContent({
             size="icon"
             variant="ghost"
             onClick={() => setCollapsed(true)}
+            aria-label="Ciutkan sidebar"
+            title="Ciutkan sidebar"
             className="
               text-slate-500
               hover:bg-slate-100
@@ -358,6 +364,8 @@ function SidebarContent({
             size="icon"
             variant="ghost"
             onClick={() => setCollapsed(false)}
+            aria-label="Perluas sidebar"
+            title="Perluas sidebar"
             className="
               text-slate-500
               hover:bg-slate-100
@@ -371,29 +379,48 @@ function SidebarContent({
 
       {/* MENU */}
 
-      <div className="flex-1 px-3 py-4">
-        <nav className="space-y-3">
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        <nav aria-label="Navigasi internal" className="space-y-3">
           {visibleMenus.map((menu) => {
             const Icon = dashboardMenuIconMap[menu.icon];
 
             if (isMenuGroup(menu)) {
-              const groupActive = menu.children.some((child) =>
-                isActiveMenu(pathname, child.href),
-              );
-              const groupOpen = collapsed
-                ? true
-                : (openMenuGroups[menu.title] ?? groupActive);
+              const groupActive = menu.title === activeGroupTitle;
+              const groupOpen = collapsed || openMenuGroup === menu.title;
 
               return (
                 <div key={menu.title} className="space-y-1">
-                  {!collapsed ? (
+                  {!collapsed && menu.href ? (
+                    <div className="flex items-center rounded-md text-pbd-navy">
+                      <Link
+                        href={menu.href}
+                        onClick={onClose}
+                        className="flex min-w-0 flex-1 items-center gap-2 px-4 py-2 text-[11px] font-bold uppercase"
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {menu.title}
+                      </Link>
+                      <button
+                        type="button"
+                        aria-label={`Buka submenu ${menu.title}`}
+                        aria-expanded={groupOpen}
+                        onClick={() => toggleMenuGroup(menu.title)}
+                        className="p-2"
+                      >
+                        <ChevronDown
+                          className={cn("h-4 w-4", !groupOpen && "-rotate-90")}
+                        />
+                      </button>
+                    </div>
+                  ) : !collapsed ? (
                     <button
                       type="button"
-                      onClick={() => toggleMenuGroup(menu.title, groupActive)}
+                      onClick={() => toggleMenuGroup(menu.title)}
                       aria-expanded={groupOpen}
+                      aria-controls={`sidebar-group-${menu.title.toLowerCase()}`}
                       className={cn(
-                        "flex w-full items-center gap-2 rounded-md px-4 py-2 text-left text-[11px] font-bold uppercase tracking-wide transition-colors hover:bg-slate-100",
-                        groupActive ? "text-pbd-blue" : "text-slate-400",
+                        "flex w-full items-center gap-2 rounded-md px-4 py-2 text-left text-[11px] font-bold uppercase tracking-wide transition-colors hover:bg-slate-100 hover:text-pbd-navy",
+                        groupActive ? "text-pbd-navy" : "text-slate-400",
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -417,24 +444,35 @@ function SidebarContent({
                   )}
 
                   {groupOpen && (
-                    <div className="space-y-1">
+                    <div
+                      id={`sidebar-group-${menu.title.toLowerCase()}`}
+                      className="space-y-1"
+                    >
                       {menu.children.map((child) => {
                         const ChildIcon = dashboardMenuIconMap[child.icon];
-                        const active = isActiveMenu(pathname, child.href);
+                        const active = child.href === activeHref;
 
                         return (
                           <Link
                             key={child.href}
                             href={child.href}
-                            onClick={onClose}
+                            onClick={() => {
+                              setMenuGroupState({
+                                pathname,
+                                title: menu.title,
+                              });
+                              onClose?.();
+                            }}
+                            aria-current={active ? "page" : undefined}
+                            title={collapsed ? child.title : undefined}
                             className={cn(
-                              "flex items-center rounded-md transition-all",
+                              "flex items-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pbd-blue/30",
                               collapsed
                                 ? "justify-center px-0 py-3"
                                 : "gap-3 px-4 py-2.5",
                               active
-                                ? "bg-pbd-navy text-white shadow-sm"
-                                : "text-slate-600 hover:bg-slate-100 hover:text-pbd-navy",
+                                ? "bg-pbd-navy font-semibold text-white shadow-sm"
+                                : "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-pbd-navy",
                             )}
                           >
                             <ChildIcon
@@ -455,19 +493,24 @@ function SidebarContent({
               );
             }
 
-            const active = isActiveMenu(pathname, menu.href);
+            const active = menu.href === activeHref;
 
             return (
               <div key={menu.href}>
                 <Link
                   href={menu.href}
-                  onClick={onClose}
+                  onClick={() => {
+                    setMenuGroupState({ pathname, title: null });
+                    onClose?.();
+                  }}
+                  aria-current={active ? "page" : undefined}
+                  title={collapsed ? menu.title : undefined}
                   className={cn(
-                    "flex items-center rounded-md transition-all",
+                    "flex items-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pbd-blue/30",
                     collapsed ? "justify-center px-0 py-3" : "gap-3 px-4 py-3",
                     active
-                      ? "bg-pbd-navy text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-pbd-navy",
+                      ? "bg-pbd-navy font-semibold text-white shadow-sm"
+                      : "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-pbd-navy",
                   )}
                 >
                   <Icon className={cn(collapsed ? "h-6 w-6" : "h-5 w-5")} />
@@ -499,7 +542,6 @@ export default function DashboardSidebar({
   setCollapsed,
 }: SidebarProps) {
   const [role, setRole] = useState("");
-  const [systemAccess, setSystemAccess] = useState<string[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -513,7 +555,6 @@ export default function DashboardSidebar({
 
         if (mounted) {
           setRole(result.user?.role ?? "");
-          setSystemAccess(result.user?.systemAccess ?? []);
         }
       } catch (error) {
         console.error(error);
@@ -544,7 +585,6 @@ export default function DashboardSidebar({
             setCollapsed={() => {}}
             onClose={() => setMobileOpen(false)}
             role={role}
-            systemAccess={systemAccess}
           />
         </SheetContent>
       </Sheet>
@@ -568,7 +608,6 @@ export default function DashboardSidebar({
           collapsed={collapsed}
           setCollapsed={setCollapsed}
           role={role}
-          systemAccess={systemAccess}
         />
       </aside>
     </>

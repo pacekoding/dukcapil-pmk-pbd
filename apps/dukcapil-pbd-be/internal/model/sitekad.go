@@ -83,19 +83,5 @@ func (SitekadPotensiKampungEntity) TableName() string {
 }
 
 func (s SitekadPotensiKampungEntity) ToSitekadPotensiKampung() SitekadPotensiKampung {
-	return SitekadPotensiKampung{
-		ID:            s.ID,
-		Kode:          s.Kode,
-		KabupatenKota: s.KabupatenKota,
-		Distrik:       s.Distrik,
-		Kampung:       s.Kampung,
-		NamaKelompok:  s.NamaKelompok,
-		KategoriUsaha: s.KategoriUsaha,
-		JenisUsaha:    s.JenisUsaha,
-		Komoditas:     s.Komoditas,
-		JumlahAnggota: s.JumlahAnggota,
-		DanaAlokasi:   s.DanaAlokasi,
-		CreatedAt:     s.CreatedAt,
-		UpdatedAt:     s.UpdatedAt,
-	}
+	return SitekadPotensiKampung(s)
 }

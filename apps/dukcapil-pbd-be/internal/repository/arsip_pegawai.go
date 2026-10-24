@@ -11,6 +11,7 @@ import (
 	"dukcapil-pbd-be/internal/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ArsipPegawaiRepository struct {
@@ -37,9 +38,10 @@ func (r *ArsipPegawaiRepository) List(ctx context.Context, params model.ArsipPeg
 			nama AS name,
 			tempat_lahir AS birth_place,
 			COALESCE(TO_CHAR(tanggal_lahir, 'YYYY-MM-DD'), '') AS birth_date,
-			jabatan AS position,
-			bidang,
-			unit,
+			bidang_id, seksi_id, jabatan_id,
+			COALESCE((SELECT name FROM organisasi_jabatan j WHERE j.id = jabatan_id), jabatan) AS position,
+			COALESCE((SELECT name FROM organisasi_bidang b WHERE b.id = bidang_id), bidang) AS bidang,
+			COALESCE((SELECT name FROM organisasi_seksi s WHERE s.id = seksi_id), unit) AS unit,
 			pangkat_golongan AS rank,
 			email,
 			telepon AS phone,
@@ -84,9 +86,10 @@ func (r *ArsipPegawaiRepository) Detail(ctx context.Context, id int64) (model.Ar
 			nama AS name,
 			tempat_lahir AS birth_place,
 			COALESCE(TO_CHAR(tanggal_lahir, 'YYYY-MM-DD'), '') AS birth_date,
-			jabatan AS position,
-			bidang,
-			unit,
+			bidang_id, seksi_id, jabatan_id,
+			COALESCE((SELECT name FROM organisasi_jabatan j WHERE j.id = jabatan_id), jabatan) AS position,
+			COALESCE((SELECT name FROM organisasi_bidang b WHERE b.id = bidang_id), bidang) AS bidang,
+			COALESCE((SELECT name FROM organisasi_seksi s WHERE s.id = seksi_id), unit) AS unit,
 			pangkat_golongan AS rank,
 			email,
 			telepon AS phone,
@@ -125,16 +128,22 @@ func (r *ArsipPegawaiRepository) Create(ctx context.Context, payload model.Arsip
 		return model.ArsipPegawaiItem{}, err
 	}
 
-	record := pegawaiEntityFromPayload(payload)
-	if record.Status == "" {
-		record.Status = "Aktif"
-	}
-	if record.PhotoColor == "" {
-		record.PhotoColor = "bg-blue-100 text-blue-700"
-	}
-
-	if err := db.Create(&record).Error; err != nil {
-		return model.ArsipPegawaiItem{}, fmt.Errorf("create arsip pegawai: %w", err)
+	var record model.ArsipPegawaiEntity
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := resolvePegawaiOrganization(tx, &payload, model.ArsipPegawaiEntity{}); err != nil {
+			return err
+		}
+		record = pegawaiEntityFromPayload(payload)
+		if record.Status == "" {
+			record.Status = "Aktif"
+		}
+		if record.PhotoColor == "" {
+			record.PhotoColor = "bg-blue-100 text-blue-700"
+		}
+		return tx.Create(&record).Error
+	})
+	if err != nil {
+		return model.ArsipPegawaiItem{}, err
 	}
 
 	item, found, err := r.Detail(ctx, record.ID)
@@ -153,39 +162,52 @@ func (r *ArsipPegawaiRepository) Update(ctx context.Context, id int64, payload m
 		return model.ArsipPegawaiItem{}, false, err
 	}
 
-	record := pegawaiEntityFromPayload(payload)
-	updates := map[string]any{
-		"nip":              record.NIP,
-		"nik":              record.NIK,
-		"nama":             record.Nama,
-		"tempat_lahir":     record.TempatLahir,
-		"tanggal_lahir":    record.TanggalLahir,
-		"jabatan":          record.Jabatan,
-		"bidang":           record.Bidang,
-		"unit":             record.Unit,
-		"pangkat_golongan": record.PangkatGolongan,
-		"email":            record.Email,
-		"telepon":          record.Telepon,
-		"no_rekening":      record.NoRekening,
-		"alamat":           record.Alamat,
-		"status":           record.Status,
-		"photo_color":      record.PhotoColor,
-	}
-	if updates["status"] == "" {
-		updates["status"] = "Aktif"
-	}
-	if updates["photo_color"] == "" {
-		updates["photo_color"] = "bg-blue-100 text-blue-700"
-	}
+	err = db.Transaction(func(tx *gorm.DB) error {
+		var current model.ArsipPegawaiEntity
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", id).Take(&current).Error; err != nil {
+			return err
+		}
+		if err := resolvePegawaiOrganization(tx, &payload, current); err != nil {
+			return err
+		}
+		record := pegawaiEntityFromPayload(payload)
+		updates := map[string]any{
+			"bidang_id":        record.BidangID,
+			"seksi_id":         record.SeksiID,
+			"jabatan_id":       record.JabatanID,
+			"nip":              record.NIP,
+			"nik":              record.NIK,
+			"nama":             record.Nama,
+			"tempat_lahir":     record.TempatLahir,
+			"tanggal_lahir":    record.TanggalLahir,
+			"jabatan":          record.Jabatan,
+			"bidang":           record.Bidang,
+			"unit":             record.Unit,
+			"pangkat_golongan": record.PangkatGolongan,
+			"email":            record.Email,
+			"telepon":          record.Telepon,
+			"no_rekening":      record.NoRekening,
+			"alamat":           record.Alamat,
+			"status":           record.Status,
+			"photo_color":      record.PhotoColor,
+		}
+		if updates["status"] == "" {
+			updates["status"] = "Aktif"
+		}
+		if updates["photo_color"] == "" {
+			updates["photo_color"] = "bg-blue-100 text-blue-700"
+		}
 
-	result := db.Model(&model.ArsipPegawaiEntity{}).
-		Where("id = ?", id).
-		Updates(updates)
-	if result.Error != nil {
-		return model.ArsipPegawaiItem{}, false, fmt.Errorf("update arsip pegawai: %w", result.Error)
-	}
-	if result.RowsAffected == 0 {
+		result := tx.Model(&model.ArsipPegawaiEntity{}).
+			Where("id = ?", id).
+			Updates(updates)
+		return result.Error
+	})
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return model.ArsipPegawaiItem{}, false, nil
+	}
+	if err != nil {
+		return model.ArsipPegawaiItem{}, false, err
 	}
 
 	item, found, err := r.Detail(ctx, id)
@@ -461,10 +483,10 @@ func (r *ArsipPegawaiRepository) pegawaiQuery(db *gorm.DB, params model.ArsipPeg
 			LOWER(nama) LIKE ? OR
 			LOWER(nip) LIKE ? OR
 			LOWER(nik) LIKE ? OR
-			LOWER(jabatan) LIKE ? OR
+			LOWER(COALESCE((SELECT name FROM organisasi_jabatan j WHERE j.id = jabatan_id), jabatan)) LIKE ? OR
 			LOWER(tempat_lahir) LIKE ? OR
-			LOWER(bidang) LIKE ? OR
-			LOWER(unit) LIKE ? OR
+			LOWER(COALESCE((SELECT name FROM organisasi_bidang b WHERE b.id = bidang_id), bidang)) LIKE ? OR
+			LOWER(COALESCE((SELECT name FROM organisasi_seksi s WHERE s.id = seksi_id), unit)) LIKE ? OR
 			LOWER(pangkat_golongan) LIKE ?
 		`, like, like, like, like, like, like, like, like)
 	}
@@ -599,6 +621,9 @@ func arsipPegawaiDocumentFileType(fileName string, mimeType string) string {
 
 func pegawaiEntityFromPayload(payload model.ArsipPegawaiPayload) model.ArsipPegawaiEntity {
 	return model.ArsipPegawaiEntity{
+		BidangID:        payload.BidangID,
+		SeksiID:         payload.SeksiID,
+		JabatanID:       payload.JabatanID,
 		NIP:             strings.TrimSpace(payload.NIP),
 		NIK:             strings.TrimSpace(payload.NIK),
 		Nama:            strings.TrimSpace(payload.Name),

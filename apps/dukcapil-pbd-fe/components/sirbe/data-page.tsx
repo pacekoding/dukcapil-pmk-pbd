@@ -1,6 +1,9 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- legacy inline form is kept inert during route migration */
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -16,10 +19,14 @@ import {
 } from "lucide-react";
 
 import { PageHero } from "@/components/dashboard/page-hero";
+import { CrudPage, DetailGrid } from "@/components/dashboard/crud-page";
+import { ErrorState, LoadingState } from "@/components/dashboard/state";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { confirmDiscard, useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import {
   Table,
   TableBody,
@@ -34,8 +41,6 @@ import {
 } from "@/lib/api/data-wilayah";
 import { formatNumber } from "@/lib/data-wilayah";
 import type {
-  CivilRegistrationData,
-  PopulationRegistrationData,
   RegionData,
   SiberDataWilayahPayload,
   SiberOapPayload,
@@ -45,14 +50,15 @@ type SessionPayload = {
   authenticated?: boolean;
   tahunAnggaran?: string;
 };
+const legacyInlineCrudEnabled: boolean = false;
 
 type NumericStrings<T> = {
   [Key in keyof T]: string;
 };
 
 type SiberFormState = {
-  registration: NumericStrings<PopulationRegistrationData>;
-  civil: NumericStrings<CivilRegistrationData>;
+  registration: NumericStrings<SiberDataWilayahPayload["registration"]>;
+  civil: NumericStrings<SiberDataWilayahPayload["civil"]>;
   oap: NumericStrings<SiberOapPayload>;
 };
 
@@ -93,7 +99,7 @@ const registrationFields = [
     label: "Pencetakan KTP-el",
     description: "Jumlah KTP elektronik yang dicetak.",
   },
-] satisfies Array<FieldDefinition<keyof PopulationRegistrationData>>;
+] satisfies Array<FieldDefinition<keyof SiberDataWilayahPayload["registration"]>>;
 
 const civilFields = [
   {
@@ -116,7 +122,7 @@ const civilFields = [
     label: "Akta Perceraian",
     description: "Jumlah akta perceraian yang tercatat.",
   },
-] satisfies Array<FieldDefinition<keyof CivilRegistrationData>>;
+] satisfies Array<FieldDefinition<keyof SiberDataWilayahPayload["civil"]>>;
 
 const oapFields = [
   {
@@ -284,7 +290,7 @@ export default function SirbeDataPage() {
     <main className="space-y-6">
       <PageHero
         icon={Database}
-        eyebrow="SIRBE"
+        eyebrow="Administrasi Kependudukan"
         title="Kelola Data Dukcapil"
         description="Perbarui data pendaftaran penduduk, pencatatan sipil, dan OAP per kabupaten/kota. Total penduduk dihitung otomatis dari OAP dan Non-OAP."
         meta={
@@ -356,7 +362,7 @@ export default function SirbeDataPage() {
         ) : null}
       </div>
 
-      {editingRegion && form ? (
+      {legacyInlineCrudEnabled && editingRegion && form ? (
         <div ref={editFormRef} className="scroll-mt-24">
           <SectionCard
             title={`Edit ${editingRegion.name}`}
@@ -560,16 +566,7 @@ export default function SirbeDataPage() {
                     {formatNumber(region.civil.aktaKelahiran)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      type="button"
-                      variant={editingId === region.id ? "secondary" : "outline"}
-                      size="sm"
-                      disabled={saving}
-                      onClick={() => openEditForm(region)}
-                    >
-                      <Edit3 className="h-4 w-4" />
-                      Edit
-                    </Button>
+                    <div className="flex justify-end gap-2"><Button asChild variant="outline" size="sm"><Link href={`/internal/dukcapil/kependudukan/${region.id}/preview`}>Lihat</Link></Button><Button asChild variant="outline" size="sm"><Link href={`/internal/dukcapil/kependudukan/${region.id}/edit`}><Edit3 className="h-4 w-4" />Edit</Link></Button></div>
                   </TableCell>
                 </TableRow>
               ))
@@ -579,6 +576,49 @@ export default function SirbeDataPage() {
       </SectionCard>
     </main>
   );
+}
+
+export function SirbeRegionPage({ mode, id }: { mode: "edit" | "preview"; id: string }) {
+  const router = useRouter();
+  const base = "/internal/dukcapil/kependudukan";
+  const [region, setRegion] = useState<RegionData | null>(null);
+  const [year, setYear] = useState("");
+  const [form, setForm] = useState<SiberFormState | null>(null);
+  const [initial, setInitial] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const dirty = mode === "edit" && form !== null && JSON.stringify(form) !== initial;
+  useUnsavedChanges(dirty);
+  useEffect(() => {
+    let active = true;
+    getSiberDataWilayah().then((response) => {
+      if (!active) return;
+      setYear(response.tahunAnggaran);
+      const found = response.regions.find((item) => item.id === id) ?? null;
+      setRegion(found);
+      if (!found) { setError("Data wilayah tidak ditemukan."); return; }
+      const values = formFromRegion(found);
+      setForm(values); setInitial(JSON.stringify(values));
+    }).catch(() => setError("Data Dukcapil gagal dimuat.")).finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [id]);
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!form || !region) return;
+    setSaving(true); setError("");
+    try { await updateSiberDataWilayah(region.id, payloadFromForm(form)); setInitial(JSON.stringify(form)); router.replace(`${base}/${region.id}/preview`); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Data gagal disimpan."); }
+    finally { setSaving(false); }
+  }
+  const flat = region ? [
+    ...registrationFields.map((field) => ({ label: field.label, value: formatNumber(region.registration[field.key]) })),
+    ...civilFields.map((field) => ({ label: field.label, value: formatNumber(region.civil[field.key]) })),
+    ...oapFields.map((field) => ({ label: field.label, value: formatNumber(region.oap[field.key]) })),
+    { label: "Total Penduduk", value: formatNumber(region.oap.jumlahJiwa) },
+  ] : [];
+  return <CrudPage title={mode === "edit" ? `Edit ${region?.name ?? "Data Wilayah"}` : region?.name ?? "Detail Data Wilayah"} description={`Data Dukcapil tahun anggaran ${year || "—"}.`} breadcrumbs={[{ label: "Internal", href: "/internal/dashboard" }, { label: "Dukcapil" }, { label: "Data Kependudukan", href: base }, { label: mode === "edit" ? "Edit" : "Preview" }]} actions={mode === "preview" && region ? <Button asChild><Link href={`${base}/${region.id}/edit`}><Edit3 className="h-4 w-4"/>Edit</Link></Button> : undefined}>
+    {loading ? <LoadingState message="Memuat data wilayah..." /> : error && !region ? <ErrorState message={error} /> : mode === "preview" && region ? <Card><CardContent><DetailGrid items={[{ label: "Wilayah", value: region.name }, { label: "Jenis", value: region.type }, ...flat]} /></CardContent></Card> : form ? <Card><CardContent><form onSubmit={submit} className="space-y-5"><DataFieldSection title="Pendaftaran Penduduk" description="Capaian layanan administrasi kependudukan." fields={registrationFields} values={form.registration} disabled={saving} prefix="registration-page" onChange={(key,value)=>setForm(current=>current?{...current,registration:{...current.registration,[key]:value}}:current)}/><DataFieldSection title="Pencatatan Sipil" description="Dokumen peristiwa penting yang tercatat." fields={civilFields} values={form.civil} disabled={saving} prefix="civil-page" onChange={(key,value)=>setForm(current=>current?{...current,civil:{...current.civil,[key]:value}}:current)}/><DataFieldSection title="Data OAP dan Penduduk" description="Data OAP, Non-OAP, dan luas wilayah." fields={oapFields} values={form.oap} disabled={saving} prefix="oap-page" decimalKey="luasWilayah" onChange={(key,value)=>setForm(current=>current?{...current,oap:{...current.oap,[key]:value}}:current)}/>{error ? <ErrorState message={error} /> : null}<div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={()=>confirmDiscard(dirty)&&router.push(base)}>Batal</Button><Button disabled={saving}>{saving ? "Menyimpan..." : "Simpan"}</Button></div></form></CardContent></Card> : null}
+  </CrudPage>;
 }
 
 function DataFieldSection<Key extends string>({

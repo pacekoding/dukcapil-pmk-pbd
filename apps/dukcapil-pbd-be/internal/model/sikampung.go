@@ -53,9 +53,19 @@ type SikampungPayload struct {
 	StatusIDM SikampungStatusIDM `json:"statusIdm"`
 }
 
+type SikampungListParams struct {
+	TahunAnggaran string
+	Search        string
+	Page          int
+	PageSize      int
+}
+
 type SikampungListResponse struct {
 	TahunAnggaran string          `json:"tahunAnggaran"`
 	Items         []SikampungData `json:"items"`
+	Page          int             `json:"page"`
+	PageSize      int             `json:"pageSize"`
+	Total         int64           `json:"total"`
 }
 
 type SikampungEntity struct {

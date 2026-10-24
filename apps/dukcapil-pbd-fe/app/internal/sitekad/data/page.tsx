@@ -1,5 +1,8 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- legacy dialog form is kept inert during route migration */
+
+import Link from "next/link";
 import {
   useEffect,
   useMemo,
@@ -27,14 +30,6 @@ import { Pagination } from "@/components/dashboard/pagination";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -80,6 +75,7 @@ const initialFormState: SitekadPotensiKampungPayload = {
   jumlahAnggota: 0,
   danaAlokasi: 0,
 };
+const legacyInlineCrudEnabled: boolean = false;
 
 export default function InternalSitekadDataPage() {
   const [records, setRecords] = useState<SitekadPotensiKampung[]>([]);
@@ -125,7 +121,7 @@ export default function InternalSitekadDataPage() {
       } catch (loadError) {
         console.error(loadError);
         if (mounted) {
-          setError("Data kelompok binaan SITEKAD gagal dimuat.");
+          setError("Data kelompok binaan gagal dimuat.");
         }
       } finally {
         if (mounted) {
@@ -396,7 +392,7 @@ export default function InternalSitekadDataPage() {
       const doc = await buildSitekadApprovalPdf(records);
       const printedAt = new Date().toISOString().slice(0, 10);
 
-      doc.save(`lembar-pengesahan-kelompok-binaan-sitekad-${printedAt}.pdf`);
+      doc.save(`lembar-pengesahan-kelompok-binaan-${printedAt}.pdf`);
       setMessage("Lembar pengesahan PDF berhasil dibuat.");
     } catch (downloadError) {
       console.error(downloadError);
@@ -410,7 +406,7 @@ export default function InternalSitekadDataPage() {
     <main className="space-y-6">
       <PageHero
         icon={UsersRound}
-        eyebrow="SITEKAD"
+        eyebrow="Kelompok Binaan"
         title="Data Kelompok Binaan"
         description="Data kelompok binaan Program TEKAD pada Kabupaten Maybrat dan Kabupaten Raja Ampat, lengkap dengan informasi wilayah, usaha, anggota, dan alokasi dana."
         meta={
@@ -430,19 +426,17 @@ export default function InternalSitekadDataPage() {
               <Download className="h-4 w-4" />
               {exportingPdf ? "Membuat PDF..." : "Download PDF"}
             </Button>
-            <Button
-              type="button"
-              className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-              onClick={openCreateForm}
-            >
+            <Button asChild className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90">
+              <Link href="/internal/pmk/kelompok-binaan/add">
               <Plus className="h-4 w-4" />
               Tambah Data
+              </Link>
             </Button>
           </div>
         }
       />
 
-      {formOpen ? (
+      {legacyInlineCrudEnabled && formOpen ? (
         <SectionCard
           title={
             editingRecord
@@ -724,14 +718,11 @@ export default function InternalSitekadDataPage() {
                     {formatCurrency(record.danaAlokasi)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setDetailTarget(record)}
-                    >
+                    <Button asChild size="sm" variant="outline">
+                      <Link href={`/internal/pmk/kelompok-binaan/${record.id}/preview`}>
                       <Eye className="h-4 w-4" />
                       Detail
+                      </Link>
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -758,90 +749,6 @@ export default function InternalSitekadDataPage() {
           />
         ) : null}
       </SectionCard>
-
-      <Dialog
-        open={Boolean(detailTarget)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDetailTarget(null);
-          }
-        }}
-      >
-        <DialogContent className="max-h-[calc(100svh-2rem)] max-w-3xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detail Kelompok Binaan</DialogTitle>
-            <DialogDescription>
-              Informasi lengkap kelompok binaan dan perkembangan Program TEKAD.
-            </DialogDescription>
-          </DialogHeader>
-
-          {detailTarget ? (
-            <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <DetailField label="Nama Kelompok">
-                  {detailTarget.namaKelompok || detailTarget.kode}
-                </DetailField>
-                <DetailField label="Kode Data">
-                  {detailTarget.kode}
-                </DetailField>
-                <DetailField label="Kabupaten">
-                  {detailTarget.kabupatenKota}
-                </DetailField>
-                <DetailField label="Distrik / Kampung">
-                  {[detailTarget.distrik, detailTarget.kampung]
-                    .filter(Boolean)
-                    .join(" / ")}
-                </DetailField>
-                <DetailField label="Kategori Sektor Usaha">
-                  {detailTarget.kategoriUsaha}
-                </DetailField>
-                <DetailField label="Jenis Usaha">
-                  {detailTarget.jenisUsaha || "-"}
-                </DetailField>
-                <DetailField label="Komoditas">
-                  {detailTarget.komoditas || "-"}
-                </DetailField>
-                <DetailField label="Jumlah Anggota">
-                  {detailTarget.jumlahAnggota} orang
-                </DetailField>
-                <DetailField label="Dana Alokasi">
-                  {formatCurrency(detailTarget.danaAlokasi)}
-                </DetailField>
-              </div>
-            </div>
-          ) : null}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDetailTarget(null)}
-            >
-              Tutup
-            </Button>
-            {detailTarget ? (
-              <>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => requestDelete(detailTarget)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Hapus
-                </Button>
-                <Button
-                  type="button"
-                  className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
-                  onClick={() => openEditForm(detailTarget)}
-                >
-                  <Edit className="h-4 w-4" />
-                  Edit Data
-                </Button>
-              </>
-            ) : null}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
@@ -1249,7 +1156,7 @@ async function buildSitekadApprovalPdf(records: SitekadPotensiKampung[]) {
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 12;
   const tableBottom = pageHeight - 20;
-  const generatedCode = `SITEKAD/${formatDateForDocumentCode(printedAt)}`;
+  const generatedCode = `KELOMPOK-BINAAN/${formatDateForDocumentCode(printedAt)}`;
   const totalMembers = records.reduce(
     (total, record) => total + (Number(record.jumlahAnggota) || 0),
     0,
@@ -1472,7 +1379,7 @@ function addPdfDocumentIntro(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.text(
-    "Dokumen ini merupakan lembar pengesahan daftar kelompok binaan yang tercatat dalam SITEKAD sampai dengan tanggal cetak.",
+    "Dokumen ini merupakan lembar pengesahan daftar kelompok binaan yang tercatat sampai dengan tanggal cetak.",
     pageWidth / 2,
     cursorY,
     { align: "center" },
@@ -1494,7 +1401,7 @@ function addPdfDocumentIntro(
       "Wilayah",
       SITEKAD_PROVINCE_NAME,
       "Sumber Data",
-      "Sistem Informasi TEKAD (SITEKAD)",
+      "Data Kelompok Binaan Program TEKAD",
     ],
   ];
 
@@ -1564,7 +1471,7 @@ function addPdfCompactHeader(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.text(
-    `Lanjutan daftar kelompok binaan SITEKAD | Dicetak ${formatLongDate(printedAt)}`,
+    `Lanjutan daftar kelompok binaan | Dicetak ${formatLongDate(printedAt)}`,
     margin,
     19,
   );
@@ -1730,7 +1637,7 @@ function addPdfFooters(
     doc.setFontSize(6.8);
     doc.setTextColor(100, 116, 139);
     doc.text(
-      `Dokumen dicetak dari SITEKAD pada ${formatLongDate(printedAt)} dan berlaku sebagai arsip pengesahan data binaan.`,
+      `Dokumen dicetak dari pengelolaan data kelompok binaan pada ${formatLongDate(printedAt)} dan berlaku sebagai arsip pengesahan data binaan.`,
       margin,
       pageHeight - 8,
     );

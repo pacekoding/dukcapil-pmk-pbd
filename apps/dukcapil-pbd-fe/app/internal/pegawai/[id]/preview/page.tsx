@@ -1,0 +1,1 @@
+import { notFound } from "next/navigation";import { PegawaiDetailClient } from "@/app/internal/pegawai/[id]/detail-client";export default async function Page({params}:{params:Promise<{id:string}>}){const {id}=await params;if(!/^\d+$/.test(id)||Number(id)<1)notFound();return <PegawaiDetailClient id={id}/>}

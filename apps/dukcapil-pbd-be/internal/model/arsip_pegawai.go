@@ -20,6 +20,9 @@ type ArsipPegawaiListParams struct {
 }
 
 type ArsipPegawaiPayload struct {
+	BidangID    *int64 `json:"bidangId"`
+	SeksiID     *int64 `json:"seksiId"`
+	JabatanID   *int64 `json:"jabatanId"`
 	NIP         string `json:"nip"`
 	NIK         string `json:"nik"`
 	Name        string `json:"name"`
@@ -63,6 +66,9 @@ type ArsipPegawaiDocumentMetadataPayload struct {
 }
 
 type ArsipPegawaiItem struct {
+	BidangID          *int64                 `json:"bidangId" gorm:"column:bidang_id"`
+	SeksiID           *int64                 `json:"seksiId" gorm:"column:seksi_id"`
+	JabatanID         *int64                 `json:"jabatanId" gorm:"column:jabatan_id"`
 	ID                int64                  `json:"id" gorm:"column:id"`
 	NIP               string                 `json:"nip" gorm:"column:nip"`
 	NIK               string                 `json:"nik" gorm:"column:nik"`
@@ -108,6 +114,9 @@ type ArsipPegawaiDocument struct {
 }
 
 type ArsipPegawaiEntity struct {
+	BidangID        *int64     `gorm:"column:bidang_id"`
+	SeksiID         *int64     `gorm:"column:seksi_id"`
+	JabatanID       *int64     `gorm:"column:jabatan_id"`
 	ID              int64      `gorm:"primaryKey;column:id"`
 	NIP             string     `gorm:"column:nip"`
 	NIK             string     `gorm:"column:nik"`

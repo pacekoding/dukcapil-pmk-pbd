@@ -16,11 +16,6 @@ func NewWebsiteController() *WebsiteController {
 
 func (w *WebsiteController) Home(c echo.Context) error {
 	response := model.WebsiteHomeResponse{
-		Stats: []model.WebsiteStat{
-			{Label: "Wilayah", Value: "6", Description: "Kabupaten/kota Papua Barat Daya"},
-			{Label: "Layanan", Value: "2", Description: "Dukcapil dan PMK"},
-			{Label: "Data", Value: "Aktif", Description: "Dashboard data wilayah tersedia"},
-		},
 		Highlights: []model.WebsiteHighlight{
 			{Title: "Administrasi Kependudukan", Description: "Pelayanan kependudukan, pencatatan sipil, dan pengelolaan data layanan publik."},
 			{Title: "Pemberdayaan Masyarakat Kampung", Description: "Penguatan tata kelola kampung dan pemberdayaan masyarakat."},
@@ -30,9 +25,6 @@ func (w *WebsiteController) Home(c echo.Context) error {
 	response.Hero.Eyebrow = "Portal Resmi"
 	response.Hero.Title = "Dukcapil & PMK Papua Barat Daya"
 	response.Hero.Description = "Portal data wilayah dan profil Dinas Kependudukan dan Pencatatan Sipil dan Pemberdayaan Masyarakat dan Kampung Provinsi Papua Barat Daya."
-	response.ProfileSummary.Title = "Profil Dinas Dukcapil & PMK"
-	response.ProfileSummary.Description = "Dinas menyelenggarakan urusan administrasi kependudukan, pencatatan sipil, pemberdayaan masyarakat kampung, dan pengelolaan data layanan publik."
-
 	return jsonData(c, http.StatusOK, response)
 }
 

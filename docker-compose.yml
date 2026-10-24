@@ -31,6 +31,13 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
       STORAGE_ROOT: ${STORAGE_ROOT:-/app/storage/uploads}
       MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-20}
+      OFFICE_GOVERNMENT_NAME: ${OFFICE_GOVERNMENT_NAME:-}
+      OFFICE_PROVINCE_NAME: ${OFFICE_PROVINCE_NAME:-}
+      OFFICE_AGENCY_NAME: ${OFFICE_AGENCY_NAME:-}
+      OFFICE_ADDRESS: ${OFFICE_ADDRESS:-}
+      OFFICE_PHONE: ${OFFICE_PHONE:-}
+      OFFICE_EMAIL: ${OFFICE_EMAIL:-}
+      OFFICE_WEBSITE: ${OFFICE_WEBSITE:-}
     depends_on:
       dukcapil-pbd-db:
         condition: service_healthy

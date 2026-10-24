@@ -200,7 +200,7 @@ export default function ArsipPage() {
     <main className="space-y-6">
       <PageHero
         icon={FolderArchive}
-        eyebrow="Sistem ARSIPKU"
+        eyebrow="Pegawai dan Arsip"
         title="Data Arsip"
         description="Cari, filter, dan kelompokkan seluruh dokumen arsip dari semua pegawai."
         meta={

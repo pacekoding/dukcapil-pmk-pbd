@@ -1,4 +1,4 @@
-import { PegawaiDetailClient } from "@/app/internal/pegawai/[id]/detail-client";
+import { redirect } from "next/navigation";
 
 export default async function PegawaiDetailPage({
   params,
@@ -7,5 +7,5 @@ export default async function PegawaiDetailPage({
 }) {
   const { id } = await params;
 
-  return <PegawaiDetailClient id={id} />;
+  redirect(`/internal/pegawai/${id}/preview`);
 }

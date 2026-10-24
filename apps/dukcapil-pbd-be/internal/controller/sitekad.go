@@ -49,7 +49,7 @@ func (s *SitekadController) List(c echo.Context) error {
 func (s *SitekadController) Options(c echo.Context) error {
 	response, err := s.sitekad.Options(c.Request().Context())
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "opsi wilayah SITeKAD gagal dimuat")
+		return echo.NewHTTPError(http.StatusInternalServerError, "opsi wilayah kelompok binaan gagal dimuat")
 	}
 
 	return jsonData(c, http.StatusOK, response)

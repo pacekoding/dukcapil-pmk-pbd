@@ -133,8 +133,12 @@ func softDeleteStoredFilesForEntity(tx *gorm.DB, module string, relatedType stri
 }
 
 func finalizeStoredFile(file model.StoredFile) model.StoredFile {
-	file.PreviewURL = fmt.Sprintf("/api/backend/files/%d/preview", file.ID)
-	file.DownloadURL = fmt.Sprintf("/api/backend/files/%d/download", file.ID)
+	prefix := "files"
+	if file.Module == "activity-execution" {
+		prefix = "activity-files"
+	}
+	file.PreviewURL = fmt.Sprintf("/api/backend/%s/%d/preview", prefix, file.ID)
+	file.DownloadURL = fmt.Sprintf("/api/backend/%s/%d/download", prefix, file.ID)
 	return file
 }
 
@@ -144,6 +148,13 @@ func storedFileAccessAllowed(db *gorm.DB, file model.StoredFile, claims security
 	}
 
 	switch file.Module {
+	case "activity-execution":
+		if !claims.Role.Valid() || file.RelatedEntityType != "activity_attachment" {
+			return false, nil
+		}
+		var count int64
+		err := db.Table("lampiran_kegiatan").Where("id=? AND file_id=? AND deleted_at IS NULL", file.RelatedEntityID, file.ID).Count(&count).Error
+		return count > 0, err
 	case "arsip":
 		var count int64
 		err := db.Table("arsip").
@@ -174,7 +185,7 @@ func storedFileAccessAllowed(db *gorm.DB, file model.StoredFile, claims security
 			Where("id = ?", file.RelatedEntityID).
 			Count(&count).Error
 		if err != nil {
-			return false, fmt.Errorf("check SITEKAD file access: %w", err)
+			return false, fmt.Errorf("check kelompok binaan file access: %w", err)
 		}
 		return count > 0, nil
 	default:

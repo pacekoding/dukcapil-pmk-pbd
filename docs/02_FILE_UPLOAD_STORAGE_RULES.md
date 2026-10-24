@@ -203,3 +203,9 @@ karena penghapusan folder host tidak dilindungi Docker.
 - [ ] Thumbnail dan PDF dapat dirender melalui proxy Next.js.
 - [ ] File tetap ada setelah rebuild dan restart container.
 - [ ] Backup PostgreSQL dan folder uploads tersedia.
+
+## Lampiran Pelaksanaan Kegiatan
+
+Modul `activity-execution` menggunakan storage service dan metadata existing dengan visibility private. Dokumentasi menerima PDF/JPEG/PNG/WebP. Kebijakan khusus `activity-attachment` menerima DOCX/XLSX tambahan untuk dokumen pendukung; arsip modul lain tetap mengikuti tabel format di atas. Paket Office diperiksa sebagai OOXML dengan part dan Content Types yang sesuai, batas ekspansi, serta penolakan VBA/macro.
+
+File kegiatan diakses melalui `/api/v1/activity-files/:file_id/preview|download` untuk seluruh role internal, termasuk GET/HEAD Range. Metadata kategori/caption/tanggal/lokasi disimpan pada `lampiran_kegiatan`. Foto yang digunakan dalam snapshot laporan tidak dapat dihapus. Detail relasi dan pengujian tersedia pada [Pelaksanaan Kegiatan](06_PELAKSANAAN_KEGIATAN.md).

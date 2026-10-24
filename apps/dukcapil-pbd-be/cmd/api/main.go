@@ -12,6 +12,7 @@ import (
 	"dukcapil-pbd-be/internal/database"
 	"dukcapil-pbd-be/internal/fileasset"
 	authmiddleware "dukcapil-pbd-be/internal/middleware"
+	"dukcapil-pbd-be/internal/model"
 	"dukcapil-pbd-be/internal/repository"
 	"dukcapil-pbd-be/internal/router"
 	"dukcapil-pbd-be/internal/security"
@@ -75,12 +76,22 @@ func main() {
 	sitekadRepo := repository.NewSitekadRepository(db)
 	storedFileRepo := repository.NewStoredFileRepository(db)
 	kabKotaRepo := repository.NewKabKotaRepository(db)
-	portalAppRepo := repository.NewPortalAppRepository(db)
+	subkegiatanRepo := repository.NewSubkegiatanRepository(db)
 	tokenManager := security.NewManager(env("JWT_SECRET", "dev-secret-change-me"), 24*time.Hour)
 	authMiddleware := authmiddleware.NewAuthMiddleware(tokenManager)
 
+	office := model.DefaultTravelOffice()
+	office.GovernmentName = env("OFFICE_GOVERNMENT_NAME", office.GovernmentName)
+	office.ProvinceName = env("OFFICE_PROVINCE_NAME", office.ProvinceName)
+	office.AgencyName = env("OFFICE_AGENCY_NAME", office.AgencyName)
+	office.Address = env("OFFICE_ADDRESS", office.Address)
+	office.Phone = env("OFFICE_PHONE", office.Phone)
+	office.Email = env("OFFICE_EMAIL", office.Email)
+	office.Website = env("OFFICE_WEBSITE", office.Website)
 	e := router.New(router.Config{
 		AllowedOrigin:   allowedOrigin,
+		Travel:          controller.NewTravelController(repository.NewTravelRepository(db, office)),
+		Activities:      controller.NewActivityController(repository.NewActivityRepository(db, office), repository.NewTravelRepository(db, office), fileService),
 		MaxUploadSizeMB: maxUploadSizeMB,
 		Health:          controller.NewHealthController(db),
 		Auth:            controller.NewAuthController(userRepo, tokenManager),
@@ -91,9 +102,10 @@ func main() {
 		Sitekad:         controller.NewSitekadController(sitekadRepo, fileService),
 		StoredFiles:     controller.NewStoredFileController(storedFileRepo, storageService),
 		KabKota:         controller.NewKabKotaController(kabKotaRepo),
+		Subkegiatan:     controller.NewSubkegiatanController(subkegiatanRepo),
+		Organization:    controller.NewOrganizationController(repository.NewOrganizationRepository(db)),
 		Users:           controller.NewUserController(userRepo),
 		Website:         controller.NewWebsiteController(),
-		PortalApps:      controller.NewPortalAppController(portalAppRepo),
 		AuthMiddleware:  authMiddleware,
 	})
 

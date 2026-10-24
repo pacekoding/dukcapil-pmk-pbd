@@ -1,10 +1,6 @@
 package model
 
-import (
-	"time"
-
-	"github.com/lib/pq"
-)
+import "time"
 
 type Role string
 
@@ -25,23 +21,21 @@ func (r Role) Valid() bool {
 }
 
 type User struct {
-	ID           int64    `json:"id"`
-	Username     string   `json:"username"`
-	Name         string   `json:"name"`
-	Role         Role     `json:"role"`
-	SystemAccess []string `json:"systemAccess"`
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Role     Role   `json:"role"`
 }
 
 type AdminUserEntity struct {
-	ID           int64          `gorm:"primaryKey;column:id"`
-	Username     string         `gorm:"column:username"`
-	FullName     string         `gorm:"column:full_name"`
-	Role         Role           `gorm:"column:role"`
-	SystemAccess pq.StringArray `gorm:"type:text[];column:system_access"`
-	PasswordHash string         `gorm:"column:password_hash"`
-	IsActive     bool           `gorm:"column:is_active"`
-	CreatedAt    time.Time      `gorm:"column:created_at"`
-	UpdatedAt    time.Time      `gorm:"column:updated_at"`
+	ID           int64     `gorm:"primaryKey;column:id"`
+	Username     string    `gorm:"column:username"`
+	FullName     string    `gorm:"column:full_name"`
+	Role         Role      `gorm:"column:role"`
+	PasswordHash string    `gorm:"column:password_hash"`
+	IsActive     bool      `gorm:"column:is_active"`
+	CreatedAt    time.Time `gorm:"column:created_at"`
+	UpdatedAt    time.Time `gorm:"column:updated_at"`
 }
 
 func (AdminUserEntity) TableName() string {
@@ -50,53 +44,48 @@ func (AdminUserEntity) TableName() string {
 
 func (u AdminUserEntity) ToUser() User {
 	return User{
-		ID:           u.ID,
-		Username:     u.Username,
-		Name:         u.FullName,
-		Role:         u.Role,
-		SystemAccess: []string(u.SystemAccess),
+		ID:       u.ID,
+		Username: u.Username,
+		Name:     u.FullName,
+		Role:     u.Role,
 	}
 }
 
 func (u AdminUserEntity) ToAdminUser() AdminUser {
 	return AdminUser{
-		ID:           u.ID,
-		Username:     u.Username,
-		Name:         u.FullName,
-		Role:         u.Role,
-		SystemAccess: []string(u.SystemAccess),
-		IsActive:     u.IsActive,
-		CreatedAt:    formatJSONTime(u.CreatedAt),
-		UpdatedAt:    formatJSONTime(u.UpdatedAt),
+		ID:        u.ID,
+		Username:  u.Username,
+		Name:      u.FullName,
+		Role:      u.Role,
+		IsActive:  u.IsActive,
+		CreatedAt: formatJSONTime(u.CreatedAt),
+		UpdatedAt: formatJSONTime(u.UpdatedAt),
 	}
 }
 
 type AdminUser struct {
-	ID           int64    `json:"id"`
-	Username     string   `json:"username"`
-	Name         string   `json:"name"`
-	Role         Role     `json:"role"`
-	SystemAccess []string `json:"systemAccess"`
-	IsActive     bool     `json:"isActive"`
-	CreatedAt    string   `json:"createdAt"`
-	UpdatedAt    string   `json:"updatedAt"`
+	ID        int64  `json:"id"`
+	Username  string `json:"username"`
+	Name      string `json:"name"`
+	Role      Role   `json:"role"`
+	IsActive  bool   `json:"isActive"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 type CreateAdminUserRequest struct {
-	Username     string   `json:"username"`
-	Name         string   `json:"name"`
-	Role         Role     `json:"role"`
-	SystemAccess []string `json:"systemAccess"`
-	Password     string   `json:"password"`
-	IsActive     bool     `json:"isActive"`
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Role     Role   `json:"role"`
+	Password string `json:"password"`
+	IsActive bool   `json:"isActive"`
 }
 
 type UpdateAdminUserRequest struct {
-	Username     string   `json:"username"`
-	Name         string   `json:"name"`
-	Role         Role     `json:"role"`
-	SystemAccess []string `json:"systemAccess"`
-	IsActive     bool     `json:"isActive"`
+	Username string `json:"username"`
+	Name     string `json:"name"`
+	Role     Role   `json:"role"`
+	IsActive bool   `json:"isActive"`
 }
 
 type ResetPasswordRequest struct {

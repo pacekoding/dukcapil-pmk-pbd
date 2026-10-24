@@ -20,12 +20,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   getCurrentTahunAnggaran,
   getTahunAnggaranOptions,
 } from "@/lib/tahun-anggaran";
+import { formatAdminRole } from "@/types/admin-user";
 
 type DashboardTopbarProps = {
   setMobileOpen: (value: boolean) => void;
@@ -50,13 +53,14 @@ const menuTitles: Record<
     description: "Ringkasan data agregat prioritas Dukcapil dan PMK",
   },
 
-  "/internal/pengaturan": {
-    title: "Dashboard",
-    description: "Pusat pengaturan super admin",
+  "/internal/sibumkam/data": {
+    title: "Data BUM Kampung",
+    description:
+      "Kelola data BUM Kampung berdasarkan kabupaten/kota, distrik, kampung, kategori, dan status verifikasi.",
   },
 
-  "/internal/sibumkam/data": {
-    title: "Data BUMKam",
+  "/internal/pmk/bum-kampung": {
+    title: "Data BUM Kampung",
     description:
       "Kelola data BUM Kampung berdasarkan kabupaten/kota, distrik, kampung, kategori, dan status verifikasi.",
   },
@@ -66,25 +70,47 @@ const menuTitles: Record<
     description: "Kelola IKS, IKE, IKL, nilai IDM, dan status IDM",
   },
 
+  "/internal/pmk/data-kampung": {
+    title: "Data Kampung IDM",
+    description: "Kelola IKS, IKE, IKL, nilai IDM, dan status IDM",
+  },
+
   "/internal/sitekad/data": {
+    title: "Data Kelompok Binaan",
+    description: "Kelola data kelompok binaan pada lokus Program TEKAD",
+  },
+
+  "/internal/pmk/kelompok-binaan": {
     title: "Data Kelompok Binaan",
     description: "Kelola data kelompok binaan pada lokus Program TEKAD",
   },
 
   "/internal/sitekad/capaian-kendala": {
     title: "Capaian & Kendala",
-    description: "Kelola riwayat capaian dan kendala kelompok binaan Program TEKAD",
+    description:
+      "Kelola riwayat capaian dan kendala kelompok binaan Program TEKAD",
+  },
+
+  "/internal/pmk/kelompok-binaan/capaian-kendala": {
+    title: "Capaian & Kendala",
+    description:
+      "Kelola riwayat capaian dan kendala kelompok binaan Program TEKAD",
   },
 
   "/internal/dukcapil/kependudukan": {
     title: "Data Kependudukan",
+    description: "Kelola data kependudukan dan OAP per kabupaten/kota",
+  },
+
+  "/internal/dukcapil/pendaftaran-penduduk": {
+    title: "Pendaftaran Penduduk",
     description:
-      "Kelola data kependudukan dan OAP per kabupaten/kota",
+      "Kelola data agregat layanan pendaftaran penduduk per kabupaten/kota",
   },
 
   "/internal/dukcapil/pencatatan-sipil": {
-    title: "Data Pencatatan Sipil",
-    description: "Kelola data pencatatan sipil per kabupaten/kota",
+    title: "Pencatatan Sipil",
+    description: "Kelola data agregat pencatatan sipil per kabupaten/kota",
   },
 
   "/internal/pegawai": {
@@ -102,9 +128,26 @@ const menuTitles: Record<
     description: "Kelola pengguna internal dan role akses",
   },
 
-  "/internal/pengaturan/status-portal": {
-    title: "Status Portal",
-    description: "Kelola status ketersediaan sistem internal",
+  "/internal/pelaksanaan-kegiatan": {
+    title: "Pelaksanaan Kegiatan",
+    description: "Pusat dokumen dan bukti realisasi kegiatan/subkegiatan",
+  },
+  "/internal/perjalanan-dinas/surat-tugas": {
+    title: "Surat Tugas",
+    description: "Administrasi penugasan perjalanan dinas pegawai",
+  },
+  "/internal/perjalanan-dinas/spd": {
+    title: "Surat Perjalanan Dinas (SPD)",
+    description: "Administrasi Surat Perjalanan Dinas pegawai",
+  },
+  "/internal/pengaturan/struktur-organisasi": {
+    title: "Struktur Organisasi",
+    description: "Kelola master bidang, seksi, dan jabatan pegawai",
+  },
+
+  "/internal/pengaturan/subkegiatan": {
+    title: "Subkegiatan",
+    description: "Kelola data subkegiatan",
   },
 
   "/internal/pengaturan/kab-kota": {
@@ -113,34 +156,45 @@ const menuTitles: Record<
   },
 
   "/internal/pengaturan/data-wilayah-release": {
-    title: "Release Data Wilayah",
+    title: "Publikasi Website",
     description: "Atur tahun data wilayah yang ditampilkan ke publik",
   },
 };
 
 function getPageInfo(pathname: string) {
+  if (pathname.startsWith("/internal/pelaksanaan-kegiatan")) {
+    return menuTitles["/internal/pelaksanaan-kegiatan"];
+  }
   if (menuTitles[pathname]) {
     return menuTitles[pathname];
-  }
-
-  if (pathname === "/internal/dashboard") {
-    return menuTitles["/internal/dashboard"];
-  }
-
-  if (pathname === "/internal/pengaturan") {
-    return menuTitles["/internal/pengaturan"];
   }
 
   if (pathname.startsWith("/internal/sibumkam/data")) {
     return menuTitles["/internal/sibumkam/data"];
   }
 
+  if (pathname.startsWith("/internal/pmk/bum-kampung")) {
+    return menuTitles["/internal/pmk/bum-kampung"];
+  }
+
   if (pathname.startsWith("/internal/sikampung/data")) {
     return menuTitles["/internal/sikampung/data"];
   }
 
+  if (pathname.startsWith("/internal/pmk/data-kampung")) {
+    return menuTitles["/internal/pmk/data-kampung"];
+  }
+
   if (pathname.startsWith("/internal/sitekad/data")) {
     return menuTitles["/internal/sitekad/data"];
+  }
+
+  if (pathname.startsWith("/internal/pmk/kelompok-binaan/capaian-kendala")) {
+    return menuTitles["/internal/pmk/kelompok-binaan/capaian-kendala"];
+  }
+
+  if (pathname.startsWith("/internal/pmk/kelompok-binaan")) {
+    return menuTitles["/internal/pmk/kelompok-binaan"];
   }
 
   if (pathname.startsWith("/internal/sitekad/capaian-kendala")) {
@@ -151,12 +205,20 @@ function getPageInfo(pathname: string) {
     return menuTitles["/internal/pengaturan/pengguna"];
   }
 
+  if (pathname.startsWith("/internal/pengaturan/subkegiatan")) {
+    return menuTitles["/internal/pengaturan/subkegiatan"];
+  }
+
   if (pathname.startsWith("/internal/pengaturan/kab-kota")) {
     return menuTitles["/internal/pengaturan/kab-kota"];
   }
 
   if (pathname.startsWith("/internal/dukcapil/kependudukan")) {
     return menuTitles["/internal/dukcapil/kependudukan"];
+  }
+
+  if (pathname.startsWith("/internal/dukcapil/pendaftaran-penduduk")) {
+    return menuTitles["/internal/dukcapil/pendaftaran-penduduk"];
   }
 
   if (pathname.startsWith("/internal/dukcapil/pencatatan-sipil")) {
@@ -183,7 +245,6 @@ export default function DashboardTopbar({
   const pathname = usePathname();
 
   const pageInfo = getPageInfo(pathname);
-
   const [tahunAnggaran, setTahunAnggaran] = useState(getCurrentTahunAnggaran);
   const [pendingTahunAnggaran, setPendingTahunAnggaran] = useState<
     string | null
@@ -419,6 +480,7 @@ export default function DashboardTopbar({
                   hover:bg-slate-50
                 "
                 type="button"
+                aria-label={`Buka menu akun ${user.name}`}
               >
                 <Avatar className="h-8 w-8">
                   <AvatarFallback
@@ -429,7 +491,7 @@ export default function DashboardTopbar({
                       text-white
                     "
                   >
-                    AP
+                    {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
 
@@ -439,13 +501,23 @@ export default function DashboardTopbar({
                   </p>
 
                   <p className="text-xs leading-4 text-slate-500">
-                    {user.role.replaceAll("_", " ")}
+                    {formatAdminRole(user.role)}
                   </p>
                 </div>
+                <ChevronDown className="hidden h-4 w-4 text-slate-400 md:block" />
               </button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" className="w-52 rounded-lg">
+            <DropdownMenuContent align="end" className="w-56 rounded-lg">
+              <DropdownMenuLabel className="px-3 py-2">
+                <span className="block truncate text-sm font-semibold text-slate-800">
+                  {user.name}
+                </span>
+                <span className="mt-0.5 block text-xs font-normal text-slate-500">
+                  {formatAdminRole(user.role)}
+                </span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}
                 className="
@@ -507,4 +579,14 @@ export default function DashboardTopbar({
       </Dialog>
     </header>
   );
+}
+
+function getInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "AP";
+
+  return words
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join("");
 }

@@ -7,12 +7,6 @@ type HealthResponse struct {
 	Database string `json:"database,omitempty"`
 }
 
-type WebsiteStat struct {
-	Label       string `json:"label"`
-	Value       string `json:"value"`
-	Description string `json:"description"`
-}
-
 type WebsiteHighlight struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -24,12 +18,7 @@ type WebsiteHomeResponse struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	} `json:"hero"`
-	Stats          []WebsiteStat      `json:"stats"`
-	Highlights     []WebsiteHighlight `json:"highlights"`
-	ProfileSummary struct {
-		Title       string `json:"title"`
-		Description string `json:"description"`
-	} `json:"profileSummary"`
+	Highlights []WebsiteHighlight `json:"highlights"`
 }
 
 type StrukturOrganisasiItem struct {

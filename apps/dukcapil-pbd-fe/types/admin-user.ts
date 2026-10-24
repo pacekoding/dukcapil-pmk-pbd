@@ -5,39 +5,24 @@ export const roleOptions = [
   "admin_sekretariat",
 ] as const;
 
-export const systemAccessOptions = [
-  {
-    value: "sibum",
-    label: "SIBUM Kampung",
-  },
-  {
-    value: "sikampung",
-    label: "SIKAMPUNG",
-  },
-  {
-    value: "sitekad",
-    label: "SITeKAD",
-  },
-  {
-    value: "siber",
-    label: "SIRBE",
-  },
-  {
-    value: "arsip_pegawai",
-    label: "ARSIPKU",
-  },
-] as const;
-
 export type AdminRole = (typeof roleOptions)[number];
 
-export type SystemAccess = (typeof systemAccessOptions)[number]["value"];
+const roleLabels: Record<AdminRole, string> = {
+  superadmin: "Superadmin",
+  admin_pmk: "Admin PMK",
+  admin_dukcapil: "Admin Dukcapil",
+  admin_sekretariat: "Admin Sekretariat",
+};
+
+export function formatAdminRole(role: string) {
+  return roleLabels[role as AdminRole] ?? role;
+}
 
 export type AdminUser = {
   id: number;
   username: string;
   name: string;
   role: AdminRole;
-  systemAccess: SystemAccess[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -47,7 +32,6 @@ export type CreateAdminUserPayload = {
   username: string;
   name: string;
   role: AdminRole;
-  systemAccess: SystemAccess[];
   password: string;
   isActive: boolean;
 };

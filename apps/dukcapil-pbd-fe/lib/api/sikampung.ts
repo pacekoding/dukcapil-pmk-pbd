@@ -6,14 +6,31 @@ import type {
   SikampungPayload,
 } from "@/types/sikampung";
 
-export function getSikampungData(tahunAnggaran?: string) {
-  if (!tahunAnggaran) {
-    return apiRequest<SikampungListResponse>(apiEndpoints.sikampung);
+type SikampungListParams = {
+  tahunAnggaran?: string;
+  page?: number;
+  pageSize?: number;
+  search?: string;
+};
+
+export function getSikampungData(params: SikampungListParams = {}) {
+  const searchParams = new URLSearchParams();
+  if (params.tahunAnggaran) {
+    searchParams.set("tahunAnggaran", params.tahunAnggaran);
+  }
+  if (params.page) {
+    searchParams.set("page", String(params.page));
+  }
+  if (params.pageSize) {
+    searchParams.set("pageSize", String(params.pageSize));
+  }
+  if (params.search?.trim()) {
+    searchParams.set("search", params.search.trim());
   }
 
-  const params = new URLSearchParams({ tahunAnggaran });
+  const query = searchParams.toString();
   return apiRequest<SikampungListResponse>(
-    `${apiEndpoints.sikampung}?${params.toString()}`,
+    query ? `${apiEndpoints.sikampung}?${query}` : apiEndpoints.sikampung,
   );
 }
 
@@ -22,6 +39,10 @@ export function createSikampungData(payload: SikampungPayload) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function getSikampungDataDetail(id: number) {
+  return apiRequest<SikampungData>(apiEndpoints.sikampungDetail(id));
 }
 
 export function updateSikampungData(id: number, payload: SikampungPayload) {

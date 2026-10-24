@@ -114,6 +114,26 @@ GET /api/backend/files/{file_id}/download
 
 Endpoint file memerlukan login dan pemeriksaan hak akses.
 
+## Data Agregat Dukcapil
+
+Portal internal mengelola data tahunan per kabupaten/kota melalui endpoint
+Endpoint administrasi kependudukan yang memerlukan login dengan role Dukcapil:
+
+```txt
+GET /api/backend/siber/pendaftaran-penduduk
+GET /api/backend/siber/pendaftaran-penduduk/{region_id}
+PUT /api/backend/siber/pendaftaran-penduduk/{region_id}
+
+GET /api/backend/siber/pencatatan-sipil
+GET /api/backend/siber/pencatatan-sipil/{region_id}
+PUT /api/backend/siber/pencatatan-sipil/{region_id}
+```
+
+Tahun diambil dari sesi login. Data tetap menggunakan tabel tahunan
+`data_wilayah` dengan primary key `(tahun_anggaran, id)`, sehingga endpoint baru
+tidak membuat master wilayah kedua. Migration `000030` menambah data pindah
+datang/keluar serta rincian peristiwa pencatatan sipil tanpa mengubah data lama.
+
 Panduan arsitektur, migrasi volume lama, backup, dan restore tersedia di
 [`docs/02_FILE_UPLOAD_STORAGE_RULES.md`](docs/02_FILE_UPLOAD_STORAGE_RULES.md).
 

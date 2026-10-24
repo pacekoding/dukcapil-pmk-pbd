@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"dukcapil-pbd-be/internal/fileasset"
 	authmiddleware "dukcapil-pbd-be/internal/middleware"
 	"dukcapil-pbd-be/internal/model"
+	"dukcapil-pbd-be/internal/repository"
 
 	"github.com/labstack/echo"
 )
@@ -88,6 +90,9 @@ func (a *ArsipPegawaiController) Create(c echo.Context) error {
 
 	record, err := a.pegawai.Create(c.Request().Context(), request)
 	if err != nil {
+		if errors.Is(err, repository.ErrOrganizationInvalid) {
+			return organizationHTTPError(err)
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "data pegawai gagal disimpan")
 	}
 	return jsonData(c, http.StatusCreated, record)
@@ -109,6 +114,9 @@ func (a *ArsipPegawaiController) Update(c echo.Context) error {
 
 	record, found, err := a.pegawai.Update(c.Request().Context(), id, request)
 	if err != nil {
+		if errors.Is(err, repository.ErrOrganizationInvalid) {
+			return organizationHTTPError(err)
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "data pegawai gagal diperbarui")
 	}
 	if !found {

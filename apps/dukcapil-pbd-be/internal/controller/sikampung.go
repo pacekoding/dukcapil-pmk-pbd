@@ -12,10 +12,32 @@ import (
 )
 
 type SikampungStore interface {
-	List(ctx context.Context, tahunAnggaran string) (model.SikampungListResponse, error)
+	List(ctx context.Context, params model.SikampungListParams) (model.SikampungListResponse, error)
+	Get(ctx context.Context, tahunAnggaran string, id int64) (model.SikampungData, bool, error)
 	Create(ctx context.Context, tahunAnggaran string, payload model.SikampungPayload) (model.SikampungData, error)
 	Update(ctx context.Context, tahunAnggaran string, id int64, payload model.SikampungPayload) (model.SikampungData, bool, error)
 	Delete(ctx context.Context, tahunAnggaran string, id int64) (bool, error)
+}
+
+func (s *SikampungController) Detail(c echo.Context) error {
+	tahunAnggaran, err := authenticatedTahunAnggaran(c)
+	if err != nil {
+		return err
+	}
+	id, err := sikampungID(c)
+	if err != nil {
+		return err
+	}
+
+	item, found, err := s.sikampung.Get(c.Request().Context(), tahunAnggaran, id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "data kampung gagal dimuat")
+	}
+	if !found {
+		return echo.NewHTTPError(http.StatusNotFound, "data kampung tidak ditemukan")
+	}
+
+	return jsonData(c, http.StatusOK, item)
 }
 
 type SikampungController struct {
@@ -31,13 +53,44 @@ func (s *SikampungController) List(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-
-	response, err := s.sikampung.List(c.Request().Context(), tahunAnggaran)
+	page, err := sikampungPositiveQueryInt(c, "page", 1, 1_000_000)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "data SIKAMPUNG gagal dimuat")
+		return err
+	}
+	pageSize, err := sikampungPositiveQueryInt(c, "pageSize", 10, 100)
+	if err != nil {
+		return err
+	}
+	search := strings.TrimSpace(c.QueryParam("search"))
+	if len(search) > 200 {
+		return echo.NewHTTPError(http.StatusBadRequest, "pencarian data kampung terlalu panjang")
+	}
+
+	response, err := s.sikampung.List(c.Request().Context(), model.SikampungListParams{
+		TahunAnggaran: tahunAnggaran,
+		Search:        search,
+		Page:          page,
+		PageSize:      pageSize,
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "data kampung gagal dimuat")
 	}
 
 	return jsonData(c, http.StatusOK, response)
+}
+
+func sikampungPositiveQueryInt(c echo.Context, name string, fallback, maximum int) (int, error) {
+	rawValue := strings.TrimSpace(c.QueryParam(name))
+	if rawValue == "" {
+		return fallback, nil
+	}
+
+	value, err := strconv.Atoi(rawValue)
+	if err != nil || value <= 0 || value > maximum {
+		return 0, echo.NewHTTPError(http.StatusBadRequest, "parameter "+name+" tidak valid")
+	}
+
+	return value, nil
 }
 
 func (s *SikampungController) Create(c echo.Context) error {
@@ -48,7 +101,7 @@ func (s *SikampungController) Create(c echo.Context) error {
 
 	var payload model.SikampungPayload
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "payload SIKAMPUNG tidak valid")
+		return echo.NewHTTPError(http.StatusBadRequest, "data kampung tidak valid")
 	}
 	if err := validateSikampungPayload(payload); err != nil {
 		return err
@@ -56,7 +109,7 @@ func (s *SikampungController) Create(c echo.Context) error {
 
 	item, err := s.sikampung.Create(c.Request().Context(), tahunAnggaran, payload)
 	if err != nil {
-		return sikampungSaveError(err, "data SIKAMPUNG gagal dibuat")
+		return sikampungSaveError(err, "data kampung gagal dibuat")
 	}
 
 	return jsonData(c, http.StatusCreated, item)
@@ -74,7 +127,7 @@ func (s *SikampungController) Update(c echo.Context) error {
 
 	var payload model.SikampungPayload
 	if err := c.Bind(&payload); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "payload SIKAMPUNG tidak valid")
+		return echo.NewHTTPError(http.StatusBadRequest, "data kampung tidak valid")
 	}
 	if err := validateSikampungPayload(payload); err != nil {
 		return err
@@ -82,10 +135,10 @@ func (s *SikampungController) Update(c echo.Context) error {
 
 	item, found, err := s.sikampung.Update(c.Request().Context(), tahunAnggaran, id, payload)
 	if err != nil {
-		return sikampungSaveError(err, "data SIKAMPUNG gagal diperbarui")
+		return sikampungSaveError(err, "data kampung gagal diperbarui")
 	}
 	if !found {
-		return echo.NewHTTPError(http.StatusNotFound, "data SIKAMPUNG tidak ditemukan")
+		return echo.NewHTTPError(http.StatusNotFound, "data kampung tidak ditemukan")
 	}
 
 	return jsonData(c, http.StatusOK, item)
@@ -103,10 +156,10 @@ func (s *SikampungController) Delete(c echo.Context) error {
 
 	found, err := s.sikampung.Delete(c.Request().Context(), tahunAnggaran, id)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "data SIKAMPUNG gagal dihapus")
+		return echo.NewHTTPError(http.StatusInternalServerError, "data kampung gagal dihapus")
 	}
 	if !found {
-		return echo.NewHTTPError(http.StatusNotFound, "data SIKAMPUNG tidak ditemukan")
+		return echo.NewHTTPError(http.StatusNotFound, "data kampung tidak ditemukan")
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -130,7 +183,7 @@ func sikampungListTahunAnggaran(c echo.Context) (string, error) {
 		return authenticatedTahunAnggaran(c)
 	}
 	if tahunAnggaran != "2025" && tahunAnggaran != "2026" {
-		return "", echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran SIKAMPUNG tidak valid")
+		return "", echo.NewHTTPError(http.StatusBadRequest, "tahun anggaran data kampung tidak valid")
 	}
 
 	return tahunAnggaran, nil

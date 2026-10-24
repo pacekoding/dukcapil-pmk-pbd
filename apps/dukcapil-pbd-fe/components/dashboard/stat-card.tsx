@@ -10,6 +10,7 @@ type StatCardProps = {
   description?: string;
   icon?: LucideIcon;
   tone?: "blue" | "emerald" | "amber" | "slate" | "indigo";
+  loading?: boolean;
 };
 
 const toneClasses = {
@@ -26,15 +27,20 @@ export function StatCard({
   description,
   icon: Icon,
   tone = "blue",
+  loading = false,
 }: StatCardProps) {
   return (
     <div className="app-surface rounded-lg p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-500">{label}</p>
-          <p className="mt-2 text-2xl font-bold tracking-tight text-pbd-navy">
-            {value}
-          </p>
+          {loading ? (
+            <div className="mt-3 h-7 w-28 animate-pulse rounded-md bg-slate-200" />
+          ) : (
+            <p className="mt-2 text-2xl font-bold tracking-tight text-pbd-navy">
+              {value}
+            </p>
+          )}
           {description ? (
             <p className="mt-1 text-sm leading-6 text-slate-500">
               {description}

@@ -1,13 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type Ref,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type Ref } from "react";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -33,7 +27,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { OrganizationSelect } from "@/components/organization/organization-select";
+import { getOrganizationData } from "@/lib/api/organization";
+import {
+  employeeOrganizationOptions,
+  changeEmployeeBidang,
+  changeEmployeeSeksi,
+} from "@/lib/organization";
+import type { OrganizationData } from "@/types/organization";
 import { EmployeePhoto } from "@/components/arsipku/employee-photo";
+import { RankSelect } from "@/components/arsipku/rank-select";
 import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { formatFileSize } from "@/components/dashboard/document-utils";
 import { PageHero } from "@/components/dashboard/page-hero";
@@ -124,10 +127,13 @@ export function PegawaiDetailClient({ id }: { id: string }) {
   const [fileError, setFileError] = useState<string | null>(null);
   const [form, setForm] = useState<UploadForm>(() => createEmptyUploadForm());
   const [uploading, setUploading] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<PegawaiDocument | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PegawaiDocument | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
-  const [metadataTarget, setMetadataTarget] =
-    useState<PegawaiDocument | null>(null);
+  const [metadataTarget, setMetadataTarget] = useState<PegawaiDocument | null>(
+    null,
+  );
   const [metadataForm, setMetadataForm] = useState<MetadataForm>(() =>
     createEmptyMetadataForm(),
   );
@@ -139,6 +145,46 @@ export function PegawaiDetailClient({ id }: { id: string }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [organization, setOrganization] = useState<OrganizationData>({
+    fields: [],
+    sections: [],
+    positions: [],
+  });
+  const [organizationLoading, setOrganizationLoading] = useState(false);
+  const [organizationError, setOrganizationError] = useState<string | null>(
+    null,
+  );
+  const [organizationReload, setOrganizationReload] = useState(0);
+
+  useEffect(() => {
+    if (!editing) return;
+    let mounted = true;
+    async function load() {
+      setOrganizationLoading(true);
+      setOrganizationError(null);
+      try {
+        const data = await getOrganizationData();
+        if (mounted) setOrganization(data);
+      } catch {
+        if (mounted)
+          setOrganizationError(
+            "Master organisasi gagal dimuat. Silakan coba lagi.",
+          );
+      } finally {
+        if (mounted) setOrganizationLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      mounted = false;
+    };
+  }, [editing, organizationReload]);
+
+  const organizationOptions = employeeOrganizationOptions(
+    organization,
+    editForm ?? { bidangId: null, seksiId: null, jabatanId: null },
+    pegawai,
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -364,16 +410,6 @@ export function PegawaiDetailClient({ id }: { id: string }) {
     }
   };
 
-  const startEditing = () => {
-    if (!pegawai) {
-      return;
-    }
-    setEditForm(createEditForm(pegawai));
-    setSelectedPhoto(null);
-    setPhotoError(null);
-    setEditing(true);
-  };
-
   const cancelEditing = () => {
     setEditing(false);
     setEditForm(null);
@@ -418,7 +454,13 @@ export function PegawaiDetailClient({ id }: { id: string }) {
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
-    if (!pegawai || !editForm || photoError) {
+    if (
+      !pegawai ||
+      !editForm ||
+      photoError ||
+      organizationLoading ||
+      organizationError
+    ) {
       return;
     }
 
@@ -426,6 +468,10 @@ export function PegawaiDetailClient({ id }: { id: string }) {
     setError(null);
     setMessage(null);
     try {
+      if (!editForm.bidangId || !editForm.jabatanId) {
+        setError("Bidang dan jabatan wajib dipilih.");
+        return;
+      }
       let updated = await updateArsipPegawai(pegawai.id, editForm);
       setPegawai(updated);
       if (selectedPhoto) {
@@ -463,7 +509,7 @@ export function PegawaiDetailClient({ id }: { id: string }) {
       <main className="space-y-6">
         <PageHero
           icon={IdCard}
-          eyebrow="Detail ARSIPKU"
+          eyebrow="Detail Pegawai"
           title="Memuat data pegawai"
           description="Mengambil biodata dan arsip dokumen pegawai dari server."
         />
@@ -476,7 +522,7 @@ export function PegawaiDetailClient({ id }: { id: string }) {
       <main className="space-y-6">
         <PageHero
           icon={IdCard}
-          eyebrow="Detail ARSIPKU"
+          eyebrow="Detail Pegawai"
           title="Pegawai tidak ditemukan"
           description="Data pegawai belum tersedia atau sudah dihapus dari sistem arsip."
           aside={
@@ -497,7 +543,7 @@ export function PegawaiDetailClient({ id }: { id: string }) {
     <main className="space-y-6">
       <PageHero
         icon={IdCard}
-        eyebrow="Detail ARSIPKU"
+        eyebrow="Detail Pegawai"
         title={pegawai.name}
         description="Biodata singkat dan arsip dokumen pegawai."
         meta={
@@ -528,14 +574,11 @@ export function PegawaiDetailClient({ id }: { id: string }) {
               Upload Dokumen
             </Button>
             {!editing ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 rounded-xl"
-                onClick={startEditing}
-              >
+              <Button asChild variant="outline" className="h-11 rounded-xl">
+                <Link href={`/internal/pegawai/${pegawai.id}/edit`}>
                 <Edit3 className="h-4 w-4" />
                 Edit Data
+                </Link>
               </Button>
             ) : null}
             <Button asChild variant="outline" className="h-11 rounded-xl">
@@ -660,25 +703,100 @@ export function PegawaiDetailClient({ id }: { id: string }) {
                   required={false}
                   onChange={(value) => updateEditField("birthDate", value)}
                 />
-                <EmployeeFormInput
-                  label="Jabatan"
-                  value={editForm.position}
-                  onChange={(value) => updateEditField("position", value)}
-                />
-                <EmployeeFormInput
+                {organizationError ? (
+                  <div className="space-y-2 md:col-span-2">
+                    <ErrorState message={organizationError} />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() =>
+                        setOrganizationReload((value) => value + 1)
+                      }
+                    >
+                      Coba Lagi
+                    </Button>
+                  </div>
+                ) : null}
+                {organizationLoading ? (
+                  <p
+                    role="status"
+                    className="text-sm text-slate-500 md:col-span-2"
+                  >
+                    Memuat master organisasi...
+                  </p>
+                ) : null}
+                {!pegawai.bidangId || !pegawai.jabatanId ? (
+                  <p className="text-sm text-amber-700 md:col-span-2">
+                    Data organisasi lama:{" "}
+                    {[pegawai.bidang, pegawai.unit, pegawai.position]
+                      .filter(Boolean)
+                      .join(" / ") || "Belum diisi"}
+                    . Pilih bidang dan jabatan dari master untuk melengkapi
+                    data.
+                  </p>
+                ) : null}
+                <OrganizationSelect
                   label="Bidang"
-                  value={editForm.bidang}
-                  onChange={(value) => updateEditField("bidang", value)}
+                  required
+                  value={editForm.bidangId}
+                  items={organizationOptions.fields}
+                  disabled={
+                    saving || organizationLoading || Boolean(organizationError)
+                  }
+                  onChange={(bidangId) =>
+                    setEditForm((current) =>
+                      current
+                        ? { ...current, ...changeEmployeeBidang(bidangId) }
+                        : current,
+                    )
+                  }
                 />
-                <EmployeeFormInput
+                <OrganizationSelect
                   label="Seksi"
-                  value={editForm.unit}
-                  onChange={(value) => updateEditField("unit", value)}
+                  value={editForm.seksiId}
+                  items={organizationOptions.sections}
+                  disabled={
+                    saving ||
+                    organizationLoading ||
+                    Boolean(organizationError) ||
+                    !editForm.bidangId
+                  }
+                  onChange={(seksiId) =>
+                    setEditForm((current) =>
+                      current
+                        ? {
+                            ...current,
+                            ...changeEmployeeSeksi(
+                              organization,
+                              current,
+                              seksiId,
+                            ),
+                          }
+                        : current,
+                    )
+                  }
                 />
-                <EmployeeFormInput
-                  label="Pangkat/Golongan"
+                <OrganizationSelect
+                  label="Jabatan"
+                  required
+                  value={editForm.jabatanId}
+                  items={organizationOptions.positions}
+                  disabled={
+                    saving ||
+                    organizationLoading ||
+                    Boolean(organizationError) ||
+                    !editForm.bidangId
+                  }
+                  onChange={(jabatanId) =>
+                    setEditForm((current) =>
+                      current ? { ...current, jabatanId } : current,
+                    )
+                  }
+                />
+                <RankSelect
                   value={editForm.rank}
-                  onChange={(value) => updateEditField("rank", value)}
+                  disabled={saving}
+                  onValueChange={(value) => updateEditField("rank", value)}
                 />
                 <EmployeeFormInput
                   label="Email"
@@ -737,7 +855,12 @@ export function PegawaiDetailClient({ id }: { id: string }) {
             </Button>
             <Button
               type="submit"
-              disabled={saving || Boolean(photoError)}
+              disabled={
+                saving ||
+                Boolean(photoError) ||
+                organizationLoading ||
+                Boolean(organizationError)
+              }
               className="bg-pbd-navy text-white hover:bg-pbd-navy/90"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -775,16 +898,22 @@ export function PegawaiDetailClient({ id }: { id: string }) {
             description="Data utama pegawai untuk kebutuhan arsip internal."
             action={
               <div className="flex justify-end">
-                <Button type="button" variant="outline" onClick={startEditing}>
+                <Button asChild variant="outline">
+                  <Link href={`/internal/pegawai/${pegawai.id}/edit`}>
                   <Edit3 className="h-4 w-4" />
                   Edit Data
+                  </Link>
                 </Button>
               </div>
             }
           >
             <div className="grid gap-4 md:grid-cols-2">
               <InfoItem label="Nama" value={pegawai.name} icon={UserRound} />
-              <InfoItem label="Status" value={pegawai.status} icon={BadgeCheck} />
+              <InfoItem
+                label="Status"
+                value={pegawai.status}
+                icon={BadgeCheck}
+              />
               <InfoItem label="NIP" value={pegawai.nip} icon={IdCard} />
               <InfoItem label="NIK" value={pegawai.nik} icon={ShieldCheck} />
               <InfoItem
@@ -836,7 +965,10 @@ export function PegawaiDetailClient({ id }: { id: string }) {
           title="Upload Dokumen Pegawai"
           description="Pilih file, isi nama dokumen, tahun dokumen, dan kategori arsip."
         >
-          <form onSubmit={(event) => void handleUpload(event)} className="space-y-5">
+          <form
+            onSubmit={(event) => void handleUpload(event)}
+            className="space-y-5"
+          >
             <div className="grid gap-4 md:grid-cols-2">
               <div className="grid gap-2 md:col-span-2">
                 <Label htmlFor="arsipku-file">File dokumen</Label>
@@ -860,8 +992,12 @@ export function PegawaiDetailClient({ id }: { id: string }) {
                     )}
                   >
                     <div className="min-w-0">
-                      <p className="truncate font-semibold">{selectedFile.name}</p>
-                      <p className="text-xs">{formatFileSize(selectedFile.size)}</p>
+                      <p className="truncate font-semibold">
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-xs">
+                        {formatFileSize(selectedFile.size)}
+                      </p>
                     </div>
                     <Button
                       type="button"
@@ -876,7 +1012,9 @@ export function PegawaiDetailClient({ id }: { id: string }) {
                   </div>
                 ) : null}
                 {fileError ? (
-                  <p className="text-sm font-medium text-red-600">{fileError}</p>
+                  <p className="text-sm font-medium text-red-600">
+                    {fileError}
+                  </p>
                 ) : null}
               </div>
 
@@ -937,7 +1075,9 @@ export function PegawaiDetailClient({ id }: { id: string }) {
                 Batal
               </Button>
               <Button type="submit" disabled={uploading}>
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null}
                 <Upload className="h-4 w-4" />
                 Upload
               </Button>
@@ -1062,7 +1202,7 @@ export function PegawaiDetailClient({ id }: { id: string }) {
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
         title="Hapus Dokumen Arsip?"
-        description={`Dokumen ${deleteTarget?.title ?? "pegawai"} akan dihapus dari Arsipku dan tabel arsip.`}
+        description={`Dokumen ${deleteTarget?.title ?? "pegawai"} akan dihapus dari data arsip pegawai.`}
         loading={deleting}
         onOpenChange={(open) => {
           if (!open) {
@@ -1186,11 +1326,7 @@ function DocumentSelectField({
   return (
     <label className="grid gap-2">
       <span className="text-sm font-bold text-pbd-navy">{label}</span>
-      <Select
-        value={value}
-        disabled={disabled}
-        onValueChange={onValueChange}
-      >
+      <Select value={value} disabled={disabled} onValueChange={onValueChange}>
         <SelectTrigger className="h-10">
           <SelectValue />
         </SelectTrigger>
@@ -1290,26 +1426,6 @@ function EmployeeFormInput({
       />
     </label>
   );
-}
-
-function createEditForm(pegawai: PegawaiArchive): PegawaiArchivePayload {
-  return {
-    nip: pegawai.nip,
-    nik: pegawai.nik,
-    name: pegawai.name,
-    birthPlace: pegawai.birthPlace,
-    birthDate: pegawai.birthDate,
-    position: pegawai.position,
-    bidang: pegawai.bidang,
-    unit: pegawai.unit,
-    rank: pegawai.rank,
-    email: pegawai.email,
-    phone: pegawai.phone,
-    bankAccount: pegawai.bankAccount,
-    address: pegawai.address,
-    status: pegawai.status === "Aktif" ? "Aktif" : "Nonaktif",
-    photoColor: pegawai.photoColor,
-  };
 }
 
 function createEmptyUploadForm(): UploadForm {

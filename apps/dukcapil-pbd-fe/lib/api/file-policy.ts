@@ -16,9 +16,19 @@ export const DEFAULT_MAX_UPLOAD_SIZE_MB =
 export const DEFAULT_MAX_UPLOAD_SIZE_BYTES =
   DEFAULT_MAX_UPLOAD_SIZE_MB * 1024 * 1024;
 
-type UploadKind = "image" | "pdf" | "archive";
+export const ACTIVITY_ATTACHMENT_ACCEPT = `${ARCHIVE_FILE_ACCEPT},.docx,.xlsx`;
+type UploadKind = "image" | "pdf" | "archive" | "activity-attachment";
 
 const extensionsByKind: Record<UploadKind, Set<string>> = {
+  "activity-attachment": new Set([
+    ".pdf",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".docx",
+    ".xlsx",
+  ]),
   image: new Set([".jpg", ".jpeg", ".png", ".webp"]),
   pdf: new Set([".pdf"]),
   archive: new Set([".pdf", ".jpg", ".jpeg", ".png", ".webp"]),
@@ -29,9 +39,7 @@ export function validateClientUpload(file: File, kind: UploadKind) {
     throw new Error("File tidak boleh kosong.");
   }
   if (file.size > DEFAULT_MAX_UPLOAD_SIZE_BYTES) {
-    throw new Error(
-      `Ukuran file maksimal ${DEFAULT_MAX_UPLOAD_SIZE_MB} MB.`,
-    );
+    throw new Error(`Ukuran file maksimal ${DEFAULT_MAX_UPLOAD_SIZE_MB} MB.`);
   }
   const dotIndex = file.name.lastIndexOf(".");
   const extension =

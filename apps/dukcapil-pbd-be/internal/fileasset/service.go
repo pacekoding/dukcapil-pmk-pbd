@@ -27,9 +27,10 @@ var (
 type Kind string
 
 const (
-	KindImage Kind = "image"
-	KindPDF   Kind = "pdf"
-	KindAny   Kind = "any"
+	KindImage              Kind = "image"
+	KindPDF                Kind = "pdf"
+	KindAny                Kind = "any"
+	KindActivityAttachment Kind = "activity-attachment"
 )
 
 type SaveRequest struct {
@@ -197,6 +198,8 @@ func inspectUpload(header *multipart.FileHeader) (string, error) {
 	buffer = buffer[:read]
 
 	switch {
+	case len(buffer) >= 4 && string(buffer[:4]) == "PK\x03\x04":
+		return inspectOffice(header)
 	case isPDF(buffer):
 		return "application/pdf", nil
 	case isJPEG(buffer):
@@ -216,6 +219,8 @@ func validateType(kind Kind, extension string, detectedMime string, declaredMime
 		extensions map[string]bool
 		canonical  string
 	}{
+		wordMime:  {mime: wordMime, extensions: map[string]bool{".docx": true}, canonical: "docx"},
+		excelMime: {mime: excelMime, extensions: map[string]bool{".xlsx": true}, canonical: "xlsx"},
 		"application/pdf": {
 			mime:       "application/pdf",
 			extensions: map[string]bool{".pdf": true},
@@ -251,6 +256,10 @@ func validateType(kind Kind, extension string, detectedMime string, declaredMime
 			return "", ErrUnsupported
 		}
 	case KindAny:
+		if detectedMime == wordMime || detectedMime == excelMime {
+			return "", ErrUnsupported
+		}
+	case KindActivityAttachment:
 	default:
 		return "", ErrUnsupported
 	}

@@ -1,6 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars -- legacy inline form is kept inert during route migration */
+
+import Link from "next/link";
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import {
   Database,
   Download,
@@ -14,6 +25,7 @@ import {
 
 import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { PageHero } from "@/components/dashboard/page-hero";
+import { Pagination } from "@/components/dashboard/pagination";
 import { SectionCard } from "@/components/dashboard/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,11 +81,16 @@ const initialFormState: SikampungFormState = {
   statusIdm: "Tertinggal",
 };
 
+const PAGE_SIZE = 10;
+const legacyInlineCrudEnabled: boolean = false;
+
 export default function InternalSikampungDataPage() {
   const [records, setRecords] = useState<SikampungData[]>([]);
   const [kabKotaOptions, setKabKotaOptions] = useState<KabKota[]>([]);
   const [tahunAnggaran, setTahunAnggaran] = useState("");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<SikampungData | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SikampungData | null>(null);
@@ -82,65 +99,74 @@ export default function InternalSikampungDataPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const requestIdRef = useRef(0);
 
   const nilaiIdm = useMemo(
     () => calculateNilaiIdm(form.iks, form.ike, form.ikl),
     [form.ike, form.ikl, form.iks],
   );
 
-  const filteredRecords = useMemo(() => {
-    const normalizedQuery = query.toLowerCase().trim();
-
-    if (!normalizedQuery) {
-      return records;
-    }
-
-    return records.filter((record) =>
-      [
-        record.kodeDesa,
-        record.desa,
-        record.distrik,
-        record.kabupaten,
-        formatIDM(record.iks),
-        formatIDM(record.ike),
-        formatIDM(record.ikl),
-        formatIDM(record.nilaiIdm),
-        record.statusIdm,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [query, records]);
-
-  async function loadData() {
+  const loadData = useCallback(async (targetPage: number, search: string) => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError("");
 
     try {
-      const [sikampungResponse, kabKotaResponse] = await Promise.all([
-        getSikampungData(),
-        getKabKota(),
-      ]);
+      const sikampungResponse = await getSikampungData({
+        page: targetPage,
+        pageSize: PAGE_SIZE,
+        search,
+      });
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       setRecords(sikampungResponse.items);
       setTahunAnggaran(sikampungResponse.tahunAnggaran);
-      setKabKotaOptions(kabKotaResponse);
+      setTotal(sikampungResponse.total);
+      setPage(sikampungResponse.page);
     } catch (loadError) {
       console.error(loadError);
-      setError(
-        "Data SIKAMPUNG atau master Kab/Kota gagal dimuat. Periksa koneksi atau sesi login.",
-      );
+      if (requestId === requestIdRef.current) {
+        setError(
+          "Data kampung gagal dimuat. Periksa koneksi atau sesi login.",
+        );
+      }
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
-  }
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      void loadData();
-    }, 0);
+      void loadData(page, query);
+    }, 300);
 
     return () => window.clearTimeout(timer);
+  }, [loadData, page, query]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadKabKotaOptions = async () => {
+      try {
+        const response = await getKabKota();
+        if (mounted) {
+          setKabKotaOptions(response);
+        }
+      } catch (loadError) {
+        console.error(loadError);
+        if (mounted) {
+          setError("Master Kab/Kota gagal dimuat.");
+        }
+      }
+    };
+
+    void loadKabKotaOptions();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const openCreateForm = () => {
@@ -190,17 +216,20 @@ export default function InternalSikampungDataPage() {
 
     try {
       if (editingRecord) {
-        const updated = await updateSikampungData(editingRecord.id, payload);
-        setRecords((current) =>
-          current.map((record) => (record.id === updated.id ? updated : record)),
-        );
+        await updateSikampungData(editingRecord.id, payload);
         setMessage("Data kampung berhasil diperbarui.");
+        closeForm();
+        await loadData(page, query);
       } else {
-        const created = await createSikampungData(payload);
-        setRecords((current) => [created, ...current]);
+        await createSikampungData(payload);
         setMessage("Data kampung berhasil ditambahkan.");
+        closeForm();
+        if (page === 1) {
+          await loadData(1, query);
+        } else {
+          setPage(1);
+        }
       }
-      closeForm();
     } catch (submitError) {
       console.error(submitError);
       setError("Data kampung gagal disimpan. Pastikan kode desa belum digunakan.");
@@ -219,10 +248,13 @@ export default function InternalSikampungDataPage() {
 
     try {
       await deleteSikampungData(deleteTarget.id);
-      setRecords((current) =>
-        current.filter((record) => record.id !== deleteTarget.id),
-      );
       setMessage("Data kampung berhasil dihapus.");
+      const targetPage = records.length === 1 && page > 1 ? page - 1 : page;
+      if (targetPage === page) {
+        await loadData(targetPage, query);
+      } else {
+        setPage(targetPage);
+      }
     } catch (deleteError) {
       console.error(deleteError);
       setError("Data kampung gagal dihapus.");
@@ -235,22 +267,20 @@ export default function InternalSikampungDataPage() {
     <main className="space-y-6">
       <PageHero
         icon={Database}
-        eyebrow="SIKAMPUNG"
+        eyebrow="Data Kampung"
         title="Data Kampung IDM"
         description="Kelola data kampung berdasarkan kode desa, wilayah administrasi, indeks IKS/IKE/IKL, nilai IDM, dan status IDM."
         meta={
           <Badge className="h-8 rounded-full bg-blue-50 px-4 text-sm font-bold text-pbd-blue">
-            {records.length} data kampung {tahunAnggaran ? `- ${tahunAnggaran}` : ""}
+            {total} data kampung {tahunAnggaran ? `- ${tahunAnggaran}` : ""}
           </Badge>
         }
         aside={
-          <Button
-            type="button"
-            className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            onClick={openCreateForm}
-          >
+          <Button asChild className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90">
+            <Link href="/internal/pmk/data-kampung/add">
             <Plus className="h-4 w-4" />
             Tambah Data Kampung
+            </Link>
           </Button>
         }
       />
@@ -266,7 +296,7 @@ export default function InternalSikampungDataPage() {
         </div>
       ) : null}
 
-      {formOpen ? (
+      {legacyInlineCrudEnabled && formOpen ? (
         <SectionCard
           title={editingRecord ? "Edit Data Kampung" : "Tambah Data Kampung"}
           description="Nilai IDM dihitung otomatis dari rata-rata IKS, IKE, dan IKL sampai 4 desimal."
@@ -382,17 +412,20 @@ export default function InternalSikampungDataPage() {
               type="button"
               variant="outline"
               className="h-10 rounded-lg"
-              disabled={filteredRecords.length === 0}
-              onClick={() => downloadKampungCsv(filteredRecords)}
+              disabled={records.length === 0}
+              onClick={() => downloadKampungCsv(records)}
             >
               <Download className="h-4 w-4" />
-              Download CSV
+              Download CSV Halaman Ini
             </Button>
             <div className="relative w-full sm:w-80">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setPage(1);
+                }}
                 className="pl-9"
                 placeholder="Cari kode, desa, distrik, kabupaten..."
               />
@@ -426,8 +459,8 @@ export default function InternalSikampungDataPage() {
                   Memuat data kampung...
                 </TableCell>
               </TableRow>
-            ) : filteredRecords.length > 0 ? (
-              filteredRecords.map((record) => (
+            ) : records.length > 0 ? (
+              records.map((record) => (
                 <TableRow key={record.id}>
                   <TableCell className="font-bold text-pbd-navy">
                     <div className="flex items-center gap-3">
@@ -464,9 +497,14 @@ export default function InternalSikampungDataPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEditForm(record)}>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/internal/pmk/data-kampung/${record.id}/preview`}>Lihat</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/internal/pmk/data-kampung/${record.id}/edit`}>
                           <Edit className="h-4 w-4" />
                           Edit
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           variant="destructive"
@@ -486,18 +524,28 @@ export default function InternalSikampungDataPage() {
                   colSpan={10}
                   className="py-10 text-center text-sm font-medium text-slate-500"
                 >
-                  Belum ada data kampung yang sesuai dengan pencarian.
+                  {query.trim()
+                    ? "Belum ada data kampung yang sesuai dengan pencarian."
+                    : "Belum ada data kampung."}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+        {!loading && total > 0 ? (
+          <Pagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            onPageChange={setPage}
+          />
+        ) : null}
       </SectionCard>
 
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
         title="Hapus Data Kampung?"
-        description={`Data ${deleteTarget?.desa ?? "kampung"} akan dihapus dari database SIKAMPUNG.`}
+        description={`Data ${deleteTarget?.desa ?? "kampung"} akan dihapus dari basis data kampung.`}
         onOpenChange={(open) => {
           if (!open) {
             setDeleteTarget(null);

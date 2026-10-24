@@ -28,6 +28,17 @@ type PopulationRegistrationData struct {
 	NikWni          int `json:"nikWni"`
 	PerekamanKtpEl  int `json:"perekamanKtpEl"`
 	PencetakanKtpEl int `json:"pencetakanKtpEl"`
+	PindahDatang    int `json:"pindahDatang"`
+	PindahKeluar    int `json:"pindahKeluar"`
+}
+
+type LegacyPopulationRegistrationPayload struct {
+	PenerbitanKk    int `json:"penerbitanKk"`
+	PerubahanKk     int `json:"perubahanKk"`
+	Kia             int `json:"kia"`
+	NikWni          int `json:"nikWni"`
+	PerekamanKtpEl  int `json:"perekamanKtpEl"`
+	PencetakanKtpEl int `json:"pencetakanKtpEl"`
 }
 
 type OapData struct {
@@ -44,16 +55,48 @@ type DataWilayahOapPayload struct {
 }
 
 type DataWilayahDukcapilPayload struct {
-	Registration PopulationRegistrationData `json:"registration"`
-	Civil        CivilRegistrationData      `json:"civil"`
-	Oap          DataWilayahOapPayload      `json:"oap"`
+	Registration LegacyPopulationRegistrationPayload `json:"registration"`
+	Civil        LegacyCivilRegistrationPayload      `json:"civil"`
+	Oap          DataWilayahOapPayload               `json:"oap"`
 }
 
 type CivilRegistrationData struct {
+	AktaKelahiran                  int `json:"aktaKelahiran"`
+	AktaKematian                   int `json:"aktaKematian"`
+	AktaPerkawinan                 int `json:"aktaPerkawinan"`
+	AktaPerceraian                 int `json:"aktaPerceraian"`
+	LahirMati                      int `json:"lahirMati"`
+	PengangkatanAnak               int `json:"pengangkatanAnak"`
+	PengakuanAnak                  int `json:"pengakuanAnak"`
+	PengesahanAnak                 int `json:"pengesahanAnak"`
+	PerubahanNama                  int `json:"perubahanNama"`
+	PembatalanPerkawinan           int `json:"pembatalanPerkawinan"`
+	PembatalanPerceraian           int `json:"pembatalanPerceraian"`
+	PerubahanStatusKewarganegaraan int `json:"perubahanStatusKewarganegaraan"`
+	PembetulanAkta                 int `json:"pembetulanAkta"`
+	PembatalanAkta                 int `json:"pembatalanAkta"`
+	PeristiwaPentingLainnya        int `json:"peristiwaPentingLainnya"`
+}
+
+type LegacyCivilRegistrationPayload struct {
 	AktaKelahiran  int `json:"aktaKelahiran"`
 	AktaKematian   int `json:"aktaKematian"`
 	AktaPerkawinan int `json:"aktaPerkawinan"`
 	AktaPerceraian int `json:"aktaPerceraian"`
+}
+
+type DukcapilAggregateRegion[T any] struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	ShortName string `json:"shortName"`
+	Type      string `json:"type"`
+	Data      T      `json:"data"`
+}
+
+type DukcapilAggregateResponse[T any] struct {
+	TahunAnggaran string                       `json:"tahunAnggaran"`
+	Regions       []DukcapilAggregateRegion[T] `json:"regions"`
+	UpdatedAt     *time.Time                   `json:"updatedAt,omitempty"`
 }
 
 type RegionData struct {
@@ -92,38 +135,51 @@ type DataWilayahWebsiteSettingsPayload struct {
 }
 
 type DataWilayahEntity struct {
-	TahunAnggaran               string    `gorm:"primaryKey;column:tahun_anggaran"`
-	ID                          string    `gorm:"primaryKey;column:id"`
-	SortOrder                   int       `gorm:"column:sort_order"`
-	Name                        string    `gorm:"column:name"`
-	ShortName                   string    `gorm:"column:short_name"`
-	RegionType                  string    `gorm:"column:region_type"`
-	MapLabel                    string    `gorm:"column:map_label"`
-	IdmSangatTertinggal         int       `gorm:"column:idm_sangat_tertinggal"`
-	IdmTertinggal               int       `gorm:"column:idm_tertinggal"`
-	IdmBerkembang               int       `gorm:"column:idm_berkembang"`
-	IdmMaju                     int       `gorm:"column:idm_maju"`
-	IdmMandiri                  int       `gorm:"column:idm_mandiri"`
-	BumdesJumlah                int       `gorm:"column:bumdes_jumlah"`
-	BumdesAktif                 int       `gorm:"column:bumdes_aktif"`
-	BumdesTidakAktif            int       `gorm:"column:bumdes_tidak_aktif"`
-	BumdesBersama               int       `gorm:"column:bumdes_bersama"`
-	RegistrationPenerbitanKk    int       `gorm:"column:registration_penerbitan_kk"`
-	RegistrationPerubahanKk     int       `gorm:"column:registration_perubahan_kk"`
-	RegistrationKia             int       `gorm:"column:registration_kia"`
-	RegistrationNikWni          int       `gorm:"column:registration_nik_wni"`
-	RegistrationPerekamanKtpEl  int       `gorm:"column:registration_perekaman_ktp_el"`
-	RegistrationPencetakanKtpEl int       `gorm:"column:registration_pencetakan_ktp_el"`
-	OapLuasWilayah              float64   `gorm:"column:oap_luas_wilayah"`
-	OapJumlahOap                int       `gorm:"column:oap_jumlah_oap"`
-	OapJumlahNonOap             int       `gorm:"column:oap_jumlah_non_oap"`
-	OapJumlahJiwa               int       `gorm:"column:oap_jumlah_jiwa"`
-	CivilAktaKelahiran          int       `gorm:"column:civil_akta_kelahiran"`
-	CivilAktaKematian           int       `gorm:"column:civil_akta_kematian"`
-	CivilAktaPerkawinan         int       `gorm:"column:civil_akta_perkawinan"`
-	CivilAktaPerceraian         int       `gorm:"column:civil_akta_perceraian"`
-	CreatedAt                   time.Time `gorm:"column:created_at"`
-	UpdatedAt                   time.Time `gorm:"column:updated_at"`
+	TahunAnggaran                       string    `gorm:"primaryKey;column:tahun_anggaran"`
+	ID                                  string    `gorm:"primaryKey;column:id"`
+	SortOrder                           int       `gorm:"column:sort_order"`
+	Name                                string    `gorm:"column:name"`
+	ShortName                           string    `gorm:"column:short_name"`
+	RegionType                          string    `gorm:"column:region_type"`
+	MapLabel                            string    `gorm:"column:map_label"`
+	IdmSangatTertinggal                 int       `gorm:"column:idm_sangat_tertinggal"`
+	IdmTertinggal                       int       `gorm:"column:idm_tertinggal"`
+	IdmBerkembang                       int       `gorm:"column:idm_berkembang"`
+	IdmMaju                             int       `gorm:"column:idm_maju"`
+	IdmMandiri                          int       `gorm:"column:idm_mandiri"`
+	BumdesJumlah                        int       `gorm:"column:bumdes_jumlah"`
+	BumdesAktif                         int       `gorm:"column:bumdes_aktif"`
+	BumdesTidakAktif                    int       `gorm:"column:bumdes_tidak_aktif"`
+	BumdesBersama                       int       `gorm:"column:bumdes_bersama"`
+	RegistrationPenerbitanKk            int       `gorm:"column:registration_penerbitan_kk"`
+	RegistrationPerubahanKk             int       `gorm:"column:registration_perubahan_kk"`
+	RegistrationKia                     int       `gorm:"column:registration_kia"`
+	RegistrationNikWni                  int       `gorm:"column:registration_nik_wni"`
+	RegistrationPerekamanKtpEl          int       `gorm:"column:registration_perekaman_ktp_el"`
+	RegistrationPencetakanKtpEl         int       `gorm:"column:registration_pencetakan_ktp_el"`
+	RegistrationPindahDatang            int       `gorm:"column:registration_pindah_datang"`
+	RegistrationPindahKeluar            int       `gorm:"column:registration_pindah_keluar"`
+	OapLuasWilayah                      float64   `gorm:"column:oap_luas_wilayah"`
+	OapJumlahOap                        int       `gorm:"column:oap_jumlah_oap"`
+	OapJumlahNonOap                     int       `gorm:"column:oap_jumlah_non_oap"`
+	OapJumlahJiwa                       int       `gorm:"column:oap_jumlah_jiwa"`
+	CivilAktaKelahiran                  int       `gorm:"column:civil_akta_kelahiran"`
+	CivilAktaKematian                   int       `gorm:"column:civil_akta_kematian"`
+	CivilAktaPerkawinan                 int       `gorm:"column:civil_akta_perkawinan"`
+	CivilAktaPerceraian                 int       `gorm:"column:civil_akta_perceraian"`
+	CivilLahirMati                      int       `gorm:"column:civil_lahir_mati"`
+	CivilPengangkatanAnak               int       `gorm:"column:civil_pengangkatan_anak"`
+	CivilPengakuanAnak                  int       `gorm:"column:civil_pengakuan_anak"`
+	CivilPengesahanAnak                 int       `gorm:"column:civil_pengesahan_anak"`
+	CivilPerubahanNama                  int       `gorm:"column:civil_perubahan_nama"`
+	CivilPembatalanPerkawinan           int       `gorm:"column:civil_pembatalan_perkawinan"`
+	CivilPembatalanPerceraian           int       `gorm:"column:civil_pembatalan_perceraian"`
+	CivilPerubahanStatusKewarganegaraan int       `gorm:"column:civil_perubahan_status_kewarganegaraan"`
+	CivilPembetulanAkta                 int       `gorm:"column:civil_pembetulan_akta"`
+	CivilPembatalanAkta                 int       `gorm:"column:civil_pembatalan_akta"`
+	CivilPeristiwaPentingLainnya        int       `gorm:"column:civil_peristiwa_penting_lainnya"`
+	CreatedAt                           time.Time `gorm:"column:created_at"`
+	UpdatedAt                           time.Time `gorm:"column:updated_at"`
 }
 
 type DataWilayahPublicSettingsEntity struct {
@@ -169,6 +225,8 @@ func (d DataWilayahEntity) ToRegionData() RegionData {
 			NikWni:          d.RegistrationNikWni,
 			PerekamanKtpEl:  d.RegistrationPerekamanKtpEl,
 			PencetakanKtpEl: d.RegistrationPencetakanKtpEl,
+			PindahDatang:    d.RegistrationPindahDatang,
+			PindahKeluar:    d.RegistrationPindahKeluar,
 		},
 		Oap: OapData{
 			LuasWilayah:  d.OapLuasWilayah,
@@ -177,11 +235,36 @@ func (d DataWilayahEntity) ToRegionData() RegionData {
 			JumlahJiwa:   d.OapJumlahJiwa,
 		},
 		Civil: CivilRegistrationData{
-			AktaKelahiran:  d.CivilAktaKelahiran,
-			AktaKematian:   d.CivilAktaKematian,
-			AktaPerkawinan: d.CivilAktaPerkawinan,
-			AktaPerceraian: d.CivilAktaPerceraian,
+			AktaKelahiran:                  d.CivilAktaKelahiran,
+			AktaKematian:                   d.CivilAktaKematian,
+			AktaPerkawinan:                 d.CivilAktaPerkawinan,
+			AktaPerceraian:                 d.CivilAktaPerceraian,
+			LahirMati:                      d.CivilLahirMati,
+			PengangkatanAnak:               d.CivilPengangkatanAnak,
+			PengakuanAnak:                  d.CivilPengakuanAnak,
+			PengesahanAnak:                 d.CivilPengesahanAnak,
+			PerubahanNama:                  d.CivilPerubahanNama,
+			PembatalanPerkawinan:           d.CivilPembatalanPerkawinan,
+			PembatalanPerceraian:           d.CivilPembatalanPerceraian,
+			PerubahanStatusKewarganegaraan: d.CivilPerubahanStatusKewarganegaraan,
+			PembetulanAkta:                 d.CivilPembetulanAkta,
+			PembatalanAkta:                 d.CivilPembatalanAkta,
+			PeristiwaPentingLainnya:        d.CivilPeristiwaPentingLainnya,
 		},
+	}
+}
+
+func (d DataWilayahEntity) ToPopulationRegistrationRegion() DukcapilAggregateRegion[PopulationRegistrationData] {
+	region := d.ToRegionData()
+	return DukcapilAggregateRegion[PopulationRegistrationData]{
+		ID: d.ID, Name: d.Name, ShortName: d.ShortName, Type: d.RegionType, Data: region.Registration,
+	}
+}
+
+func (d DataWilayahEntity) ToCivilRegistrationRegion() DukcapilAggregateRegion[CivilRegistrationData] {
+	region := d.ToRegionData()
+	return DukcapilAggregateRegion[CivilRegistrationData]{
+		ID: d.ID, Name: d.Name, ShortName: d.ShortName, Type: d.RegionType, Data: region.Civil,
 	}
 }
 

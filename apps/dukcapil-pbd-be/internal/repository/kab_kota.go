@@ -11,6 +11,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var ErrKabKotaAlreadyExists = errors.New("kode wilayah atau nama kabupaten/kota sudah digunakan")
+
 type KabKotaRepository struct {
 	db *gorm.DB
 }
@@ -49,7 +51,7 @@ func (r *KabKotaRepository) Create(ctx context.Context, payload model.KabKotaPay
 		Provinsi:    strings.TrimSpace(payload.Provinsi),
 	}
 	if err := db.Create(&record).Error; err != nil {
-		return model.KabKota{}, fmt.Errorf("create kab kota: %w", normalizeWriteError(err))
+		return model.KabKota{}, fmt.Errorf("create kab kota: %w", normalizeKabKotaWriteError(err))
 	}
 	return record.ToKabKota(), nil
 }
@@ -71,7 +73,7 @@ func (r *KabKotaRepository) Update(ctx context.Context, id int64, payload model.
 				"updated_at":   gorm.Expr("NOW()"),
 			})
 		if result.Error != nil {
-			return normalizeWriteError(result.Error)
+			return normalizeKabKotaWriteError(result.Error)
 		}
 		if result.RowsAffected == 0 {
 			return gorm.ErrRecordNotFound
@@ -86,6 +88,13 @@ func (r *KabKotaRepository) Update(ctx context.Context, id int64, payload model.
 	}
 
 	return record.ToKabKota(), true, nil
+}
+
+func normalizeKabKotaWriteError(err error) error {
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return ErrKabKotaAlreadyExists
+	}
+	return err
 }
 
 func (r *KabKotaRepository) Delete(ctx context.Context, id int64) (bool, error) {

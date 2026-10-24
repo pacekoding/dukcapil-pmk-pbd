@@ -20,6 +20,8 @@ export type PopulationRegistrationData = {
   nikWni: number;
   perekamanKtpEl: number;
   pencetakanKtpEl: number;
+  pindahDatang: number;
+  pindahKeluar: number;
 };
 
 export type OapData = {
@@ -34,6 +36,17 @@ export type CivilRegistrationData = {
   aktaKematian: number;
   aktaPerkawinan: number;
   aktaPerceraian: number;
+  lahirMati: number;
+  pengangkatanAnak: number;
+  pengakuanAnak: number;
+  pengesahanAnak: number;
+  perubahanNama: number;
+  pembatalanPerkawinan: number;
+  pembatalanPerceraian: number;
+  perubahanStatusKewarganegaraan: number;
+  pembetulanAkta: number;
+  pembatalanAkta: number;
+  peristiwaPentingLainnya: number;
 };
 
 export type RegionData = {
@@ -75,7 +88,18 @@ export type SiberOapPayload = Pick<
 >;
 
 export type SiberDataWilayahPayload = {
-  registration: PopulationRegistrationData;
-  civil: CivilRegistrationData;
+  registration: Pick<
+    PopulationRegistrationData,
+    | "penerbitanKk"
+    | "perubahanKk"
+    | "kia"
+    | "nikWni"
+    | "perekamanKtpEl"
+    | "pencetakanKtpEl"
+  >;
+  civil: Pick<
+    CivilRegistrationData,
+    "aktaKelahiran" | "aktaKematian" | "aktaPerkawinan" | "aktaPerceraian"
+  >;
   oap: SiberOapPayload;
 };

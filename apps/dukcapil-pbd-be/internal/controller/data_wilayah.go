@@ -25,6 +25,12 @@ const (
 type DataWilayahStore interface {
 	List(ctx context.Context, tahunAnggaran string) (model.DataWilayahResponse, error)
 	UpdateDukcapil(ctx context.Context, tahunAnggaran, id string, payload model.DataWilayahDukcapilPayload) (model.RegionData, bool, error)
+	ListPopulationRegistration(ctx context.Context, tahunAnggaran string) (model.DukcapilAggregateResponse[model.PopulationRegistrationData], error)
+	GetPopulationRegistration(ctx context.Context, tahunAnggaran, id string) (model.DukcapilAggregateRegion[model.PopulationRegistrationData], bool, error)
+	UpdatePopulationRegistration(ctx context.Context, tahunAnggaran, id string, payload model.PopulationRegistrationData) (model.DukcapilAggregateRegion[model.PopulationRegistrationData], bool, error)
+	ListCivilRegistration(ctx context.Context, tahunAnggaran string) (model.DukcapilAggregateResponse[model.CivilRegistrationData], error)
+	GetCivilRegistration(ctx context.Context, tahunAnggaran, id string) (model.DukcapilAggregateRegion[model.CivilRegistrationData], bool, error)
+	UpdateCivilRegistration(ctx context.Context, tahunAnggaran, id string, payload model.CivilRegistrationData) (model.DukcapilAggregateRegion[model.CivilRegistrationData], bool, error)
 	GetWebsiteSettings(ctx context.Context) (model.DataWilayahWebsiteSettingsResponse, error)
 	UpdateWebsiteSettings(ctx context.Context, payload model.DataWilayahWebsiteSettingsPayload) (model.DataWilayahWebsiteSettingsResponse, error)
 }
@@ -76,9 +82,115 @@ func (d *DataWilayahController) SiberList(c echo.Context) error {
 
 	response, err := d.dataWilayah.List(c.Request().Context(), tahunAnggaran)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "data wilayah SIRBE gagal dimuat")
+		return echo.NewHTTPError(http.StatusInternalServerError, "data administrasi kependudukan gagal dimuat")
 	}
 
+	return jsonData(c, http.StatusOK, response)
+}
+
+func (d *DataWilayahController) PopulationRegistrationList(c echo.Context) error {
+	tahunAnggaran, err := siberDataWilayahTahunAnggaran(c)
+	if err != nil {
+		return err
+	}
+
+	response, err := d.dataWilayah.ListPopulationRegistration(c.Request().Context(), tahunAnggaran)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "data pendaftaran penduduk gagal dimuat")
+	}
+	return jsonData(c, http.StatusOK, response)
+}
+
+func (d *DataWilayahController) PopulationRegistrationDetail(c echo.Context) error {
+	tahunAnggaran, id, err := dukcapilAggregateRequestKeys(c)
+	if err != nil {
+		return err
+	}
+
+	response, found, err := d.dataWilayah.GetPopulationRegistration(c.Request().Context(), tahunAnggaran, id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "data pendaftaran penduduk gagal dimuat")
+	}
+	if !found {
+		return echo.NewHTTPError(http.StatusNotFound, "data wilayah tidak ditemukan")
+	}
+	return jsonData(c, http.StatusOK, response)
+}
+
+func (d *DataWilayahController) UpdatePopulationRegistration(c echo.Context) error {
+	tahunAnggaran, id, err := dukcapilAggregateRequestKeys(c)
+	if err != nil {
+		return err
+	}
+
+	var payload model.PopulationRegistrationData
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "payload pendaftaran penduduk tidak valid")
+	}
+	if err := validatePopulationRegistrationPayload(payload); err != nil {
+		return err
+	}
+
+	response, found, err := d.dataWilayah.UpdatePopulationRegistration(c.Request().Context(), tahunAnggaran, id, payload)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "data pendaftaran penduduk gagal diperbarui")
+	}
+	if !found {
+		return echo.NewHTTPError(http.StatusNotFound, "data wilayah tidak ditemukan")
+	}
+	return jsonData(c, http.StatusOK, response)
+}
+
+func (d *DataWilayahController) CivilRegistrationList(c echo.Context) error {
+	tahunAnggaran, err := siberDataWilayahTahunAnggaran(c)
+	if err != nil {
+		return err
+	}
+
+	response, err := d.dataWilayah.ListCivilRegistration(c.Request().Context(), tahunAnggaran)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "data pencatatan sipil gagal dimuat")
+	}
+	return jsonData(c, http.StatusOK, response)
+}
+
+func (d *DataWilayahController) CivilRegistrationDetail(c echo.Context) error {
+	tahunAnggaran, id, err := dukcapilAggregateRequestKeys(c)
+	if err != nil {
+		return err
+	}
+
+	response, found, err := d.dataWilayah.GetCivilRegistration(c.Request().Context(), tahunAnggaran, id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "data pencatatan sipil gagal dimuat")
+	}
+	if !found {
+		return echo.NewHTTPError(http.StatusNotFound, "data wilayah tidak ditemukan")
+	}
+	return jsonData(c, http.StatusOK, response)
+}
+
+func (d *DataWilayahController) UpdateCivilRegistration(c echo.Context) error {
+	tahunAnggaran, id, err := dukcapilAggregateRequestKeys(c)
+	if err != nil {
+		return err
+	}
+
+	var payload model.CivilRegistrationData
+	if err := c.Bind(&payload); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "payload pencatatan sipil tidak valid")
+	}
+	if err := validateCivilRegistrationPayload(payload); err != nil {
+		return err
+	}
+
+	response, found, err := d.dataWilayah.UpdateCivilRegistration(c.Request().Context(), tahunAnggaran, id, payload)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "data pencatatan sipil gagal diperbarui")
+	}
+	if !found {
+		return echo.NewHTTPError(http.StatusNotFound, "data wilayah tidak ditemukan")
+	}
 	return jsonData(c, http.StatusOK, response)
 }
 
@@ -248,4 +360,61 @@ func hasAtMostTwoDecimalPlaces(value float64) bool {
 	formatted := strconv.FormatFloat(value, 'f', -1, 64)
 	decimalIndex := strings.IndexByte(formatted, '.')
 	return decimalIndex == -1 || len(formatted)-decimalIndex-1 <= 2
+}
+
+func dukcapilAggregateRequestKeys(c echo.Context) (string, string, error) {
+	tahunAnggaran, err := siberDataWilayahTahunAnggaran(c)
+	if err != nil {
+		return "", "", err
+	}
+	id := strings.TrimSpace(c.Param("id"))
+	if len(id) > 64 || !dataWilayahRegionIDPattern.MatchString(id) {
+		return "", "", echo.NewHTTPError(http.StatusBadRequest, "id wilayah tidak valid")
+	}
+	return tahunAnggaran, id, nil
+}
+
+func validatePopulationRegistrationPayload(payload model.PopulationRegistrationData) error {
+	return validateDukcapilCounts(
+		payload.PenerbitanKk,
+		payload.PerubahanKk,
+		payload.Kia,
+		payload.NikWni,
+		payload.PerekamanKtpEl,
+		payload.PencetakanKtpEl,
+		payload.PindahDatang,
+		payload.PindahKeluar,
+	)
+}
+
+func validateCivilRegistrationPayload(payload model.CivilRegistrationData) error {
+	return validateDukcapilCounts(
+		payload.AktaKelahiran,
+		payload.AktaKematian,
+		payload.AktaPerkawinan,
+		payload.AktaPerceraian,
+		payload.LahirMati,
+		payload.PengangkatanAnak,
+		payload.PengakuanAnak,
+		payload.PengesahanAnak,
+		payload.PerubahanNama,
+		payload.PembatalanPerkawinan,
+		payload.PembatalanPerceraian,
+		payload.PerubahanStatusKewarganegaraan,
+		payload.PembetulanAkta,
+		payload.PembatalanAkta,
+		payload.PeristiwaPentingLainnya,
+	)
+}
+
+func validateDukcapilCounts(values ...int) error {
+	for _, value := range values {
+		if value < 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "nilai data Dukcapil tidak boleh negatif")
+		}
+		if int64(value) > dataWilayahMaxInteger {
+			return echo.NewHTTPError(http.StatusBadRequest, "nilai data Dukcapil melebihi batas")
+		}
+	}
+	return nil
 }

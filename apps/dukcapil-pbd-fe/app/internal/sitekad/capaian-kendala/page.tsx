@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- legacy dialog form is kept inert during route migration */
+
 import Link from "next/link";
 import {
   useEffect,
@@ -140,7 +142,7 @@ export default function InternalSitekadCapaianKendalaPage() {
       } catch (loadError) {
         console.error(loadError);
         if (mounted) {
-          setError("Data capaian dan kendala SITEKAD gagal dimuat.");
+          setError("Data capaian dan kendala kelompok binaan gagal dimuat.");
         }
       } finally {
         if (mounted) {
@@ -508,7 +510,7 @@ export default function InternalSitekadCapaianKendalaPage() {
     <main className="space-y-6">
       <PageHero
         icon={Trophy}
-        eyebrow="SITEKAD"
+        eyebrow="Kelompok Binaan"
         title="Capaian & Kendala Program"
         description="Dokumentasikan perkembangan, hasil kegiatan, hambatan lapangan, dan bukti pendukung setiap kelompok binaan Program TEKAD."
         meta={
@@ -517,14 +519,11 @@ export default function InternalSitekadCapaianKendalaPage() {
           </Badge>
         }
         aside={
-          <Button
-            type="button"
-            className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90"
-            onClick={openCreateForm}
-            disabled={loading}
-          >
+          <Button asChild className="h-11 rounded-xl bg-pbd-navy text-white hover:bg-pbd-navy/90">
+            <Link href="/internal/pmk/kelompok-binaan/capaian-kendala/add">
             <Plus className="h-4 w-4" />
             Tambah Capaian
+            </Link>
           </Button>
         }
       />
@@ -552,7 +551,7 @@ export default function InternalSitekadCapaianKendalaPage() {
           description="Setiap capaian harus terhubung dengan satu kelompok binaan."
         >
           <Button asChild className="bg-pbd-navy text-white hover:bg-pbd-navy/90">
-            <Link href="/internal/sitekad/data">
+            <Link href="/internal/pmk/kelompok-binaan">
               <UsersRound className="h-4 w-4" />
               Tambah Kelompok Binaan
             </Link>
@@ -618,8 +617,8 @@ export default function InternalSitekadCapaianKendalaPage() {
               <CapaianCard
                 key={record.id}
                 record={record}
-                onDetail={() => setDetailTarget(record)}
-                onEdit={() => openEditForm(record)}
+                onDetail={() => window.location.assign(`/internal/pmk/kelompok-binaan/capaian-kendala/${record.id}/preview`)}
+                onEdit={() => window.location.assign(`/internal/pmk/kelompok-binaan/capaian-kendala/${record.id}/edit`)}
                 onDelete={() => setDeleteTarget(record)}
               />
             ))
@@ -644,7 +643,7 @@ export default function InternalSitekadCapaianKendalaPage() {
       </SectionCard>
 
       <Dialog
-        open={formOpen}
+        open={false && formOpen}
         onOpenChange={(open) => {
           if (!open) {
             closeForm();
@@ -810,7 +809,7 @@ export default function InternalSitekadCapaianKendalaPage() {
       </Dialog>
 
       <Dialog
-        open={Boolean(detailTarget)}
+        open={false && Boolean(detailTarget)}
         onOpenChange={(open) => {
           if (!open) {
             setDetailTarget(null);
@@ -1358,7 +1357,7 @@ function isBackendFileReference(value: string) {
 
 function hasImageExtension(value: string) {
   try {
-    const parsed = new URL(value, "http://sitekad.local");
+    const parsed = new URL(value, "http://internal.local");
     return /\.(jpe?g|png|webp)$/i.test(parsed.pathname);
   } catch {
     return false;

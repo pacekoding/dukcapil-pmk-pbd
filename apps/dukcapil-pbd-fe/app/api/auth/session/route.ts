@@ -17,7 +17,6 @@ type SessionResponse = {
       username: string;
       name: string;
       role: string;
-      systemAccess?: string[];
     };
     tahunAnggaran: string;
   };

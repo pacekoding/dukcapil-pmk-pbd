@@ -201,7 +201,7 @@ export default function InternalDataWilayahReleasePage() {
       <PageHero
         icon={CalendarClock}
         eyebrow="Pengaturan Website"
-        title="Release Data Wilayah"
+        title="Publikasi Data Website"
         description="Atur tahun data wilayah yang tersedia di halaman website publik dan tentukan periode utama yang tampil otomatis."
         meta={
           <div className="flex flex-wrap gap-2">

@@ -31,6 +31,9 @@ export type PegawaiDocument = {
 };
 
 export type PegawaiArchive = {
+  bidangId: number | null;
+  seksiId: number | null;
+  jabatanId: number | null;
   id: number;
   nip: string;
   nik: string;
@@ -54,14 +57,14 @@ export type PegawaiArchive = {
 };
 
 export type PegawaiArchivePayload = {
+  bidangId: number | null;
+  seksiId: number | null;
+  jabatanId: number | null;
   nip: string;
   nik: string;
   name: string;
   birthPlace: string;
   birthDate: string;
-  position: string;
-  bidang: string;
-  unit: string;
   rank: string;
   email: string;
   phone: string;

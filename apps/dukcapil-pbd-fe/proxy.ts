@@ -4,6 +4,7 @@ import {
   NextRequest,
   NextResponse,
 } from "next/server";
+import { canAccessInternalHref } from "@/lib/internal-access";
 
 export default function proxy(
   request: NextRequest
@@ -27,17 +28,8 @@ export default function proxy(
       "/internal/"
     );
 
-  const isInternalSettings =
-    pathname === "/internal/pengaturan" ||
-    pathname.startsWith(
-      "/internal/pengaturan/"
-    );
-
   const isLoginPage =
     pathname === "/login";
-
-  const isSuperAdmin =
-    role?.toLowerCase().replace(/[^a-z0-9]/g, "") === "superadmin";
 
   /* =========================
      PROTECT INTERNAL AREA
@@ -56,8 +48,9 @@ export default function proxy(
   }
 
   if (
-    isInternalSettings &&
-    !isSuperAdmin
+    isInternal &&
+    token &&
+    !canAccessInternalHref(pathname, role ?? "")
   ) {
     return NextResponse.redirect(
       new URL(

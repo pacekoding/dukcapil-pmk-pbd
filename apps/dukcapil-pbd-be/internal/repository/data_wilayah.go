@@ -70,6 +70,211 @@ func (r *DataWilayahRepository) List(ctx context.Context, tahunAnggaran string) 
 	}, nil
 }
 
+func (r *DataWilayahRepository) ListPopulationRegistration(
+	ctx context.Context,
+	tahunAnggaran string,
+) (model.DukcapilAggregateResponse[model.PopulationRegistrationData], error) {
+	records, updatedAt, err := r.listDukcapilRecords(ctx, tahunAnggaran)
+	if err != nil {
+		return model.DukcapilAggregateResponse[model.PopulationRegistrationData]{}, err
+	}
+
+	regions := make([]model.DukcapilAggregateRegion[model.PopulationRegistrationData], 0, len(records))
+	for _, record := range records {
+		regions = append(regions, record.ToPopulationRegistrationRegion())
+	}
+
+	return model.DukcapilAggregateResponse[model.PopulationRegistrationData]{
+		TahunAnggaran: strings.TrimSpace(tahunAnggaran),
+		Regions:       regions,
+		UpdatedAt:     updatedAt,
+	}, nil
+}
+
+func (r *DataWilayahRepository) GetPopulationRegistration(
+	ctx context.Context,
+	tahunAnggaran string,
+	id string,
+) (model.DukcapilAggregateRegion[model.PopulationRegistrationData], bool, error) {
+	record, found, err := r.getDukcapilRecord(ctx, tahunAnggaran, id)
+	if err != nil || !found {
+		return model.DukcapilAggregateRegion[model.PopulationRegistrationData]{}, found, err
+	}
+	return record.ToPopulationRegistrationRegion(), true, nil
+}
+
+func (r *DataWilayahRepository) UpdatePopulationRegistration(
+	ctx context.Context,
+	tahunAnggaran string,
+	id string,
+	payload model.PopulationRegistrationData,
+) (model.DukcapilAggregateRegion[model.PopulationRegistrationData], bool, error) {
+	updates := map[string]any{
+		"registration_penerbitan_kk":     payload.PenerbitanKk,
+		"registration_perubahan_kk":      payload.PerubahanKk,
+		"registration_kia":               payload.Kia,
+		"registration_nik_wni":           payload.NikWni,
+		"registration_perekaman_ktp_el":  payload.PerekamanKtpEl,
+		"registration_pencetakan_ktp_el": payload.PencetakanKtpEl,
+		"registration_pindah_datang":     payload.PindahDatang,
+		"registration_pindah_keluar":     payload.PindahKeluar,
+		"updated_at":                     gorm.Expr("NOW()"),
+	}
+	record, found, err := r.updateDukcapilRecord(ctx, tahunAnggaran, id, updates)
+	if err != nil || !found {
+		return model.DukcapilAggregateRegion[model.PopulationRegistrationData]{}, found, err
+	}
+	return record.ToPopulationRegistrationRegion(), true, nil
+}
+
+func (r *DataWilayahRepository) ListCivilRegistration(
+	ctx context.Context,
+	tahunAnggaran string,
+) (model.DukcapilAggregateResponse[model.CivilRegistrationData], error) {
+	records, updatedAt, err := r.listDukcapilRecords(ctx, tahunAnggaran)
+	if err != nil {
+		return model.DukcapilAggregateResponse[model.CivilRegistrationData]{}, err
+	}
+
+	regions := make([]model.DukcapilAggregateRegion[model.CivilRegistrationData], 0, len(records))
+	for _, record := range records {
+		regions = append(regions, record.ToCivilRegistrationRegion())
+	}
+
+	return model.DukcapilAggregateResponse[model.CivilRegistrationData]{
+		TahunAnggaran: strings.TrimSpace(tahunAnggaran),
+		Regions:       regions,
+		UpdatedAt:     updatedAt,
+	}, nil
+}
+
+func (r *DataWilayahRepository) GetCivilRegistration(
+	ctx context.Context,
+	tahunAnggaran string,
+	id string,
+) (model.DukcapilAggregateRegion[model.CivilRegistrationData], bool, error) {
+	record, found, err := r.getDukcapilRecord(ctx, tahunAnggaran, id)
+	if err != nil || !found {
+		return model.DukcapilAggregateRegion[model.CivilRegistrationData]{}, found, err
+	}
+	return record.ToCivilRegistrationRegion(), true, nil
+}
+
+func (r *DataWilayahRepository) UpdateCivilRegistration(
+	ctx context.Context,
+	tahunAnggaran string,
+	id string,
+	payload model.CivilRegistrationData,
+) (model.DukcapilAggregateRegion[model.CivilRegistrationData], bool, error) {
+	updates := map[string]any{
+		"civil_akta_kelahiran":                   payload.AktaKelahiran,
+		"civil_akta_kematian":                    payload.AktaKematian,
+		"civil_akta_perkawinan":                  payload.AktaPerkawinan,
+		"civil_akta_perceraian":                  payload.AktaPerceraian,
+		"civil_lahir_mati":                       payload.LahirMati,
+		"civil_pengangkatan_anak":                payload.PengangkatanAnak,
+		"civil_pengakuan_anak":                   payload.PengakuanAnak,
+		"civil_pengesahan_anak":                  payload.PengesahanAnak,
+		"civil_perubahan_nama":                   payload.PerubahanNama,
+		"civil_pembatalan_perkawinan":            payload.PembatalanPerkawinan,
+		"civil_pembatalan_perceraian":            payload.PembatalanPerceraian,
+		"civil_perubahan_status_kewarganegaraan": payload.PerubahanStatusKewarganegaraan,
+		"civil_pembetulan_akta":                  payload.PembetulanAkta,
+		"civil_pembatalan_akta":                  payload.PembatalanAkta,
+		"civil_peristiwa_penting_lainnya":        payload.PeristiwaPentingLainnya,
+		"updated_at":                             gorm.Expr("NOW()"),
+	}
+	record, found, err := r.updateDukcapilRecord(ctx, tahunAnggaran, id, updates)
+	if err != nil || !found {
+		return model.DukcapilAggregateRegion[model.CivilRegistrationData]{}, found, err
+	}
+	return record.ToCivilRegistrationRegion(), true, nil
+}
+
+func (r *DataWilayahRepository) listDukcapilRecords(
+	ctx context.Context,
+	tahunAnggaran string,
+) ([]model.DataWilayahEntity, *time.Time, error) {
+	db, err := r.session(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := r.ensureCurrentReleaseYearData(db, currentDataWilayahReleaseYear()); err != nil {
+		return nil, nil, err
+	}
+
+	var records []model.DataWilayahEntity
+	if err := db.Where("tahun_anggaran = ?", strings.TrimSpace(tahunAnggaran)).
+		Order("sort_order ASC").Find(&records).Error; err != nil {
+		return nil, nil, fmt.Errorf("list data Dukcapil: %w", err)
+	}
+
+	var latest time.Time
+	for _, record := range records {
+		if record.UpdatedAt.After(latest) {
+			latest = record.UpdatedAt
+		}
+	}
+	if latest.IsZero() {
+		return records, nil, nil
+	}
+	return records, &latest, nil
+}
+
+func (r *DataWilayahRepository) getDukcapilRecord(
+	ctx context.Context,
+	tahunAnggaran string,
+	id string,
+) (model.DataWilayahEntity, bool, error) {
+	db, err := r.session(ctx)
+	if err != nil {
+		return model.DataWilayahEntity{}, false, err
+	}
+
+	var record model.DataWilayahEntity
+	err = db.First(&record, "tahun_anggaran = ? AND id = ?", strings.TrimSpace(tahunAnggaran), strings.TrimSpace(id)).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return model.DataWilayahEntity{}, false, nil
+	}
+	if err != nil {
+		return model.DataWilayahEntity{}, false, fmt.Errorf("get data Dukcapil: %w", err)
+	}
+	return record, true, nil
+}
+
+func (r *DataWilayahRepository) updateDukcapilRecord(
+	ctx context.Context,
+	tahunAnggaran string,
+	id string,
+	updates map[string]any,
+) (model.DataWilayahEntity, bool, error) {
+	db, err := r.session(ctx)
+	if err != nil {
+		return model.DataWilayahEntity{}, false, err
+	}
+
+	var record model.DataWilayahEntity
+	err = db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Model(&model.DataWilayahEntity{}).
+			Where("tahun_anggaran = ? AND id = ?", strings.TrimSpace(tahunAnggaran), strings.TrimSpace(id)).
+			Updates(updates)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		return tx.First(&record, "tahun_anggaran = ? AND id = ?", strings.TrimSpace(tahunAnggaran), strings.TrimSpace(id)).Error
+	})
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return model.DataWilayahEntity{}, false, nil
+	}
+	if err != nil {
+		return model.DataWilayahEntity{}, false, fmt.Errorf("update data Dukcapil: %w", err)
+	}
+	return record, true, nil
+}
+
 func (r *DataWilayahRepository) UpdateDukcapil(
 	ctx context.Context,
 	tahunAnggaran string,
@@ -259,18 +464,24 @@ func (r *DataWilayahRepository) ensureCurrentReleaseYearData(db *gorm.DB, curren
 			idm_sangat_tertinggal, idm_tertinggal, idm_berkembang, idm_maju, idm_mandiri,
 			bumdes_jumlah, bumdes_aktif, bumdes_tidak_aktif, bumdes_bersama,
 			registration_penerbitan_kk, registration_perubahan_kk, registration_kia, registration_nik_wni,
-			registration_perekaman_ktp_el, registration_pencetakan_ktp_el,
+			registration_perekaman_ktp_el, registration_pencetakan_ktp_el, registration_pindah_datang, registration_pindah_keluar,
 			oap_luas_wilayah, oap_jumlah_oap, oap_jumlah_non_oap, oap_jumlah_jiwa,
-			civil_akta_kelahiran, civil_akta_kematian, civil_akta_perkawinan, civil_akta_perceraian
+			civil_akta_kelahiran, civil_akta_kematian, civil_akta_perkawinan, civil_akta_perceraian,
+			civil_lahir_mati, civil_pengangkatan_anak, civil_pengakuan_anak, civil_pengesahan_anak, civil_perubahan_nama,
+			civil_pembatalan_perkawinan, civil_pembatalan_perceraian, civil_perubahan_status_kewarganegaraan,
+			civil_pembetulan_akta, civil_pembatalan_akta, civil_peristiwa_penting_lainnya
 		)
 		SELECT
 			?, id, sort_order, name, short_name, region_type, map_label,
 			idm_sangat_tertinggal, idm_tertinggal, idm_berkembang, idm_maju, idm_mandiri,
 			bumdes_jumlah, bumdes_aktif, bumdes_tidak_aktif, bumdes_bersama,
 			registration_penerbitan_kk, registration_perubahan_kk, registration_kia, registration_nik_wni,
-			registration_perekaman_ktp_el, registration_pencetakan_ktp_el,
+			registration_perekaman_ktp_el, registration_pencetakan_ktp_el, registration_pindah_datang, registration_pindah_keluar,
 			oap_luas_wilayah, oap_jumlah_oap, oap_jumlah_non_oap, oap_jumlah_jiwa,
-			civil_akta_kelahiran, civil_akta_kematian, civil_akta_perkawinan, civil_akta_perceraian
+			civil_akta_kelahiran, civil_akta_kematian, civil_akta_perkawinan, civil_akta_perceraian,
+			civil_lahir_mati, civil_pengangkatan_anak, civil_pengakuan_anak, civil_pengesahan_anak, civil_perubahan_nama,
+			civil_pembatalan_perkawinan, civil_pembatalan_perceraian, civil_perubahan_status_kewarganegaraan,
+			civil_pembetulan_akta, civil_pembatalan_akta, civil_peristiwa_penting_lainnya
 		FROM data_wilayah
 		WHERE tahun_anggaran = ?
 		ON CONFLICT (tahun_anggaran, id) DO NOTHING

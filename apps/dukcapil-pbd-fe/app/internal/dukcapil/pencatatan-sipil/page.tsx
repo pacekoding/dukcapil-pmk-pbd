@@ -1,5 +1,5 @@
-import SirbeDataPage from "@/components/sirbe/data-page";
+import { CivilRegistrationPage } from "@/components/sirbe/aggregate-data-page";
 
 export default function PencatatanSipilPage() {
-  return <SirbeDataPage />;
+  return <CivilRegistrationPage />;
 }

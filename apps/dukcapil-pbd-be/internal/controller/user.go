@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 
 	authmiddleware "dukcapil-pbd-be/internal/middleware"
@@ -15,14 +14,6 @@ import (
 )
 
 const minPasswordLength = 8
-
-var validSystemAccess = map[string]bool{
-	"sibum":         true,
-	"sikampung":     true,
-	"sitekad":       true,
-	"siber":         true,
-	"arsip_pegawai": true,
-}
 
 type AdminUserStore interface {
 	List(ctx context.Context) ([]model.AdminUser, error)
@@ -187,17 +178,11 @@ func validateCreateAdminUser(request model.CreateAdminUserRequest) error {
 	if err := validateAdminUserFields(request.Username, request.Name, request.Role); err != nil {
 		return err
 	}
-	if err := validateSystemAccess(request.SystemAccess); err != nil {
-		return err
-	}
 	return validatePassword(request.Password)
 }
 
 func validateUpdateAdminUser(request model.UpdateAdminUserRequest) error {
 	if err := validateAdminUserFields(request.Username, request.Name, request.Role); err != nil {
-		return err
-	}
-	if err := validateSystemAccess(request.SystemAccess); err != nil {
 		return err
 	}
 	return nil
@@ -227,27 +212,6 @@ func validRole(role model.Role) bool {
 	return role.Valid()
 }
 
-func validateSystemAccess(values []string) error {
-	for _, value := range values {
-		normalized := strings.ToLower(strings.TrimSpace(value))
-		if normalized == "" {
-			continue
-		}
-		if !validSystemAccess[normalized] {
-			return echo.NewHTTPError(http.StatusBadRequest, "hak akses sistem tidak valid")
-		}
-	}
-	return nil
-}
-
 func sameUsername(left, right string) bool {
 	return strings.EqualFold(strings.TrimSpace(left), strings.TrimSpace(right))
-}
-
-func paramInt64(c echo.Context, name string) (int64, error) {
-	value, err := strconv.ParseInt(c.Param(name), 10, 64)
-	if err != nil {
-		return 0, echo.NewHTTPError(http.StatusBadRequest, "parameter "+name+" tidak valid")
-	}
-	return value, nil
 }
