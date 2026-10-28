@@ -1,6 +1,7 @@
 import { API_PREFIX } from "@/lib/api/http";
 
 export const apiEndpoints = {
+  otsus: `${API_PREFIX}/otsus`,
   bumKampung: `${API_PREFIX}/bum-kampung`,
   bumKampungDetail: (id: number) => `${API_PREFIX}/bum-kampung/${id}`,
   sikampung: `${API_PREFIX}/sikampung`,

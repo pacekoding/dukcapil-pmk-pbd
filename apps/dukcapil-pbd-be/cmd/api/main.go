@@ -92,6 +92,7 @@ func main() {
 		AllowedOrigin:   allowedOrigin,
 		Travel:          controller.NewTravelController(repository.NewTravelRepository(db, office)),
 		Activities:      controller.NewActivityController(repository.NewActivityRepository(db, office), repository.NewTravelRepository(db, office), fileService),
+		Otsus:           controller.NewOtsusController(repository.NewOtsusRepository(db), subkegiatanRepo, fileService),
 		MaxUploadSizeMB: maxUploadSizeMB,
 		Health:          controller.NewHealthController(db),
 		Auth:            controller.NewAuthController(userRepo, tokenManager),

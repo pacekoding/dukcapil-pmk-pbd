@@ -22,6 +22,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
+  Tags,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -67,6 +68,7 @@ const dashboardMenuIconMap: Record<DashboardMenuIcon, LucideIcon> = {
   listChecks: ListChecks,
   users: UsersRound,
   settings: Settings,
+  tags: Tags,
 };
 
 function canShowMenuItem(item: { roles?: string[] }, role: string) {
@@ -145,6 +147,10 @@ function getSidebarBrand(pathname: string) {
       title: "Pelaksanaan Kegiatan",
       subtitle: "Dokumen dan Realisasi Kegiatan",
     };
+  }
+
+  if (pathname.startsWith("/internal/otsus")) {
+    return { title: "Labelisasi Otsus", subtitle: "Dana Otonomi Khusus" };
   }
 
   if (pathname === "/internal/dashboard") {

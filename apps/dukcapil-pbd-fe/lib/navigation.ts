@@ -14,7 +14,8 @@ export type DashboardMenuIcon =
   | "globe"
   | "listChecks"
   | "users"
-  | "settings";
+  | "settings"
+  | "tags";
 
 export type DashboardMenuLink = {
   title: string;
@@ -164,6 +165,11 @@ export const internalMenus: DashboardMenuItem[] = [
         icon: "folderArchive",
       },
     ],
+  },
+  {
+    title: "Labelisasi Otsus",
+    href: "/internal/otsus",
+    icon: "tags",
   },
   {
     title: "Pengaturan",

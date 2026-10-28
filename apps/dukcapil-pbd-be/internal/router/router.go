@@ -28,6 +28,7 @@ type Config struct {
 	Organization    *controller.OrganizationController
 	Travel          *controller.TravelController
 	Activities      *controller.ActivityController
+	Otsus           *controller.OtsusController
 	Users           *controller.UserController
 	Website         *controller.WebsiteController
 	AuthMiddleware  *authmiddleware.AuthMiddleware
@@ -91,6 +92,22 @@ func New(config Config) *echo.Echo {
 		protected.Add(method, "/activity-files/:file_id/download", config.StoredFiles.Download)
 	}
 	protected.POST("/travel/:kind/:id/link-activity", config.Activities.LinkTravel)
+	otsus := protected.Group("/otsus")
+	otsus.GET("/options", config.Otsus.Options)
+	otsus.GET("", config.Otsus.List)
+	otsus.POST("", config.Otsus.Save)
+	otsus.GET("/:id", config.Otsus.Detail)
+	otsus.PUT("/:id", config.Otsus.Save)
+	otsus.DELETE("/:id", config.Otsus.Delete)
+	otsus.POST("/:id/documentations", config.Otsus.UploadDocumentation)
+	otsus.DELETE("/:id/documentations/:document_id", config.Otsus.DeleteDocumentation)
+	otsus.POST("/:id/lpj", config.Otsus.UploadLPJ)
+	otsus.DELETE("/:id/lpj", config.Otsus.DeleteLPJ)
+	otsus.POST("/:id/dpa", config.Otsus.UploadDPA)
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		protected.Add(method, "/otsus-files/:file_id/preview", config.StoredFiles.Preview)
+		protected.Add(method, "/otsus-files/:file_id/download", config.StoredFiles.Download)
+	}
 	travel := protected.Group("/travel")
 	travel.GET("/options", config.Travel.Options)
 	travel.GET("/:kind", config.Travel.List)

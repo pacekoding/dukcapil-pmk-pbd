@@ -19,6 +19,10 @@ export function canAccessInternalHref(href: string, role: string) {
     ].includes(role);
   }
 
+  if (href.startsWith("/internal/otsus")) {
+    return ["superadmin", "admin_sekretariat", "admin_dukcapil", "admin_pmk"].includes(role);
+  }
+
   if (href.startsWith("/internal/dukcapil")) {
     return role === "admin_dukcapil";
   }

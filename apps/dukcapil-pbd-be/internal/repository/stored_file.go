@@ -136,6 +136,8 @@ func finalizeStoredFile(file model.StoredFile) model.StoredFile {
 	prefix := "files"
 	if file.Module == "activity-execution" {
 		prefix = "activity-files"
+	} else if file.Module == "otsus" {
+		prefix = "otsus-files"
 	}
 	file.PreviewURL = fmt.Sprintf("/api/backend/%s/%d/preview", prefix, file.ID)
 	file.DownloadURL = fmt.Sprintf("/api/backend/%s/%d/download", prefix, file.ID)
@@ -143,11 +145,27 @@ func finalizeStoredFile(file model.StoredFile) model.StoredFile {
 }
 
 func storedFileAccessAllowed(db *gorm.DB, file model.StoredFile, claims security.Claims) (bool, error) {
-	if claims.Role == model.RoleSuperAdmin {
+	if claims.Role == model.RoleSuperAdmin && file.Module != "otsus" {
 		return true, nil
 	}
 
 	switch file.Module {
+	case "otsus":
+		if file.RelatedEntityType != "otsus_documentation" && file.RelatedEntityType != "otsus_lpj" && file.RelatedEntityType != "otsus_dpa" {
+			return false, nil
+		}
+		var count int64
+		var query *gorm.DB
+		switch file.RelatedEntityType {
+		case "otsus_documentation":
+			query = db.Table("otsus_documentations d").Joins("JOIN otsus_labels o ON o.id=d.otsus_label_id").Where("d.id=? AND d.file_id=? AND o.tahun_anggaran=?", file.RelatedEntityID, file.ID, strings.TrimSpace(claims.TahunAnggaran))
+		case "otsus_lpj":
+			query = db.Table("otsus_lpj l").Joins("JOIN otsus_labels o ON o.id=l.otsus_label_id").Where("l.id=? AND l.file_id=? AND o.tahun_anggaran=?", file.RelatedEntityID, file.ID, strings.TrimSpace(claims.TahunAnggaran))
+		case "otsus_dpa":
+			query = db.Table("otsus_dpa_versions d").Joins("JOIN otsus_labels o ON o.id=d.otsus_label_id").Where("d.id=? AND d.file_id=? AND o.tahun_anggaran=?", file.RelatedEntityID, file.ID, strings.TrimSpace(claims.TahunAnggaran))
+		}
+		err := query.Count(&count).Error
+		return count > 0, err
 	case "activity-execution":
 		if !claims.Role.Valid() || file.RelatedEntityType != "activity_attachment" {
 			return false, nil

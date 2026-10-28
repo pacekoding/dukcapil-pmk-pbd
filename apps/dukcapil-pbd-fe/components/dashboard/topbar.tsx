@@ -52,6 +52,10 @@ const menuTitles: Record<
     title: "Dashboard",
     description: "Ringkasan data agregat prioritas Dukcapil dan PMK",
   },
+  "/internal/otsus": {
+    title: "Labelisasi Otsus",
+    description: "Kelola data subkegiatan yang menggunakan Dana Otonomi Khusus.",
+  },
 
   "/internal/sibumkam/data": {
     title: "Data BUM Kampung",
@@ -162,6 +166,9 @@ const menuTitles: Record<
 };
 
 function getPageInfo(pathname: string) {
+  if (pathname.startsWith("/internal/otsus")) {
+    return menuTitles["/internal/otsus"];
+  }
   if (pathname.startsWith("/internal/pelaksanaan-kegiatan")) {
     return menuTitles["/internal/pelaksanaan-kegiatan"];
   }

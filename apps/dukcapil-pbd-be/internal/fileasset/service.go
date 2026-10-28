@@ -31,6 +31,7 @@ const (
 	KindPDF                Kind = "pdf"
 	KindAny                Kind = "any"
 	KindActivityAttachment Kind = "activity-attachment"
+	KindOtsusLPJ           Kind = "otsus-lpj"
 )
 
 type SaveRequest struct {
@@ -208,6 +209,8 @@ func inspectUpload(header *multipart.FileHeader) (string, error) {
 		return "image/png", nil
 	case isWebP(buffer):
 		return "image/webp", nil
+	case isLegacyOffice(buffer):
+		return "application/msword", nil
 	default:
 		return "", ErrUnsupported
 	}
@@ -225,6 +228,11 @@ func validateType(kind Kind, extension string, detectedMime string, declaredMime
 			mime:       "application/pdf",
 			extensions: map[string]bool{".pdf": true},
 			canonical:  "pdf",
+		},
+		"application/msword": {
+			mime:       "application/msword",
+			extensions: map[string]bool{".doc": true},
+			canonical:  "doc",
 		},
 		"image/jpeg": {
 			mime:       "image/jpeg",
@@ -260,6 +268,10 @@ func validateType(kind Kind, extension string, detectedMime string, declaredMime
 			return "", ErrUnsupported
 		}
 	case KindActivityAttachment:
+	case KindOtsusLPJ:
+		if detectedMime != "application/pdf" && detectedMime != wordMime && detectedMime != "application/msword" {
+			return "", ErrUnsupported
+		}
 	default:
 		return "", ErrUnsupported
 	}
@@ -286,4 +298,8 @@ func isPNG(value []byte) bool {
 
 func isWebP(value []byte) bool {
 	return len(value) >= 12 && string(value[:4]) == "RIFF" && string(value[8:12]) == "WEBP"
+}
+
+func isLegacyOffice(value []byte) bool {
+	return len(value) >= 8 && string(value[:8]) == string([]byte{0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1})
 }
