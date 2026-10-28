@@ -1,1 +1,1 @@
-import { notFound } from "next/navigation";import { SirbeRegionPage } from "@/components/sirbe/data-page";export default async function Page({params}:{params:Promise<{id:string}>}){const {id}=await params;if(!id.trim())notFound();return <SirbeRegionPage mode="edit" id={id}/>}
+import { notFound } from "next/navigation";import { DukcapilRegionPage } from "@/components/dukcapil/data-page";export default async function Page({params}:{params:Promise<{id:string}>}){const {id}=await params;if(!id.trim())notFound();return <DukcapilRegionPage mode="edit" id={id}/>}

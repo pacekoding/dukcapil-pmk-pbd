@@ -54,11 +54,11 @@ func (r *OtsusRepository) List(ctx context.Context, year, search string) ([]mode
 		return nil, err
 	}
 	var rows []model.OtsusLabel
-	q := db.Table("otsus_labels o").
+	q := db.Table("labelisasi_otsus o").
 		Select(`o.*, s.bidang, s.program, s.kegiatan, s.subkegiatan,
-		 (SELECT COUNT(*) FROM otsus_documentations od WHERE od.otsus_label_id=o.id) AS documentation_count,
-		 (SELECT COUNT(*) FROM otsus_dpa_versions dv WHERE dv.otsus_label_id=o.id) AS dpa_count,
-		 EXISTS(SELECT 1 FROM otsus_lpj l WHERE l.otsus_label_id=o.id) AS has_lpj`).
+		 (SELECT COUNT(*) FROM dokumentasi_otsus od WHERE od.otsus_label_id=o.id) AS documentation_count,
+		 (SELECT COUNT(*) FROM versi_dpa_otsus dv WHERE dv.otsus_label_id=o.id) AS dpa_count,
+		 EXISTS(SELECT 1 FROM lpj_otsus l WHERE l.otsus_label_id=o.id) AS has_lpj`).
 		Joins("JOIN subkegiatan s ON s.id=o.subkegiatan_id").
 		Where("o.tahun_anggaran = ?", strings.TrimSpace(year)).Order("o.updated_at DESC, o.id DESC")
 	if term := strings.TrimSpace(search); term != "" {
@@ -81,7 +81,7 @@ func (r *OtsusRepository) Detail(ctx context.Context, id int64, year string) (mo
 
 func loadOtsusDetail(db *gorm.DB, id int64, year string) (model.OtsusDetail, error) {
 	var out model.OtsusDetail
-	err := db.Table("otsus_labels o").Select("o.*, s.bidang, s.program, s.kegiatan, s.subkegiatan").
+	err := db.Table("labelisasi_otsus o").Select("o.*, s.bidang, s.program, s.kegiatan, s.subkegiatan").
 		Joins("JOIN subkegiatan s ON s.id=o.subkegiatan_id").
 		Where("o.id=? AND o.tahun_anggaran=?", id, strings.TrimSpace(year)).Take(&out.Label).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -204,11 +204,11 @@ func (r *OtsusRepository) Delete(ctx context.Context, id int64, year string) ([]
 		if exists == 0 {
 			return ErrOtsusNotFound
 		}
-		if e := tx.Table("stored_files").Where("module='otsus' AND related_entity_type IN ? AND related_entity_id IN (SELECT id FROM otsus_documentations WHERE otsus_label_id=?) AND deleted_at IS NULL", []string{"otsus_documentation"}, id).Pluck("storage_key", &keys).Error; e != nil {
+		if e := tx.Table("stored_files").Where("module='otsus' AND related_entity_type IN ? AND related_entity_id IN (SELECT id FROM dokumentasi_otsus WHERE otsus_label_id=?) AND deleted_at IS NULL", []string{"otsus_documentation"}, id).Pluck("storage_key", &keys).Error; e != nil {
 			return e
 		}
 		var other []string
-		if e := tx.Table("stored_files").Where("module='otsus' AND ((related_entity_type='otsus_lpj' AND related_entity_id IN (SELECT id FROM otsus_lpj WHERE otsus_label_id=?)) OR (related_entity_type='otsus_dpa' AND related_entity_id IN (SELECT id FROM otsus_dpa_versions WHERE otsus_label_id=?))) AND deleted_at IS NULL", id, id).Pluck("storage_key", &other).Error; e != nil {
+		if e := tx.Table("stored_files").Where("module='otsus' AND ((related_entity_type='lpj_otsus' AND related_entity_id IN (SELECT id FROM lpj_otsus WHERE otsus_label_id=?)) OR (related_entity_type='otsus_dpa' AND related_entity_id IN (SELECT id FROM versi_dpa_otsus WHERE otsus_label_id=?))) AND deleted_at IS NULL", id, id).Pluck("storage_key", &other).Error; e != nil {
 			return e
 		}
 		keys = append(keys, other...)

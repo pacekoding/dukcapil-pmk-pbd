@@ -12,8 +12,8 @@ type DashboardShellProps = {
   theme?:
     | "default"
     | "sibum"
-    | "sikampung"
-    | "sitekad"
+    | "dataKampung"
+    | "kelompokBinaan"
     | "arsip"
     | "settings";
 };
@@ -83,23 +83,14 @@ export function DashboardShell({
 }
 
 function getInternalTheme(pathname: string): NonNullable<DashboardShellProps["theme"]> {
-  if (
-    pathname.startsWith("/internal/pmk/bum-kampung") ||
-    pathname.startsWith("/internal/sibumkam")
-  ) {
+  if (pathname.startsWith("/internal/pmk/bum-kampung")) {
     return "sibum";
   }
-  if (
-    pathname.startsWith("/internal/pmk/data-kampung") ||
-    pathname.startsWith("/internal/sikampung")
-  ) {
-    return "sikampung";
+  if (pathname.startsWith("/internal/pmk/data-kampung")) {
+    return "dataKampung";
   }
-  if (
-    pathname.startsWith("/internal/pmk/kelompok-binaan") ||
-    pathname.startsWith("/internal/sitekad")
-  ) {
-    return "sitekad";
+  if (pathname.startsWith("/internal/pmk/kelompok-binaan")) {
+    return "kelompokBinaan";
   }
   if (
     pathname.startsWith("/internal/pegawai") ||

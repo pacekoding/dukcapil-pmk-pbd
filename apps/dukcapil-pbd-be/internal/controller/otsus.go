@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"dukcapil-pbd-be/internal/fileasset"
+	authmiddleware "dukcapil-pbd-be/internal/middleware"
 	"dukcapil-pbd-be/internal/model"
 	"dukcapil-pbd-be/internal/repository"
 	"github.com/labstack/echo"
@@ -36,15 +37,23 @@ func otsusHTTPError(err error) error {
 }
 
 func otsusContext(c echo.Context) (int64, string, error) {
-	user, err := travelUser(c)
-	if err != nil {
-		return 0, "", err
+	claims, ok := authmiddleware.ClaimsFromContext(c)
+	if !ok || claims.UserID <= 0 {
+		return 0, "", echo.NewHTTPError(http.StatusUnauthorized, "sesi internal tidak valid")
 	}
 	year, err := authenticatedTahunAnggaran(c)
 	if err != nil {
 		return 0, "", err
 	}
-	return user, year, nil
+	return claims.UserID, year, nil
+}
+
+func otsusID(c echo.Context) (int64, error) {
+	id, err := strconv.ParseInt(strings.TrimSpace(c.Param("id")), 10, 64)
+	if err != nil || id <= 0 {
+		return 0, echo.NewHTTPError(http.StatusBadRequest, "ID Labelisasi Otsus tidak valid")
+	}
+	return id, nil
 }
 
 func (o *OtsusController) Options(c echo.Context) error {
@@ -70,7 +79,7 @@ func (o *OtsusController) Detail(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id, err := travelID(c)
+	id, err := otsusID(c)
 	if err != nil {
 		return err
 	}
@@ -87,7 +96,7 @@ func (o *OtsusController) Save(c echo.Context) error {
 	}
 	var id int64
 	if c.Param("id") != "" {
-		id, err = travelID(c)
+		id, err = otsusID(c)
 		if err != nil {
 			return err
 		}
@@ -111,7 +120,7 @@ func (o *OtsusController) Delete(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id, err := travelID(c)
+	id, err := otsusID(c)
 	if err != nil {
 		return err
 	}
@@ -130,7 +139,7 @@ func (o *OtsusController) UploadDocumentation(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id, err := travelID(c)
+	id, err := otsusID(c)
 	if err != nil {
 		return err
 	}
@@ -154,7 +163,7 @@ func (o *OtsusController) DeleteDocumentation(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id, err := travelID(c)
+	id, err := otsusID(c)
 	if err != nil {
 		return err
 	}
@@ -175,7 +184,7 @@ func (o *OtsusController) UploadLPJ(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id, err := travelID(c)
+	id, err := otsusID(c)
 	if err != nil {
 		return err
 	}
@@ -183,7 +192,7 @@ func (o *OtsusController) UploadLPJ(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(400, "File LPJ wajib diunggah.")
 	}
-	input, err := o.files.Save(c.Request().Context(), fileasset.SaveRequest{Header: header, Kind: fileasset.KindOtsusLPJ, Visibility: model.FileVisibilityPrivate, Module: "otsus", RelatedType: "otsus_lpj", Category: "lpj", StorageCategory: "lpj", Year: year, UploadedBy: &user})
+	input, err := o.files.Save(c.Request().Context(), fileasset.SaveRequest{Header: header, Kind: fileasset.KindOtsusLPJ, Visibility: model.FileVisibilityPrivate, Module: "otsus", RelatedType: "lpj_otsus", Category: "lpj", StorageCategory: "lpj", Year: year, UploadedBy: &user})
 	if err != nil {
 		return managedUploadHTTPError(err)
 	}
@@ -200,7 +209,7 @@ func (o *OtsusController) DeleteLPJ(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id, err := travelID(c)
+	id, err := otsusID(c)
 	if err != nil {
 		return err
 	}
@@ -217,7 +226,7 @@ func (o *OtsusController) UploadDPA(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	id, err := travelID(c)
+	id, err := otsusID(c)
 	if err != nil {
 		return err
 	}

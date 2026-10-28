@@ -1,1 +1,0 @@
-import { notFound } from "next/navigation";import { AttachmentRecordPage } from "@/components/activity/attachment-record-page";export default async function Page({params}:{params:Promise<{id:string}>}){const {id}=await params;if(!/^\d+$/.test(id)||Number(id)<1)notFound();return <AttachmentRecordPage activityId={Number(id)} mode="add"/>}

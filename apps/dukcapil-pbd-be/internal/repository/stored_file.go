@@ -134,9 +134,7 @@ func softDeleteStoredFilesForEntity(tx *gorm.DB, module string, relatedType stri
 
 func finalizeStoredFile(file model.StoredFile) model.StoredFile {
 	prefix := "files"
-	if file.Module == "activity-execution" {
-		prefix = "activity-files"
-	} else if file.Module == "otsus" {
+	if file.Module == "otsus" {
 		prefix = "otsus-files"
 	}
 	file.PreviewURL = fmt.Sprintf("/api/backend/%s/%d/preview", prefix, file.ID)
@@ -151,27 +149,20 @@ func storedFileAccessAllowed(db *gorm.DB, file model.StoredFile, claims security
 
 	switch file.Module {
 	case "otsus":
-		if file.RelatedEntityType != "otsus_documentation" && file.RelatedEntityType != "otsus_lpj" && file.RelatedEntityType != "otsus_dpa" {
+		if file.RelatedEntityType != "otsus_documentation" && file.RelatedEntityType != "lpj_otsus" && file.RelatedEntityType != "otsus_dpa" {
 			return false, nil
 		}
 		var count int64
 		var query *gorm.DB
 		switch file.RelatedEntityType {
 		case "otsus_documentation":
-			query = db.Table("otsus_documentations d").Joins("JOIN otsus_labels o ON o.id=d.otsus_label_id").Where("d.id=? AND d.file_id=? AND o.tahun_anggaran=?", file.RelatedEntityID, file.ID, strings.TrimSpace(claims.TahunAnggaran))
-		case "otsus_lpj":
-			query = db.Table("otsus_lpj l").Joins("JOIN otsus_labels o ON o.id=l.otsus_label_id").Where("l.id=? AND l.file_id=? AND o.tahun_anggaran=?", file.RelatedEntityID, file.ID, strings.TrimSpace(claims.TahunAnggaran))
+			query = db.Table("dokumentasi_otsus d").Joins("JOIN labelisasi_otsus o ON o.id=d.otsus_label_id").Where("d.id=? AND d.file_id=? AND o.tahun_anggaran=?", file.RelatedEntityID, file.ID, strings.TrimSpace(claims.TahunAnggaran))
+		case "lpj_otsus":
+			query = db.Table("lpj_otsus l").Joins("JOIN labelisasi_otsus o ON o.id=l.otsus_label_id").Where("l.id=? AND l.file_id=? AND o.tahun_anggaran=?", file.RelatedEntityID, file.ID, strings.TrimSpace(claims.TahunAnggaran))
 		case "otsus_dpa":
-			query = db.Table("otsus_dpa_versions d").Joins("JOIN otsus_labels o ON o.id=d.otsus_label_id").Where("d.id=? AND d.file_id=? AND o.tahun_anggaran=?", file.RelatedEntityID, file.ID, strings.TrimSpace(claims.TahunAnggaran))
+			query = db.Table("versi_dpa_otsus d").Joins("JOIN labelisasi_otsus o ON o.id=d.otsus_label_id").Where("d.id=? AND d.file_id=? AND o.tahun_anggaran=?", file.RelatedEntityID, file.ID, strings.TrimSpace(claims.TahunAnggaran))
 		}
 		err := query.Count(&count).Error
-		return count > 0, err
-	case "activity-execution":
-		if !claims.Role.Valid() || file.RelatedEntityType != "activity_attachment" {
-			return false, nil
-		}
-		var count int64
-		err := db.Table("lampiran_kegiatan").Where("id=? AND file_id=? AND deleted_at IS NULL", file.RelatedEntityID, file.ID).Count(&count).Error
 		return count > 0, err
 	case "arsip":
 		var count int64
@@ -194,12 +185,12 @@ func storedFileAccessAllowed(db *gorm.DB, file model.StoredFile, claims security
 			return false, fmt.Errorf("check employee photo access: %w", err)
 		}
 		return count > 0, nil
-	case "sitekad":
-		if file.RelatedEntityType != "sitekad_capaian_kendala" {
+	case "kelompok_binaan":
+		if file.RelatedEntityType != "capaian_kendala" {
 			return false, nil
 		}
 		var count int64
-		err := db.Table("sitekad_capaian_kendala").
+		err := db.Table("capaian_kendala").
 			Where("id = ?", file.RelatedEntityID).
 			Count(&count).Error
 		if err != nil {

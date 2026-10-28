@@ -12,22 +12,22 @@ import (
 	"github.com/labstack/echo"
 )
 
-func TestSiberDataWilayahTahunAnggaranUsesAuthenticatedClaims(t *testing.T) {
+func TestDukcapilDataWilayahTahunAnggaranUsesAuthenticatedClaims(t *testing.T) {
 	e := echo.New()
 	request := httptest.NewRequest(http.MethodGet, "/?tahunAnggaran=1999", nil)
 	context := e.NewContext(request, httptest.NewRecorder())
 	context.Set(authmiddleware.ClaimsContextKey, security.Claims{TahunAnggaran: "2026"})
 
-	tahunAnggaran, err := siberDataWilayahTahunAnggaran(context)
+	tahunAnggaran, err := dukcapilDataWilayahTahunAnggaran(context)
 	if err != nil {
-		t.Fatalf("siberDataWilayahTahunAnggaran() error = %v", err)
+		t.Fatalf("dukcapilDataWilayahTahunAnggaran() error = %v", err)
 	}
 	if tahunAnggaran != "2026" {
-		t.Fatalf("siberDataWilayahTahunAnggaran() = %q, want authenticated year %q", tahunAnggaran, "2026")
+		t.Fatalf("dukcapilDataWilayahTahunAnggaran() = %q, want authenticated year %q", tahunAnggaran, "2026")
 	}
 }
 
-func TestSiberDataWilayahTahunAnggaranRejectsMissingOrInvalidClaims(t *testing.T) {
+func TestDukcapilDataWilayahTahunAnggaranRejectsMissingOrInvalidClaims(t *testing.T) {
 	tests := []struct {
 		name       string
 		claims     *security.Claims
@@ -53,7 +53,7 @@ func TestSiberDataWilayahTahunAnggaranRejectsMissingOrInvalidClaims(t *testing.T
 				context.Set(authmiddleware.ClaimsContextKey, *test.claims)
 			}
 
-			_, err := siberDataWilayahTahunAnggaran(context)
+			_, err := dukcapilDataWilayahTahunAnggaran(context)
 			assertHTTPErrorCode(t, err, test.statusCode)
 		})
 	}

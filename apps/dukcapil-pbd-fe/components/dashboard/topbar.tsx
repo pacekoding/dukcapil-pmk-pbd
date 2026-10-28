@@ -57,42 +57,19 @@ const menuTitles: Record<
     description: "Kelola data subkegiatan yang menggunakan Dana Otonomi Khusus.",
   },
 
-  "/internal/sibumkam/data": {
-    title: "Data BUM Kampung",
-    description:
-      "Kelola data BUM Kampung berdasarkan kabupaten/kota, distrik, kampung, kategori, dan status verifikasi.",
-  },
-
   "/internal/pmk/bum-kampung": {
     title: "Data BUM Kampung",
     description:
       "Kelola data BUM Kampung berdasarkan kabupaten/kota, distrik, kampung, kategori, dan status verifikasi.",
   },
-
-  "/internal/sikampung/data": {
-    title: "Data Kampung IDM",
-    description: "Kelola IKS, IKE, IKL, nilai IDM, dan status IDM",
-  },
-
   "/internal/pmk/data-kampung": {
     title: "Data Kampung IDM",
     description: "Kelola IKS, IKE, IKL, nilai IDM, dan status IDM",
   },
 
-  "/internal/sitekad/data": {
-    title: "Data Kelompok Binaan",
-    description: "Kelola data kelompok binaan pada lokus Program TEKAD",
-  },
-
   "/internal/pmk/kelompok-binaan": {
     title: "Data Kelompok Binaan",
     description: "Kelola data kelompok binaan pada lokus Program TEKAD",
-  },
-
-  "/internal/sitekad/capaian-kendala": {
-    title: "Capaian & Kendala",
-    description:
-      "Kelola riwayat capaian dan kendala kelompok binaan Program TEKAD",
   },
 
   "/internal/pmk/kelompok-binaan/capaian-kendala": {
@@ -132,18 +109,6 @@ const menuTitles: Record<
     description: "Kelola pengguna internal dan role akses",
   },
 
-  "/internal/pelaksanaan-kegiatan": {
-    title: "Pelaksanaan Kegiatan",
-    description: "Pusat dokumen dan bukti realisasi kegiatan/subkegiatan",
-  },
-  "/internal/perjalanan-dinas/surat-tugas": {
-    title: "Surat Tugas",
-    description: "Administrasi penugasan perjalanan dinas pegawai",
-  },
-  "/internal/perjalanan-dinas/spd": {
-    title: "Surat Perjalanan Dinas (SPD)",
-    description: "Administrasi Surat Perjalanan Dinas pegawai",
-  },
   "/internal/pengaturan/struktur-organisasi": {
     title: "Struktur Organisasi",
     description: "Kelola master bidang, seksi, dan jabatan pegawai",
@@ -169,31 +134,16 @@ function getPageInfo(pathname: string) {
   if (pathname.startsWith("/internal/otsus")) {
     return menuTitles["/internal/otsus"];
   }
-  if (pathname.startsWith("/internal/pelaksanaan-kegiatan")) {
-    return menuTitles["/internal/pelaksanaan-kegiatan"];
-  }
   if (menuTitles[pathname]) {
     return menuTitles[pathname];
-  }
-
-  if (pathname.startsWith("/internal/sibumkam/data")) {
-    return menuTitles["/internal/sibumkam/data"];
   }
 
   if (pathname.startsWith("/internal/pmk/bum-kampung")) {
     return menuTitles["/internal/pmk/bum-kampung"];
   }
 
-  if (pathname.startsWith("/internal/sikampung/data")) {
-    return menuTitles["/internal/sikampung/data"];
-  }
-
   if (pathname.startsWith("/internal/pmk/data-kampung")) {
     return menuTitles["/internal/pmk/data-kampung"];
-  }
-
-  if (pathname.startsWith("/internal/sitekad/data")) {
-    return menuTitles["/internal/sitekad/data"];
   }
 
   if (pathname.startsWith("/internal/pmk/kelompok-binaan/capaian-kendala")) {
@@ -202,10 +152,6 @@ function getPageInfo(pathname: string) {
 
   if (pathname.startsWith("/internal/pmk/kelompok-binaan")) {
     return menuTitles["/internal/pmk/kelompok-binaan"];
-  }
-
-  if (pathname.startsWith("/internal/sitekad/capaian-kendala")) {
-    return menuTitles["/internal/sitekad/capaian-kendala"];
   }
 
   if (pathname.startsWith("/internal/pengaturan/pengguna")) {

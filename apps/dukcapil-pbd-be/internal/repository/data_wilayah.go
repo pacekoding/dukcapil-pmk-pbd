@@ -42,12 +42,12 @@ func (r *DataWilayahRepository) List(ctx context.Context, tahunAnggaran string) 
 		}
 	}
 
-	sikampungUpdatedAt, err := r.attachSikampungSummary(ctx, db, tahunAnggaran, regions)
+	dataKampungUpdatedAt, err := r.attachDataKampungSummary(ctx, db, tahunAnggaran, regions)
 	if err != nil {
 		return model.DataWilayahResponse{}, err
 	}
-	if sikampungUpdatedAt.After(latestUpdatedAt) {
-		latestUpdatedAt = sikampungUpdatedAt
+	if dataKampungUpdatedAt.After(latestUpdatedAt) {
+		latestUpdatedAt = dataKampungUpdatedAt
 	}
 
 	bumKampungUpdatedAt, err := r.attachBumKampungSummary(ctx, db, tahunAnggaran, regions)
@@ -497,7 +497,7 @@ func currentDataWilayahReleaseYear() string {
 	return fmt.Sprintf("%d", time.Now().In(wit).Year())
 }
 
-type sikampungRegionSummary struct {
+type dataKampungRegionSummary struct {
 	Kabupaten        string
 	SangatTertinggal int
 	Tertinggal       int
@@ -516,7 +516,7 @@ type bumKampungRegionSummary struct {
 	LatestUpdatedAt time.Time
 }
 
-func (r *DataWilayahRepository) attachSikampungSummary(
+func (r *DataWilayahRepository) attachDataKampungSummary(
 	ctx context.Context,
 	db *gorm.DB,
 	tahunAnggaran string,
@@ -526,9 +526,9 @@ func (r *DataWilayahRepository) attachSikampungSummary(
 		return time.Time{}, nil
 	}
 
-	var summaries []sikampungRegionSummary
+	var summaries []dataKampungRegionSummary
 	if err := db.WithContext(ctx).
-		Table("sikampung_data").
+		Table("data_kampung").
 		Select(`
 			kabupaten,
 			COUNT(*) FILTER (WHERE status_idm = 'Sangat Tertinggal')::INTEGER AS sangat_tertinggal,
@@ -541,15 +541,15 @@ func (r *DataWilayahRepository) attachSikampungSummary(
 		Where("tahun_anggaran = ?", strings.TrimSpace(tahunAnggaran)).
 		Group("kabupaten").
 		Scan(&summaries).Error; err != nil {
-		return time.Time{}, fmt.Errorf("summarize sikampung for data wilayah: %w", err)
+		return time.Time{}, fmt.Errorf("summarize dataKampung for data wilayah: %w", err)
 	}
 
 	if len(summaries) == 0 {
 		return time.Time{}, nil
 	}
 
-	applySikampungSummary(regions, summaries)
-	return latestSikampungSummaryUpdatedAt(summaries), nil
+	applyDataKampungSummary(regions, summaries)
+	return latestDataKampungSummaryUpdatedAt(summaries), nil
 }
 
 func (r *DataWilayahRepository) attachBumKampungSummary(
@@ -587,11 +587,11 @@ func (r *DataWilayahRepository) attachBumKampungSummary(
 	return latestBumKampungSummaryUpdatedAt(summaries), nil
 }
 
-func applySikampungSummary(
+func applyDataKampungSummary(
 	regions []model.RegionData,
-	summaries []sikampungRegionSummary,
+	summaries []dataKampungRegionSummary,
 ) {
-	summaryByKabupaten := make(map[string]sikampungRegionSummary, len(summaries))
+	summaryByKabupaten := make(map[string]dataKampungRegionSummary, len(summaries))
 	for _, summary := range summaries {
 		summaryByKabupaten[normalizeRegionKey(summary.Kabupaten)] = summary
 	}
@@ -639,7 +639,7 @@ func applyBumKampungSummary(
 }
 
 type regionSummary interface {
-	sikampungRegionSummary | bumKampungRegionSummary
+	dataKampungRegionSummary | bumKampungRegionSummary
 }
 
 func findRegionSummary[T regionSummary](
@@ -677,7 +677,7 @@ func normalizeRegionKey(value string) string {
 	return strings.Join(strings.Fields(normalized), " ")
 }
 
-func latestSikampungSummaryUpdatedAt(summaries []sikampungRegionSummary) time.Time {
+func latestDataKampungSummaryUpdatedAt(summaries []dataKampungRegionSummary) time.Time {
 	latest := time.Time{}
 	for _, summary := range summaries {
 		if summary.LatestUpdatedAt.After(latest) {

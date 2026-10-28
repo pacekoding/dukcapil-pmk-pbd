@@ -120,13 +120,13 @@ Portal internal mengelola data tahunan per kabupaten/kota melalui endpoint
 Endpoint administrasi kependudukan yang memerlukan login dengan role Dukcapil:
 
 ```txt
-GET /api/backend/siber/pendaftaran-penduduk
-GET /api/backend/siber/pendaftaran-penduduk/{region_id}
-PUT /api/backend/siber/pendaftaran-penduduk/{region_id}
+GET /api/backend/dukcapil/pendaftaran-penduduk
+GET /api/backend/dukcapil/pendaftaran-penduduk/{region_id}
+PUT /api/backend/dukcapil/pendaftaran-penduduk/{region_id}
 
-GET /api/backend/siber/pencatatan-sipil
-GET /api/backend/siber/pencatatan-sipil/{region_id}
-PUT /api/backend/siber/pencatatan-sipil/{region_id}
+GET /api/backend/dukcapil/pencatatan-sipil
+GET /api/backend/dukcapil/pencatatan-sipil/{region_id}
+PUT /api/backend/dukcapil/pencatatan-sipil/{region_id}
 ```
 
 Tahun diambil dari sesi login. Data tetap menggunakan tabel tahunan

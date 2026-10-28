@@ -1,5 +1,0 @@
-ALTER TABLE arsip DROP CONSTRAINT IF EXISTS arsip_file_fk;
-DROP INDEX IF EXISTS idx_arsip_file;
-ALTER TABLE arsip DROP COLUMN IF EXISTS file_id;
-
-DROP TABLE IF EXISTS stored_files;

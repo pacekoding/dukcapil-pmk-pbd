@@ -82,7 +82,7 @@ func TestApplyBumKampungSummaryMapsSibumDataToWebsiteRegions(t *testing.T) {
 	assertBumdesData(t, regions[3].Bumdes, model.BumdesData{})
 }
 
-func TestApplySikampungSummaryMapsOperationalIdmData(t *testing.T) {
+func TestApplyDataKampungSummaryMapsOperationalIdmData(t *testing.T) {
 	regions := []model.RegionData{
 		{
 			Name:      "Kabupaten Sorong",
@@ -101,7 +101,7 @@ func TestApplySikampungSummaryMapsOperationalIdmData(t *testing.T) {
 			},
 		},
 	}
-	summaries := []sikampungRegionSummary{
+	summaries := []dataKampungRegionSummary{
 		{
 			Kabupaten:        "SORONG",
 			SangatTertinggal: 68,
@@ -110,7 +110,7 @@ func TestApplySikampungSummaryMapsOperationalIdmData(t *testing.T) {
 		},
 	}
 
-	applySikampungSummary(regions, summaries)
+	applyDataKampungSummary(regions, summaries)
 
 	assertIdmData(t, regions[0].Idm, model.IdmData{
 		SangatTertinggal: 68,

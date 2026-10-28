@@ -74,8 +74,8 @@ func (d *DataWilayahController) WebsiteList(c echo.Context) error {
 	return jsonData(c, http.StatusOK, response)
 }
 
-func (d *DataWilayahController) SiberList(c echo.Context) error {
-	tahunAnggaran, err := siberDataWilayahTahunAnggaran(c)
+func (d *DataWilayahController) DukcapilList(c echo.Context) error {
+	tahunAnggaran, err := dukcapilDataWilayahTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (d *DataWilayahController) SiberList(c echo.Context) error {
 }
 
 func (d *DataWilayahController) PopulationRegistrationList(c echo.Context) error {
-	tahunAnggaran, err := siberDataWilayahTahunAnggaran(c)
+	tahunAnggaran, err := dukcapilDataWilayahTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (d *DataWilayahController) UpdatePopulationRegistration(c echo.Context) err
 }
 
 func (d *DataWilayahController) CivilRegistrationList(c echo.Context) error {
-	tahunAnggaran, err := siberDataWilayahTahunAnggaran(c)
+	tahunAnggaran, err := dukcapilDataWilayahTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func (d *DataWilayahController) UpdateCivilRegistration(c echo.Context) error {
 }
 
 func (d *DataWilayahController) DashboardList(c echo.Context) error {
-	tahunAnggaran, err := siberDataWilayahTahunAnggaran(c)
+	tahunAnggaran, err := dukcapilDataWilayahTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -208,8 +208,8 @@ func (d *DataWilayahController) DashboardList(c echo.Context) error {
 	return jsonData(c, http.StatusOK, response)
 }
 
-func (d *DataWilayahController) UpdateSiberRegion(c echo.Context) error {
-	tahunAnggaran, err := siberDataWilayahTahunAnggaran(c)
+func (d *DataWilayahController) UpdateDukcapilRegion(c echo.Context) error {
+	tahunAnggaran, err := dukcapilDataWilayahTahunAnggaran(c)
 	if err != nil {
 		return err
 	}
@@ -301,7 +301,7 @@ func containsDataWilayahYear(years []string, target string) bool {
 	return false
 }
 
-func siberDataWilayahTahunAnggaran(c echo.Context) (string, error) {
+func dukcapilDataWilayahTahunAnggaran(c echo.Context) (string, error) {
 	claims, ok := authmiddleware.ClaimsFromContext(c)
 	if !ok {
 		return "", echo.NewHTTPError(http.StatusUnauthorized, "session login tidak valid")
@@ -363,7 +363,7 @@ func hasAtMostTwoDecimalPlaces(value float64) bool {
 }
 
 func dukcapilAggregateRequestKeys(c echo.Context) (string, string, error) {
-	tahunAnggaran, err := siberDataWilayahTahunAnggaran(c)
+	tahunAnggaran, err := dukcapilDataWilayahTahunAnggaran(c)
 	if err != nil {
 		return "", "", err
 	}

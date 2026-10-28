@@ -7,18 +7,6 @@ export function canAccessInternalHref(href: string, role: string) {
     return true;
   }
 
-  if (
-    href.startsWith("/internal/perjalanan-dinas") ||
-    href.startsWith("/internal/pelaksanaan-kegiatan")
-  ) {
-    return [
-      "superadmin",
-      "admin_sekretariat",
-      "admin_dukcapil",
-      "admin_pmk",
-    ].includes(role);
-  }
-
   if (href.startsWith("/internal/otsus")) {
     return ["superadmin", "admin_sekretariat", "admin_dukcapil", "admin_pmk"].includes(role);
   }
@@ -27,12 +15,7 @@ export function canAccessInternalHref(href: string, role: string) {
     return role === "admin_dukcapil";
   }
 
-  if (
-    href.startsWith("/internal/pmk") ||
-    href.startsWith("/internal/sibumkam") ||
-    href.startsWith("/internal/sikampung") ||
-    href.startsWith("/internal/sitekad")
-  ) {
+  if (href.startsWith("/internal/pmk")) {
     return role === "admin_pmk";
   }
 

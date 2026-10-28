@@ -27,11 +27,10 @@ var (
 type Kind string
 
 const (
-	KindImage              Kind = "image"
-	KindPDF                Kind = "pdf"
-	KindAny                Kind = "any"
-	KindActivityAttachment Kind = "activity-attachment"
-	KindOtsusLPJ           Kind = "otsus-lpj"
+	KindImage    Kind = "image"
+	KindPDF      Kind = "pdf"
+	KindAny      Kind = "any"
+	KindOtsusLPJ Kind = "otsus-lpj"
 )
 
 type SaveRequest struct {
@@ -267,7 +266,6 @@ func validateType(kind Kind, extension string, detectedMime string, declaredMime
 		if detectedMime == wordMime || detectedMime == excelMime {
 			return "", ErrUnsupported
 		}
-	case KindActivityAttachment:
 	case KindOtsusLPJ:
 		if detectedMime != "application/pdf" && detectedMime != wordMime && detectedMime != "application/msword" {
 			return "", ErrUnsupported

@@ -1,4 +1,4 @@
-import { PopulationRegistrationPage } from "@/components/sirbe/aggregate-data-page";
+import { PopulationRegistrationPage } from "@/components/dukcapil/aggregate-data-page";
 
 export default function Page() {
   return <PopulationRegistrationPage />;

@@ -1,5 +1,5 @@
-import SirbeDataPage from "@/components/sirbe/data-page";
+import DukcapilDataPage from "@/components/dukcapil/data-page";
 
 export default function KependudukanPage() {
-  return <SirbeDataPage />;
+  return <DukcapilDataPage />;
 }

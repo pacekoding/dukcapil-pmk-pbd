@@ -1,1 +1,0 @@
--- Irreversible: retired application data and schema are intentionally removed.

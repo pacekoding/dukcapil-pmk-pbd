@@ -587,8 +587,8 @@ func finalizeArsipPegawaiDocument(record model.ArsipPegawaiDocument) model.Arsip
 		record.DownloadURL = fmt.Sprintf("/api/backend/files/%d/download", *record.FileID)
 		record.PreviewURL = fmt.Sprintf("/api/backend/files/%d/preview", *record.FileID)
 	} else {
-		record.DownloadURL = fmt.Sprintf("/api/backend/arsipku/%d/documents/%d/download", record.PegawaiID, record.ID)
-		record.PreviewURL = fmt.Sprintf("/api/backend/arsipku/%d/documents/%d/download?disposition=inline", record.PegawaiID, record.ID)
+		record.DownloadURL = fmt.Sprintf("/api/backend/pegawai/%d/documents/%d/download", record.PegawaiID, record.ID)
+		record.PreviewURL = fmt.Sprintf("/api/backend/pegawai/%d/documents/%d/download?disposition=inline", record.PegawaiID, record.ID)
 	}
 	return record
 }

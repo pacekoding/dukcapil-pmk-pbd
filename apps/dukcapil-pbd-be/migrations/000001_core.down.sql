@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS stored_files;
+DROP TABLE IF EXISTS kab_kota;
+DROP TABLE IF EXISTS admin_users;

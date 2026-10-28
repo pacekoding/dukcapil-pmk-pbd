@@ -360,7 +360,7 @@
   --sidebar-accent-foreground: #14532d;
 }
 
-.dashboard-theme-sikampung {
+.dashboard-theme-dataKampung {
   --color-pbd-navy: #164e63;
   --color-pbd-blue: #0891b2;
   --color-pbd-bg: #f1fbfd;
@@ -372,7 +372,7 @@
   --sidebar-accent-foreground: #164e63;
 }
 
-.dashboard-theme-sitekad {
+.dashboard-theme-kelompokBinaan {
   --color-pbd-navy: #134e4a;
   --color-pbd-blue: #0f766e;
   --color-pbd-bg: #f2fbf9;
@@ -424,35 +424,35 @@
   border-color: #bbf7d0;
 }
 
-.dashboard-theme-sikampung .bg-blue-50 {
+.dashboard-theme-dataKampung .bg-blue-50 {
   background-color: #ecfeff;
 }
 
-.dashboard-theme-sikampung .text-blue-700 {
+.dashboard-theme-dataKampung .text-blue-700 {
   color: #0e7490;
 }
 
-.dashboard-theme-sikampung .ring-blue-100 {
+.dashboard-theme-dataKampung .ring-blue-100 {
   --tw-ring-color: #a5f3fc;
 }
 
-.dashboard-theme-sikampung .border-blue-100 {
+.dashboard-theme-dataKampung .border-blue-100 {
   border-color: #a5f3fc;
 }
 
-.dashboard-theme-sitekad .bg-blue-50 {
+.dashboard-theme-kelompokBinaan .bg-blue-50 {
   background-color: #ecfdf5;
 }
 
-.dashboard-theme-sitekad .text-blue-700 {
+.dashboard-theme-kelompokBinaan .text-blue-700 {
   color: #0f766e;
 }
 
-.dashboard-theme-sitekad .ring-blue-100 {
+.dashboard-theme-kelompokBinaan .ring-blue-100 {
   --tw-ring-color: #99f6e4;
 }
 
-.dashboard-theme-sitekad .border-blue-100 {
+.dashboard-theme-kelompokBinaan .border-blue-100 {
   border-color: #99f6e4;
 }
 
@@ -489,16 +489,16 @@
 }
 
 .dashboard-theme-sibum .text-pbd-navy,
-.dashboard-theme-sikampung .text-pbd-navy,
-.dashboard-theme-sitekad .text-pbd-navy,
+.dashboard-theme-dataKampung .text-pbd-navy,
+.dashboard-theme-kelompokBinaan .text-pbd-navy,
 .dashboard-theme-arsip .text-pbd-navy,
 .dashboard-theme-settings .text-pbd-navy {
   color: #10243f;
 }
 
 .dashboard-theme-sibum .hover\:text-pbd-navy:hover,
-.dashboard-theme-sikampung .hover\:text-pbd-navy:hover,
-.dashboard-theme-sitekad .hover\:text-pbd-navy:hover,
+.dashboard-theme-dataKampung .hover\:text-pbd-navy:hover,
+.dashboard-theme-kelompokBinaan .hover\:text-pbd-navy:hover,
 .dashboard-theme-arsip .hover\:text-pbd-navy:hover,
 .dashboard-theme-settings .hover\:text-pbd-navy:hover {
   color: #10243f;

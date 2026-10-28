@@ -92,30 +92,21 @@ function isActiveMenu(pathname: string, href: string) {
 }
 
 function getSidebarBrand(pathname: string) {
-  if (
-    pathname.startsWith("/internal/pmk/bum-kampung") ||
-    pathname.startsWith("/internal/sibumkam")
-  ) {
+  if (pathname.startsWith("/internal/pmk/bum-kampung")) {
     return {
       title: "BUM Kampung",
       subtitle: "Data Badan Usaha Kampung",
     };
   }
 
-  if (
-    pathname.startsWith("/internal/pmk/data-kampung") ||
-    pathname.startsWith("/internal/sikampung")
-  ) {
+  if (pathname.startsWith("/internal/pmk/data-kampung")) {
     return {
       title: "Data Kampung",
       subtitle: "Indeks Desa Membangun",
     };
   }
 
-  if (
-    pathname.startsWith("/internal/pmk/kelompok-binaan") ||
-    pathname.startsWith("/internal/sitekad")
-  ) {
+  if (pathname.startsWith("/internal/pmk/kelompok-binaan")) {
     return {
       title: "Kelompok Binaan",
       subtitle: "Program TEKAD",
@@ -136,16 +127,6 @@ function getSidebarBrand(pathname: string) {
     return {
       title: "Pegawai dan Arsip",
       subtitle: "Data Kepegawaian",
-    };
-  }
-
-  if (
-    pathname.startsWith("/internal/perjalanan-dinas") ||
-    pathname.startsWith("/internal/pelaksanaan-kegiatan")
-  ) {
-    return {
-      title: "Pelaksanaan Kegiatan",
-      subtitle: "Dokumen dan Realisasi Kegiatan",
     };
   }
 

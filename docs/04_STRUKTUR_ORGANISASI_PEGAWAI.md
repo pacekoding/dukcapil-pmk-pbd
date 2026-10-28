@@ -8,7 +8,7 @@ Pengelolaan mengikuti hak Pengaturan existing: hanya `superadmin`. `admin_sekret
 
 Form tambah/edit pada daftar pegawai dan form edit pada detail pegawai menggunakan dropdown. Pilihan bidang berubah akan mengosongkan seksi/jabatan. Pilihan seksi berubah akan mempertahankan jabatan hanya jika masih sesuai. Master dimuat bersamaan sebelum digunakan; respons yang datang setelah form ditutup diabaikan. Form menyimpan ID, dan backend mengambil label dari master.
 
-Pangkat/Golongan pada form tambah dan edit menggunakan dropdown 17 pangkat PNS, dari Juru Muda (I/a) sampai Pembina Utama (IV/e), mengacu pada https://bkpsdm.cirebonkota.go.id/lainnya/pangkat. Nilai lama dengan format lain tetap ditampilkan saat edit. Field tetap memakai `rank`/`pangkat_golongan`; perubahan ini tidak memerlukan migrasi database. Komponen bersama: `apps/dukcapil-pbd-fe/components/arsipku/rank-select.tsx`.
+Pangkat/Golongan pada form tambah dan edit menggunakan dropdown 17 pangkat PNS, dari Juru Muda (I/a) sampai Pembina Utama (IV/e), mengacu pada https://bkpsdm.cirebonkota.go.id/lainnya/pangkat. Nilai lama dengan format lain tetap ditampilkan saat edit. Field tetap memakai `rank`/`pangkat_golongan`; perubahan ini tidak memerlukan migrasi database. Komponen bersama: `apps/dukcapil-pbd-fe/components/pegawai/rank-select.tsx`.
 
 Opsi baru memerlukan master dan induk aktif. Saat edit, ID nonaktif yang sudah dimiliki pegawai tetap ditampilkan dan dapat dipertahankan. Backend memvalidasi semua kombinasi, termasuk status aktif. Pemeriksaan dan penyimpanan memakai transaksi dan penguncian master agar perubahan bersamaan tidak melewati validasi.
 
@@ -52,7 +52,7 @@ Prefix mengikuti aplikasi: `/api/v1`. Proxy frontend memakai `/api/backend`.
 | PUT | `/organization/{fields,sections,positions}/:id` | superadmin |
 | DELETE | `/organization/{fields,sections,positions}/:id` | superadmin |
 
-Payload master: `name`, `code`, `isActive`, `bidangId`, `seksiId` sesuai jenis. Nama wajib, status create default aktif. Payload pegawai wajib menyertakan `bidangId` dan `jabatanId`; `seksiId` boleh null. Endpoint pegawai tetap `/arsipku` dan `/arsipku/:id`.
+Payload master: `name`, `code`, `isActive`, `bidangId`, `seksiId` sesuai jenis. Nama wajib, status create default aktif. Payload pegawai wajib menyertakan `bidangId` dan `jabatanId`; `seksiId` boleh null. Endpoint pegawai tetap `/pegawai` dan `/pegawai/:id`.
 
 Filter GET: `search`, `active=true|false`, `bidang_id` untuk seksi/jabatan, `seksi_id` untuk jabatan. `seksi_id=<id>` menyertakan jabatan seksi tersebut dan jabatan langsung di bawah bidang; `seksi_id=0` hanya jabatan tanpa seksi. `active=true` juga mensyaratkan induk aktif. Tanpa filter status, data nonaktif tersedia untuk pengelolaan dan hydration edit.
 
@@ -82,7 +82,7 @@ File baru frontend:
 - `apps/dukcapil-pbd-fe/types/organization.ts`
 - `apps/dukcapil-pbd-fe/tests/organization.test.mjs`
 
-File frontend yang diubah: `app/internal/pegawai/page.tsx`, `app/internal/pegawai/[id]/detail-client.tsx`, `components/dashboard/topbar.tsx`, `lib/navigation.ts`, `lib/api/endpoints.ts`, `types/arsipku.ts`, dan `package.json` pada `apps/dukcapil-pbd-fe`.
+File frontend yang diubah: `app/internal/pegawai/page.tsx`, `app/internal/pegawai/[id]/detail-client.tsx`, `components/dashboard/topbar.tsx`, `lib/navigation.ts`, `lib/api/endpoints.ts`, `types/pegawai.ts`, dan `package.json` pada `apps/dukcapil-pbd-fe`.
 
 ## Verifikasi dan aktivasi
 

@@ -82,12 +82,12 @@ export type DataWilayahSettingsPayload = {
   publishedTahunAnggaran: string[];
 };
 
-export type SiberOapPayload = Pick<
+export type DukcapilOapPayload = Pick<
   OapData,
   "luasWilayah" | "jumlahOap" | "jumlahNonOap"
 >;
 
-export type SiberDataWilayahPayload = {
+export type DukcapilDataWilayahPayload = {
   registration: Pick<
     PopulationRegistrationData,
     | "penerbitanKk"
@@ -101,5 +101,5 @@ export type SiberDataWilayahPayload = {
     CivilRegistrationData,
     "aktaKelahiran" | "aktaKematian" | "aktaPerkawinan" | "aktaPerceraian"
   >;
-  oap: SiberOapPayload;
+  oap: DukcapilOapPayload;
 };

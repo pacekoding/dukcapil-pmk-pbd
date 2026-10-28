@@ -11,7 +11,7 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { EmployeePhoto } from "@/components/arsipku/employee-photo";
+import { EmployeePhoto } from "@/components/pegawai/employee-photo";
 import { formatFileSize } from "@/components/dashboard/document-utils";
 import { PageHero } from "@/components/dashboard/page-hero";
 import { SectionCard } from "@/components/dashboard/section-card";
@@ -34,13 +34,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getArsipPegawai } from "@/lib/api/arsipku";
+import { getArsipPegawai } from "@/lib/api/pegawai";
 import { withInlineBackendAssetDisposition } from "@/lib/api/assets";
 import { apiEndpoints } from "@/lib/api/endpoints";
 import type {
   PegawaiArchive,
   PegawaiDocument,
-} from "@/types/arsipku";
+} from "@/types/pegawai";
 
 type ArchiveRecord = {
   employee: PegawaiArchive;

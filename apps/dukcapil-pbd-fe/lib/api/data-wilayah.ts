@@ -6,7 +6,7 @@ import type {
   DataWilayahSettingsPayload,
   DataWilayahWebsiteSettings,
   RegionData,
-  SiberDataWilayahPayload,
+  DukcapilDataWilayahPayload,
 } from "@/types/data-wilayah";
 
 export function getWebsiteDataWilayah() {
@@ -39,16 +39,16 @@ export function getWebsiteDataWilayahByYear(tahunAnggaran: string) {
   );
 }
 
-export function getSiberDataWilayah() {
-  return apiRequest<DataWilayahResponse>(apiEndpoints.siberDataWilayah);
+export function getDukcapilDataWilayah() {
+  return apiRequest<DataWilayahResponse>(apiEndpoints.dukcapilDataWilayah);
 }
 
-export function updateSiberDataWilayah(
+export function updateDukcapilDataWilayah(
   id: string,
-  payload: SiberDataWilayahPayload,
+  payload: DukcapilDataWilayahPayload,
 ) {
   return apiRequest<RegionData>(
-    apiEndpoints.siberDataWilayahDetail(id),
+    apiEndpoints.dukcapilDataWilayahDetail(id),
     {
       method: "PUT",
       body: JSON.stringify(payload),

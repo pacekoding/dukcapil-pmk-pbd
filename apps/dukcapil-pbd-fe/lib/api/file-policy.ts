@@ -16,19 +16,9 @@ export const DEFAULT_MAX_UPLOAD_SIZE_MB =
 export const DEFAULT_MAX_UPLOAD_SIZE_BYTES =
   DEFAULT_MAX_UPLOAD_SIZE_MB * 1024 * 1024;
 
-export const ACTIVITY_ATTACHMENT_ACCEPT = `${ARCHIVE_FILE_ACCEPT},.docx,.xlsx`;
-type UploadKind = "image" | "pdf" | "archive" | "activity-attachment";
+type UploadKind = "image" | "pdf" | "archive";
 
 const extensionsByKind: Record<UploadKind, Set<string>> = {
-  "activity-attachment": new Set([
-    ".pdf",
-    ".jpg",
-    ".jpeg",
-    ".png",
-    ".webp",
-    ".docx",
-    ".xlsx",
-  ]),
   image: new Set([".jpg", ".jpeg", ".png", ".webp"]),
   pdf: new Set([".pdf"]),
   archive: new Set([".pdf", ".jpg", ".jpeg", ".png", ".webp"]),

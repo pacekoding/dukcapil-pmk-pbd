@@ -35,8 +35,8 @@ import {
   changeEmployeeSeksi,
 } from "@/lib/organization";
 import type { OrganizationData } from "@/types/organization";
-import { EmployeePhoto } from "@/components/arsipku/employee-photo";
-import { RankSelect } from "@/components/arsipku/rank-select";
+import { EmployeePhoto } from "@/components/pegawai/employee-photo";
+import { RankSelect } from "@/components/pegawai/rank-select";
 import { ConfirmDeleteDialog } from "@/components/dashboard/confirm-delete-dialog";
 import { formatFileSize } from "@/components/dashboard/document-utils";
 import { PageHero } from "@/components/dashboard/page-hero";
@@ -69,7 +69,7 @@ import {
   updatePegawaiDocumentMetadata,
   uploadArsipPegawaiPhoto,
   uploadPegawaiDocument,
-} from "@/lib/api/arsipku";
+} from "@/lib/api/pegawai";
 import { apiEndpoints } from "@/lib/api/endpoints";
 import { withInlineBackendAssetDisposition } from "@/lib/api/assets";
 import {
@@ -84,7 +84,7 @@ import type {
   PegawaiArchivePayload,
   PegawaiDocument,
   PegawaiDocumentCategory,
-} from "@/types/arsipku";
+} from "@/types/pegawai";
 
 const documentCategories: PegawaiDocumentCategory[] = [
   "SK CPNS",
@@ -971,10 +971,10 @@ export function PegawaiDetailClient({ id }: { id: string }) {
           >
             <div className="grid gap-4 md:grid-cols-2">
               <div className="grid gap-2 md:col-span-2">
-                <Label htmlFor="arsipku-file">File dokumen</Label>
+                <Label htmlFor="pegawai-file">File dokumen</Label>
                 <Input
                   ref={fileInputRef}
-                  id="arsipku-file"
+                  id="pegawai-file"
                   type="file"
                   accept={ARCHIVE_FILE_ACCEPT}
                   disabled={uploading}
@@ -1019,7 +1019,7 @@ export function PegawaiDetailClient({ id }: { id: string }) {
               </div>
 
               <FormInput
-                id="arsipku-title"
+                id="pegawai-title"
                 label="Nama Dokumen"
                 value={form.title}
                 placeholder="Contoh: SK Pangkat Terakhir"
@@ -1029,7 +1029,7 @@ export function PegawaiDetailClient({ id }: { id: string }) {
                 }
               />
               <FormInput
-                id="arsipku-year"
+                id="pegawai-year"
                 label="Tahun Dokumen"
                 value={form.year}
                 placeholder="Contoh: 2026"
@@ -1097,7 +1097,7 @@ export function PegawaiDetailClient({ id }: { id: string }) {
           >
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <FormInput
-                id="arsipku-edit-title"
+                id="pegawai-edit-title"
                 label="Nama Dokumen"
                 value={metadataForm.title}
                 placeholder="Contoh: SK Pangkat Terakhir"
@@ -1109,7 +1109,7 @@ export function PegawaiDetailClient({ id }: { id: string }) {
                 }
               />
               <FormInput
-                id="arsipku-edit-year"
+                id="pegawai-edit-year"
                 label="Tahun Dokumen"
                 value={metadataForm.year}
                 placeholder="Contoh: 2026"

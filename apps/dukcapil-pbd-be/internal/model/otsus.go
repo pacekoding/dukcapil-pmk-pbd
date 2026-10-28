@@ -36,7 +36,7 @@ type OtsusLabel struct {
 	HasLPJ             bool      `json:"hasLpj" gorm:"-"`
 }
 
-func (OtsusLabel) TableName() string { return "otsus_labels" }
+func (OtsusLabel) TableName() string { return "labelisasi_otsus" }
 
 type OtsusDocumentation struct {
 	ID           int64      `json:"id" gorm:"primaryKey"`
@@ -48,7 +48,7 @@ type OtsusDocumentation struct {
 	File         StoredFile `json:"file" gorm:"-"`
 }
 
-func (OtsusDocumentation) TableName() string { return "otsus_documentations" }
+func (OtsusDocumentation) TableName() string { return "dokumentasi_otsus" }
 
 type OtsusLPJ struct {
 	ID           int64      `json:"id" gorm:"primaryKey"`
@@ -61,7 +61,7 @@ type OtsusLPJ struct {
 	File         StoredFile `json:"file" gorm:"-"`
 }
 
-func (OtsusLPJ) TableName() string { return "otsus_lpj" }
+func (OtsusLPJ) TableName() string { return "lpj_otsus" }
 
 type OtsusDPAVersion struct {
 	ID           int64      `json:"id" gorm:"primaryKey"`
@@ -75,7 +75,7 @@ type OtsusDPAVersion struct {
 	File         StoredFile `json:"file" gorm:"-"`
 }
 
-func (OtsusDPAVersion) TableName() string { return "otsus_dpa_versions" }
+func (OtsusDPAVersion) TableName() string { return "versi_dpa_otsus" }
 
 type OtsusDetail struct {
 	Label          OtsusLabel           `json:"label"`

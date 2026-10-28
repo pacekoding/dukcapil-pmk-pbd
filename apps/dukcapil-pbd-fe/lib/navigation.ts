@@ -120,53 +120,6 @@ export const internalMenus: DashboardMenuItem[] = [
     ],
   },
   {
-    title: "Pelaksanaan Kegiatan",
-    href: "/internal/pelaksanaan-kegiatan",
-    icon: "fileText",
-    children: [
-      {
-        title: "Surat Tugas",
-        href: "/internal/pelaksanaan-kegiatan/surat-tugas",
-        icon: "fileText",
-      },
-      {
-        title: "Surat Perjalanan Dinas",
-        href: "/internal/pelaksanaan-kegiatan/spd",
-        icon: "fileText",
-      },
-      {
-        title: "Surat Undangan",
-        href: "/internal/pelaksanaan-kegiatan/surat-undangan",
-        icon: "fileText",
-      },
-      {
-        title: "Daftar Hadir",
-        href: "/internal/pelaksanaan-kegiatan/daftar-hadir",
-        icon: "users",
-      },
-      {
-        title: "Notula",
-        href: "/internal/pelaksanaan-kegiatan/notula",
-        icon: "fileText",
-      },
-      {
-        title: "Berita Acara",
-        href: "/internal/pelaksanaan-kegiatan/berita-acara",
-        icon: "fileText",
-      },
-      {
-        title: "Laporan Kegiatan",
-        href: "/internal/pelaksanaan-kegiatan/laporan",
-        icon: "fileText",
-      },
-      {
-        title: "Dokumentasi",
-        href: "/internal/pelaksanaan-kegiatan/dokumentasi",
-        icon: "folderArchive",
-      },
-    ],
-  },
-  {
     title: "Labelisasi Otsus",
     href: "/internal/otsus",
     icon: "tags",

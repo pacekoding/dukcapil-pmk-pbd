@@ -13,12 +13,10 @@
 | Pengguna | create, edit, delete, reset password | `/add`, `/:id/edit`, `/:id/preview`; reset tetap dialog singkat |
 | Struktur Organisasi | create/edit/delete bidang, seksi, jabatan | `/:kind/add`, `/:kind/:id/edit`, `/:kind/:id/preview` |
 | Data Wilayah Release | satu konfigurasi, bukan koleksi CRUD | form pengaturan tetap pada halaman resource |
-| SIBER Data Wilayah | edit agregat wilayah existing | `/:id/edit`, `/:id/preview`; tanpa `/add` |
-| SIKAMPUNG | create, edit, detail, delete | `/add`, `/:id/edit`, `/:id/preview` |
-| SITEKAD Kelompok Binaan | create, edit, detail, delete | `/add`, `/:id/edit`, `/:id/preview` |
-| SITEKAD Capaian/Kendala | create, edit, detail, delete | `/add`, `/:id/edit`, `/:id/preview` |
-| Pelaksanaan Kegiatan | create, edit, detail, delete | `/add`, `/:id/edit`, `/:id/preview` |
-| Surat Tugas dan SPD | create, edit, preview, lifecycle | `/<jenis>/add`, `/<jenis>/:id/edit`, `/<jenis>/:id/preview`; relasi kegiatan dibawa di payload/query |
+| Data Wilayah Dukcapil Data Wilayah | edit agregat wilayah existing | `/:id/edit`, `/:id/preview`; tanpa `/add` |
+| Data Kampung | create, edit, detail, delete | `/add`, `/:id/edit`, `/:id/preview` |
+| Kelompok Binaan | create, edit, detail, delete | `/add`, `/:id/edit`, `/:id/preview` |
+| Capaian/Kendala | create, edit, detail, delete | `/add`, `/:id/edit`, `/:id/preview` |
 | Undangan, Daftar Hadir, Notula, Berita Acara, Laporan | create, edit, preview, lifecycle | `/<jenis>/add`, `/<jenis>/:id/edit`, `/<jenis>/:id/preview` |
 | Dokumentasi/Lampiran | upload, edit metadata, preview file, delete | nested di bawah kegiatan; upload `/add`, metadata `/:id/edit`, preview `/:id/preview` |
 | Tanda Terima/Daftar Penerima | create, edit, preview, lifecycle | nested di bawah kegiatan; bukan submenu utama |
@@ -47,12 +45,10 @@ Fondasi reusable:
 Route penuh telah ditambahkan untuk:
 
 - Pegawai, Kab/Kota, Pengguna, Subkegiatan, dan tiga jenis Struktur Organisasi.
-- Data Kependudukan SIBER, Pendaftaran Penduduk, dan Pencatatan Sipil (edit/preview; tidak ada add karena record mengikuti master wilayah).
+- Data Kependudukan Data Wilayah Dukcapil, Pendaftaran Penduduk, dan Pencatatan Sipil (edit/preview; tidak ada add karena record mengikuti master wilayah).
 - Data Kampung IDM, BUM Kampung, Kelompok Binaan, serta Capaian & Kendala.
-- Pelaksanaan Kegiatan, Surat Tugas, SPD, Surat Undangan, Daftar Hadir, Notula, Berita Acara, Laporan, dan Daftar Penerima.
-- Lampiran kegiatan dengan route nested `/pelaksanaan-kegiatan/:activityId/lampiran/...`.
 
-Backend Subkegiatan ditambah operasi `PUT /subkegiatan/:id` dan `DELETE /subkegiatan/:id` agar pola CRUD halaman lengkap dan konsisten. SIKAMPUNG juga memperoleh `GET /sikampung/:id`, sehingga halaman edit/preview mengambil record langsung berdasarkan ID dan tidak bergantung pada halaman pertama hasil daftar.
+Backend Subkegiatan ditambah operasi `PUT /subkegiatan/:id` dan `DELETE /subkegiatan/:id` agar pola CRUD halaman lengkap dan konsisten. Data Kampung juga memperoleh `GET /data-kampung/:id`, sehingga halaman edit/preview mengambil record langsung berdasarkan ID dan tidak bergantung pada halaman pertama hasil daftar.
 
 ## Pengecualian yang disengaja
 
