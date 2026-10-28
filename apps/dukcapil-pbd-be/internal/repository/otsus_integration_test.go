@@ -71,6 +71,14 @@ func TestOtsusIntegration(t *testing.T) {
 	if len(items) != 0 {
 		t.Fatalf("2025 items=%d", len(items))
 	}
+	if items == nil {
+		t.Fatal("empty list should be a non-nil slice")
+	}
+	emptyDetail, err := repo.Detail(ctx, created.Label.ID, "2026")
+	must(err)
+	if emptyDetail.Documentations == nil || emptyDetail.DPAVersions == nil {
+		t.Fatal("empty detail collections should be non-nil slices")
+	}
 	input := func(category string, sequence int) model.StoredFileInput {
 		name := fmt.Sprintf("%s-%d.pdf", category, sequence)
 		return model.StoredFileInput{Module: "otsus", RelatedType: "otsus_dpa", Category: category, OriginalFilename: name, StoredFilename: name, StorageKey: fmt.Sprintf("private/otsus/%s/2026/%d.pdf", category, sequence), MimeType: "application/pdf", FileSize: 10, ChecksumSHA256: "", Visibility: model.FileVisibilityPrivate, UploadedBy: &user.ID}

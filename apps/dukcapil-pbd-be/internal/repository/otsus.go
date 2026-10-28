@@ -53,7 +53,7 @@ func (r *OtsusRepository) List(ctx context.Context, year, search string) ([]mode
 	if err != nil {
 		return nil, err
 	}
-	var rows []model.OtsusLabel
+	rows := make([]model.OtsusLabel, 0)
 	q := db.Table("labelisasi_otsus o").
 		Select(`o.*, s.bidang, s.program, s.kegiatan, s.subkegiatan,
 		 (SELECT COUNT(*) FROM dokumentasi_otsus od WHERE od.otsus_label_id=o.id) AS documentation_count,
@@ -68,6 +68,9 @@ func (r *OtsusRepository) List(ctx context.Context, year, search string) ([]mode
 	if err := q.Scan(&rows).Error; err != nil {
 		return nil, fmt.Errorf("list otsus: %w", err)
 	}
+	if rows == nil {
+		rows = make([]model.OtsusLabel, 0)
+	}
 	return rows, nil
 }
 
@@ -80,7 +83,10 @@ func (r *OtsusRepository) Detail(ctx context.Context, id int64, year string) (mo
 }
 
 func loadOtsusDetail(db *gorm.DB, id int64, year string) (model.OtsusDetail, error) {
-	var out model.OtsusDetail
+	out := model.OtsusDetail{
+		Documentations: make([]model.OtsusDocumentation, 0),
+		DPAVersions:    make([]model.OtsusDPAVersion, 0),
+	}
 	err := db.Table("labelisasi_otsus o").Select("o.*, s.bidang, s.program, s.kegiatan, s.subkegiatan").
 		Joins("JOIN subkegiatan s ON s.id=o.subkegiatan_id").
 		Where("o.id=? AND o.tahun_anggaran=?", id, strings.TrimSpace(year)).Take(&out.Label).Error
@@ -92,6 +98,9 @@ func loadOtsusDetail(db *gorm.DB, id int64, year string) (model.OtsusDetail, err
 	}
 	if err := db.Where("otsus_label_id=?", id).Order("created_at DESC").Find(&out.Documentations).Error; err != nil {
 		return out, err
+	}
+	if out.Documentations == nil {
+		out.Documentations = make([]model.OtsusDocumentation, 0)
 	}
 	for i := range out.Documentations {
 		file, found, e := storedFileByID(db, out.Documentations[i].FileID)
@@ -118,6 +127,9 @@ func loadOtsusDetail(db *gorm.DB, id int64, year string) (model.OtsusDetail, err
 	}
 	if err := db.Where("otsus_label_id=?", id).Order("versi DESC").Find(&out.DPAVersions).Error; err != nil {
 		return out, err
+	}
+	if out.DPAVersions == nil {
+		out.DPAVersions = make([]model.OtsusDPAVersion, 0)
 	}
 	for i := range out.DPAVersions {
 		file, found, e := storedFileByID(db, out.DPAVersions[i].FileID)

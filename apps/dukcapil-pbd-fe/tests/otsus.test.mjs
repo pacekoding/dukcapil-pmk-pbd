@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { otsusBudget } from "../lib/otsus.ts";
+import { normalizeOtsusLabels, otsusBudget } from "../lib/otsus.ts";
+
+test("daftar Otsus kosong dinormalisasi sebagai array", () => {
+  assert.deepEqual(normalizeOtsusLabels(null), []);
+});
 
 test("anggaran Otsus menghitung sisa dan persentase", () => {
   assert.deepEqual(otsusBudget(260_000_000, 130_000_000), { sisa: 130_000_000, persentase: 50 });
