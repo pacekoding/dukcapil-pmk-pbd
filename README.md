@@ -16,29 +16,52 @@ DUKCAPIL-PBD/
 
 Backend Go memakai struktur `cmd/api` sebagai entrypoint dan `internal/` untuk `controller`, `middleware`, `model`, `repository`, dan `router`. Data admin dan data wilayah tersimpan di Postgres melalui migrasi SQL dan repository GORM.
 
-## Menjalankan dengan Docker
+## Development with Docker
 
-Salin `.env.example` menjadi `.env`, lalu pastikan `UPLOADS_HOST_PATH` menunjuk ke
-direktori absolut di host. Direktori ini menyimpan file pengguna di luar lifecycle
-container.
+Docker Compose menyediakan PostgreSQL, backend Go, dan frontend Next.js. Go,
+Node.js, dan PostgreSQL tidak perlu dipasang di host. Database dan file upload
+disimpan dalam named volume Docker yang portable; tidak ada path host khusus
+macOS, Windows, atau Linux.
 
-Mac:
+### macOS dan Linux
 
-```bash
-mkdir -p /Users/Shared/dukcapil-pmk/uploads
-```
-
-Linux:
+Prasyarat: Git, Docker Desktop (macOS) atau Docker Engine dengan Compose V2
+(Linux).
 
 ```bash
-sudo install -d -m 0770 -o 10001 -g 10001 /srv/dukcapil-pmk/uploads
+git clone <repository>
+cd dukcapil-pmk-pbd
+cp .env.example .env
+docker compose up -d --build
 ```
 
-Setelah direktori tersedia:
+### Windows 11 + WSL2
+
+Gunakan Docker Desktop dengan WSL2 backend dan Linux containers. Jalankan Git
+serta Compose dari distro WSL2. Clone di filesystem WSL (bukan drive Windows)
+untuk performa dan permission file yang lebih konsisten:
 
 ```bash
-docker compose up --build
+cd ~
+mkdir -p projects
+cd projects
+git clone <repository>
+cd dukcapil-pmk-pbd
+cp .env.example .env
+docker compose up -d --build
 ```
+
+Command operasional:
+
+```bash
+docker compose ps
+docker compose logs -f
+docker compose down
+docker compose down -v
+```
+
+`docker compose down -v` menghapus database dan file upload development lokal.
+Jangan jalankan command tersebut pada environment yang datanya perlu disimpan.
 
 Frontend berjalan di `http://localhost:3000`.
 Backend health check berjalan di `http://localhost:8080/health`.
@@ -87,7 +110,6 @@ SERVER_API_PREFIX=/api/v1
 CORS_ALLOWED_ORIGIN=*
 AUTH_COOKIE_SECURE=false
 JWT_SECRET=dev-secret-change-me
-UPLOADS_HOST_PATH=/Users/Shared/dukcapil-pmk/uploads
 STORAGE_ROOT=/app/storage/uploads
 MAX_UPLOAD_SIZE_MB=20
 ```
@@ -100,7 +122,7 @@ frontend saat image dibangun.
 
 ## Penyimpanan File
 
-File PDF dan image disimpan di bind mount host, sedangkan PostgreSQL hanya
+File PDF dan image disimpan di named volume Docker, sedangkan PostgreSQL hanya
 menyimpan metadata dan storage key relatif. Format yang diterima adalah PDF,
 JPEG, PNG, dan WebP. Nama file fisik menggunakan UUID dan penulisan dilakukan
 secara atomik tanpa menimpa file yang sudah ada.
@@ -129,18 +151,18 @@ GET /api/backend/dukcapil/pencatatan-sipil/{region_id}
 PUT /api/backend/dukcapil/pencatatan-sipil/{region_id}
 ```
 
-Tahun diambil dari sesi login. Data tetap menggunakan tabel tahunan
+Tahun diambil dari sesi login. Data tetap menggunakan tabel lintas tahun
 `data_wilayah` dengan primary key `(tahun_anggaran, id)`, sehingga endpoint baru
-tidak membuat master wilayah kedua. Migration `000030` menambah data pindah
-datang/keluar serta rincian peristiwa pencatatan sipil tanpa mengubah data lama.
+tidak membuat master wilayah kedua. Kolom tahun disimpan sebagai data, bukan
+bagian dari nama tabel.
 
 Panduan arsitektur, migrasi volume lama, backup, dan restore tersedia di
 [`docs/02_FILE_UPLOAD_STORAGE_RULES.md`](docs/02_FILE_UPLOAD_STORAGE_RULES.md).
 
 ## Backup Wajib
 
-Backup portal harus selalu mencakup dump PostgreSQL dan folder
-`UPLOADS_HOST_PATH` dari waktu yang sama. Salah satu tanpa yang lain tidak cukup.
+Backup portal harus selalu mencakup dump PostgreSQL dan named volume upload dari
+waktu yang sama. Salah satu tanpa yang lain tidak cukup.
 
 Contoh:
 
@@ -152,17 +174,14 @@ mkdir -p backups
 docker compose exec -T dukcapil-pbd-db sh -lc \
   'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' \
   > backups/dukcapil-pbd.dump
-tar -C "$(dirname "$UPLOADS_HOST_PATH")" \
-  -czf backups/dukcapil-pbd-uploads.tar.gz "$(basename "$UPLOADS_HOST_PATH")"
+docker run --rm \
+  -v dukcapil-pbd_dukcapil-pbd-uploads:/source:ro \
+  -v "$PWD/backups":/backup \
+  alpine:3.20 tar -C /source -czf /backup/dukcapil-pbd-uploads.tar.gz .
 ```
 
 Jangan menjalankan `docker compose down -v` pada server yang menyimpan data.
-Opsi `-v` menghapus volume PostgreSQL. Bind mount upload tidak menggantikan
-kebutuhan backup.
+Opsi `-v` menghapus volume PostgreSQL dan upload.
 
-User seed backend:
-
-- `superadmin` / `superadmin123`
-- `admin_dukcapil` / `dukcapil123`
-- `admin_pmk` / `pmk123`
-- `admin_sekretariat` / `sekretariat123`
+User seed development: `superadmin` / `superadmin789`. Ganti password setelah
+login jika environment dapat diakses oleh pihak lain.

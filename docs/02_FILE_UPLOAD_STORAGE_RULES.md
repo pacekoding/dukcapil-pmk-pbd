@@ -15,9 +15,9 @@ ke tabel `stored_files`.
 
 ## Arsitektur
 
-- File binary disimpan di filesystem host.
+- File binary disimpan di named volume Docker `dukcapil-pbd-uploads`.
 - PostgreSQL menyimpan metadata dan storage key relatif, bukan binary/base64.
-- Docker memasang `${UPLOADS_HOST_PATH}` ke `${STORAGE_ROOT}`.
+- Docker memasang named volume tersebut ke `${STORAGE_ROOT}`.
 - Nilai Compose yang direkomendasikan untuk `STORAGE_ROOT` adalah
   `/app/storage/uploads`.
 - Backend harus gagal saat startup jika storage root tidak dapat dibuat, dibaca,
@@ -112,53 +112,18 @@ Jangan menyajikan file private melalui static route atau URL filesystem.
 - Cleanup otomatis hanya boleh ditambahkan dengan retention policy, dry-run,
   dan audit yang eksplisit.
 
-## Konfigurasi Host
+## Konfigurasi Container
 
-Mac:
+Konfigurasi yang sama digunakan di macOS, Windows + WSL2, dan Linux:
 
 ```env
-UPLOADS_HOST_PATH=/Users/Shared/dukcapil-pmk/uploads
 STORAGE_ROOT=/app/storage/uploads
 MAX_UPLOAD_SIZE_MB=20
 ```
 
-Linux:
-
-```env
-UPLOADS_HOST_PATH=/srv/dukcapil-pmk/uploads
-STORAGE_ROOT=/app/storage/uploads
-MAX_UPLOAD_SIZE_MB=20
-```
-
-Siapkan direktori Linux agar UID/GID backend `10001:10001` dapat menulis:
-
-```bash
-sudo install -d -m 0770 -o 10001 -g 10001 /srv/dukcapil-pmk/uploads
-```
-
-## Migrasi Volume Docker Lama
-
-Versi lama menggunakan named volume pada `/app/uploads`. Sebelum menjalankan
-Compose baru, salin isinya ke bind mount host dan jangan hapus volume lama:
-
-```bash
-set -a
-. ./.env
-set +a
-mkdir -p "$UPLOADS_HOST_PATH"
-docker run --rm \
-  -v dukcapil-pbd_dukcapil-pbd-uploads:/source:ro \
-  -v "$UPLOADS_HOST_PATH":/target \
-  alpine:3.20 sh -c 'cp -a /source/. /target/'
-```
-
-Nama volume dapat diperiksa dengan `docker volume ls`. Setelah aplikasi baru
-aktif, bandingkan jumlah file dan checksum file penting sebelum mempertimbangkan
-penghapusan volume lama.
-
-Migrasi SQL `000011_persistent_file_storage` membentuk metadata penyimpanan
-persisten. Row legacy yang binary-nya sudah hilang tidak dapat direkonstruksi;
-file tersebut harus diunggah ulang.
+Tidak diperlukan direktori atau permission khusus pada host. Compose membuat dan
+memasang named volume `dukcapil-pbd-uploads` secara otomatis. Nama volume aktual
+dapat diperiksa dengan `docker volume ls`.
 
 ## Backup dan Restore
 
@@ -172,14 +137,16 @@ mkdir -p backups
 docker compose exec -T dukcapil-pbd-db sh -lc \
   'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' \
   > backups/dukcapil-pbd.dump
-tar -C "$(dirname "$UPLOADS_HOST_PATH")" \
-  -czf backups/dukcapil-pbd-uploads.tar.gz "$(basename "$UPLOADS_HOST_PATH")"
+docker run --rm \
+  -v dukcapil-pbd_dukcapil-pbd-uploads:/source:ro \
+  -v "$PWD/backups":/backup \
+  alpine:3.20 tar -C /source -czf /backup/dukcapil-pbd-uploads.tar.gz .
 ```
 
-Restore dilakukan dengan menghentikan traffic upload, mengembalikan folder file
-ke `UPLOADS_HOST_PATH`, lalu menjalankan `pg_restore` ke database tujuan. Setelah
-restore, periksa permission direktori, jalankan aplikasi, dan validasi checksum
-serta endpoint preview/download.
+Restore dilakukan dengan menghentikan traffic upload, mengekstrak arsip ke named
+volume `dukcapil-pbd-uploads`, lalu menjalankan `pg_restore` ke database tujuan.
+Setelah restore, jalankan aplikasi dan validasi checksum serta endpoint
+preview/download.
 
 Jangan menjalankan:
 
@@ -187,8 +154,7 @@ Jangan menjalankan:
 docker compose down -v
 ```
 
-Opsi `-v` menghapus volume PostgreSQL. Bind mount upload tetap harus dibackup
-karena penghapusan folder host tidak dilindungi Docker.
+Opsi `-v` menghapus named volume PostgreSQL dan upload.
 
 ## Checklist Verifikasi
 

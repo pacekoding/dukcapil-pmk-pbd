@@ -35,9 +35,15 @@ services:
       dukcapil-pbd-db:
         condition: service_healthy
     volumes:
-      - "${UPLOADS_HOST_PATH:?UPLOADS_HOST_PATH wajib diisi}:/app/storage/uploads"
+      - dukcapil-pbd-uploads:/app/storage/uploads
     ports:
       - "${BE_HOST:-0.0.0.0}:${BE_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   dukcapil-pbd-fe:
@@ -60,10 +66,18 @@ services:
       SERVER_API_PREFIX: ${SERVER_API_PREFIX:-/api/v1}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
     depends_on:
-      - dukcapil-pbd-be
+      dukcapil-pbd-be:
+        condition: service_healthy
     ports:
       - "${FE_HOST:-0.0.0.0}:${FE_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
 volumes:
   dukcapil-pbd-postgres-data:
+  dukcapil-pbd-uploads:
