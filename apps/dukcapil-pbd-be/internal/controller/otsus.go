@@ -246,3 +246,24 @@ func (o *OtsusController) UploadDPA(c echo.Context) error {
 	}
 	return jsonData(c, 201, item)
 }
+
+func (o *OtsusController) DeleteDPA(c echo.Context) error {
+	_, year, err := otsusContext(c)
+	if err != nil {
+		return err
+	}
+	id, err := otsusID(c)
+	if err != nil {
+		return err
+	}
+	dpaID, err := strconv.ParseInt(c.Param("dpa_id"), 10, 64)
+	if err != nil || dpaID <= 0 {
+		return echo.NewHTTPError(400, "Dokumen DPA tidak valid.")
+	}
+	key, err := o.store.DeleteDPAVersion(c.Request().Context(), id, dpaID, year)
+	if err != nil {
+		return otsusHTTPError(err)
+	}
+	deleteManagedStoredFile(c, o.files, key)
+	return c.NoContent(204)
+}

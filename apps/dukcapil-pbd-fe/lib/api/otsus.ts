@@ -19,3 +19,4 @@ export const deleteOtsusPhoto = (id: number, documentId: number) => apiRequest<v
 export const uploadOtsusLpj = (id: number, file: File) => upload<OtsusLpj>(`${apiEndpoints.otsus}/${id}/lpj`, file);
 export const deleteOtsusLpj = (id: number) => apiRequest<void>(`${apiEndpoints.otsus}/${id}/lpj`, { method: "DELETE" });
 export const uploadOtsusDpa = (id: number, file: File, jenis: DpaType, catatan: string) => upload<OtsusDpa>(`${apiEndpoints.otsus}/${id}/dpa`, file, { jenis, catatan });
+export const deleteOtsusDpa = (id: number, dpaId: number) => apiRequest<void>(`${apiEndpoints.otsus}/${id}/dpa/${dpaId}`, { method: "DELETE" });

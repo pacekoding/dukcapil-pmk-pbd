@@ -39,6 +39,46 @@ func (r *SubkegiatanRepository) List(ctx context.Context) ([]model.Subkegiatan, 
 	return items, nil
 }
 
+func (r *SubkegiatanRepository) ListPage(ctx context.Context, params model.SubkegiatanListParams) (model.SubkegiatanListResponse, error) {
+	db, err := r.session(ctx)
+	if err != nil {
+		return model.SubkegiatanListResponse{}, err
+	}
+
+	page := max(params.Page, 1)
+	pageSize := params.PageSize
+	if pageSize <= 0 {
+		pageSize = 10
+	} else if pageSize > 100 {
+		pageSize = 100
+	}
+	query := db.Model(&model.SubkegiatanEntity{})
+	if search := strings.ToLower(strings.TrimSpace(params.Search)); search != "" {
+		pattern := "%" + search + "%"
+		query = query.Where(`LOWER(bidang) LIKE ? OR LOWER(program) LIKE ? OR LOWER(kegiatan) LIKE ? OR LOWER(subkegiatan) LIKE ? OR LOWER(kinerja) LIKE ? OR LOWER(indikator) LIKE ? OR LOWER(satuan) LIKE ? OR LOWER(definisi_operasional) LIKE ?`, pattern, pattern, pattern, pattern, pattern, pattern, pattern, pattern)
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return model.SubkegiatanListResponse{}, fmt.Errorf("count subkegiatan: %w", err)
+	}
+	if total == 0 {
+		page = 1
+	} else if totalPages := int((total + int64(pageSize) - 1) / int64(pageSize)); page > totalPages {
+		page = totalPages
+	}
+
+	var records []model.SubkegiatanEntity
+	if err := query.Order("id DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&records).Error; err != nil {
+		return model.SubkegiatanListResponse{}, fmt.Errorf("list subkegiatan page: %w", err)
+	}
+	items := make([]model.Subkegiatan, 0, len(records))
+	for _, record := range records {
+		items = append(items, record.ToSubkegiatan())
+	}
+	return model.SubkegiatanListResponse{Items: items, Page: page, PageSize: pageSize, Total: total}, nil
+}
+
 func (r *SubkegiatanRepository) Create(ctx context.Context, payload model.SubkegiatanPayload) (model.Subkegiatan, error) {
 	db, err := r.session(ctx)
 	if err != nil {
@@ -104,6 +144,30 @@ func (r *SubkegiatanRepository) Delete(ctx context.Context, id int64) (bool, err
 		return false, fmt.Errorf("delete subkegiatan: %w", result.Error)
 	}
 	return result.RowsAffected > 0, nil
+}
+
+func (r *SubkegiatanRepository) Import(ctx context.Context, payloads []model.SubkegiatanPayload) error {
+	db, err := r.session(ctx)
+	if err != nil {
+		return err
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		for _, payload := range payloads {
+			record := model.SubkegiatanEntity{
+				Bidang: strings.TrimSpace(payload.Bidang), Program: strings.TrimSpace(payload.Program),
+				Kegiatan: strings.TrimSpace(payload.Kegiatan), Subkegiatan: strings.TrimSpace(payload.Subkegiatan),
+				Kinerja: strings.TrimSpace(payload.Kinerja), Indikator: strings.TrimSpace(payload.Indikator),
+				Satuan: strings.TrimSpace(payload.Satuan), DefinisiOperasional: strings.TrimSpace(payload.DefinisiOperasional),
+			}
+			if err := tx.Create(&record).Error; err != nil {
+				if errors.Is(err, gorm.ErrDuplicatedKey) {
+					return ErrSubkegiatanAlreadyExists
+				}
+				return fmt.Errorf("import subkegiatan: %w", err)
+			}
+		}
+		return nil
+	})
 }
 
 func (r *SubkegiatanRepository) session(ctx context.Context) (*gorm.DB, error) {

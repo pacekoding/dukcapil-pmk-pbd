@@ -25,6 +25,52 @@ type SubkegiatanPayload struct {
 	DefinisiOperasional string `json:"definisiOperasional"`
 }
 
+type SubkegiatanListParams struct {
+	Search   string
+	Page     int
+	PageSize int
+}
+
+type SubkegiatanListResponse struct {
+	Items    []Subkegiatan `json:"items"`
+	Page     int           `json:"page"`
+	PageSize int           `json:"pageSize"`
+	Total    int64         `json:"total"`
+}
+
+type SubkegiatanImportRow struct {
+	Row                 int    `json:"row"`
+	Bidang              string `json:"bidang"`
+	Program             string `json:"program"`
+	Kegiatan            string `json:"kegiatan"`
+	Subkegiatan         string `json:"subkegiatan"`
+	Kinerja             string `json:"kinerja"`
+	Indikator           string `json:"indikator"`
+	Satuan              string `json:"satuan"`
+	DefinisiOperasional string `json:"definisiOperasional"`
+	Status              string `json:"status"`
+	Message             string `json:"message,omitempty"`
+}
+
+func (r SubkegiatanImportRow) Payload() SubkegiatanPayload {
+	return SubkegiatanPayload{Bidang: r.Bidang, Program: r.Program, Kegiatan: r.Kegiatan,
+		Subkegiatan: r.Subkegiatan, Kinerja: r.Kinerja, Indikator: r.Indikator,
+		Satuan: r.Satuan, DefinisiOperasional: r.DefinisiOperasional}
+}
+
+type SubkegiatanImportPreview struct {
+	TotalRows    int                    `json:"totalRows"`
+	ValidRows    int                    `json:"validRows"`
+	ExistingRows int                    `json:"existingRows"`
+	ErrorRows    int                    `json:"errorRows"`
+	Rows         []SubkegiatanImportRow `json:"rows"`
+}
+
+type SubkegiatanImportResult struct {
+	ImportedRows int `json:"importedRows"`
+	SkippedRows  int `json:"skippedRows"`
+}
+
 type SubkegiatanEntity struct {
 	ID                  int64     `gorm:"primaryKey;column:id"`
 	Bidang              string    `gorm:"column:bidang"`

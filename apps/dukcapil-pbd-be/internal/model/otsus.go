@@ -9,12 +9,15 @@ const (
 	OtsusDPAAwal          = "AWAL"
 	OtsusDPAPergeseran    = "PERGESERAN"
 	OtsusDPAPerubahan     = "PERUBAHAN"
+	OtsusSumberDanaSG     = "SG_1_25"
+	OtsusSumberDanaBG     = "BG_1"
 )
 
 type OtsusPayload struct {
 	SubkegiatanID int64  `json:"subkegiatanId"`
 	Pagu          int64  `json:"pagu"`
 	Realisasi     int64  `json:"realisasi"`
+	SumberDana    string `json:"sumberDana" gorm:"column:sumber_dana"`
 	Status        string `json:"status"`
 	Keterangan    string `json:"keterangan"`
 }
@@ -27,13 +30,15 @@ type OtsusLabel struct {
 	UpdatedBy          int64     `json:"updatedBy"`
 	CreatedAt          time.Time `json:"createdAt"`
 	UpdatedAt          time.Time `json:"updatedAt"`
-	Bidang             string    `json:"bidang" gorm:"-"`
-	Program            string    `json:"program" gorm:"-"`
-	Kegiatan           string    `json:"kegiatan" gorm:"-"`
-	Subkegiatan        string    `json:"subkegiatan" gorm:"-"`
-	DocumentationCount int64     `json:"documentationCount" gorm:"-"`
-	DPACount           int64     `json:"dpaCount" gorm:"-"`
-	HasLPJ             bool      `json:"hasLpj" gorm:"-"`
+	Bidang             string    `json:"bidang" gorm:"->;column:bidang"`
+	Program            string    `json:"program" gorm:"->;column:program"`
+	Kegiatan           string    `json:"kegiatan" gorm:"->;column:kegiatan"`
+	Subkegiatan        string    `json:"subkegiatan" gorm:"->;column:subkegiatan"`
+	SubkegiatanKode    string    `json:"subkegiatanKode" gorm:"->;column:subkegiatan_kode"`
+	SubkegiatanNama    string    `json:"subkegiatanNama" gorm:"->;column:subkegiatan_nama"`
+	DocumentationCount int64     `json:"documentationCount" gorm:"->;column:documentation_count"`
+	DPACount           int64     `json:"dpaCount" gorm:"->;column:dpa_count"`
+	HasLPJ             bool      `json:"hasLpj" gorm:"->;column:has_lpj"`
 }
 
 func (OtsusLabel) TableName() string { return "labelisasi_otsus" }

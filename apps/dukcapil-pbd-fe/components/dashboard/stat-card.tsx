@@ -1,16 +1,18 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
 type StatCardProps = {
   label: string;
   value: string;
-  description?: string;
+  description?: ReactNode;
   icon?: LucideIcon;
   tone?: "blue" | "emerald" | "amber" | "slate" | "indigo";
   loading?: boolean;
+  className?: string;
 };
 
 const toneClasses = {
@@ -28,23 +30,24 @@ export function StatCard({
   icon: Icon,
   tone = "blue",
   loading = false,
+  className,
 }: StatCardProps) {
   return (
-    <div className="app-surface rounded-lg p-5">
+    <div className={cn("app-surface self-start rounded-lg p-5", className)}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-500">{label}</p>
           {loading ? (
             <div className="mt-3 h-7 w-28 animate-pulse rounded-md bg-slate-200" />
           ) : (
-            <p className="mt-2 text-2xl font-bold tracking-tight text-pbd-navy">
+            <p className="mt-3 text-3xl font-bold leading-none tracking-tight tabular-nums text-pbd-navy">
               {value}
             </p>
           )}
           {description ? (
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <div className="mt-2 text-sm leading-5 text-slate-500">
               {description}
-            </p>
+            </div>
           ) : null}
         </div>
         {Icon ? (

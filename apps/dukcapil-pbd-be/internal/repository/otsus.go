@@ -24,6 +24,7 @@ func NewOtsusRepository(db *gorm.DB) *OtsusRepository { return &OtsusRepository{
 
 func ValidateOtsusPayload(p model.OtsusPayload) error {
 	p.Status = strings.TrimSpace(p.Status)
+	p.SumberDana = strings.TrimSpace(p.SumberDana)
 	if p.SubkegiatanID <= 0 {
 		return fmt.Errorf("%w: subkegiatan wajib dipilih", ErrOtsusInvalid)
 	}
@@ -32,6 +33,9 @@ func ValidateOtsusPayload(p model.OtsusPayload) error {
 	}
 	if p.Realisasi > p.Pagu {
 		return fmt.Errorf("%w: realisasi tidak boleh melebihi pagu", ErrOtsusInvalid)
+	}
+	if p.SumberDana != model.OtsusSumberDanaSG && p.SumberDana != model.OtsusSumberDanaBG {
+		return fmt.Errorf("%w: sumber dana Otsus wajib dipilih", ErrOtsusInvalid)
 	}
 	switch p.Status {
 	case model.OtsusStatusBelumMulai, model.OtsusStatusBerjalan, model.OtsusStatusSelesai:
@@ -56,11 +60,14 @@ func (r *OtsusRepository) List(ctx context.Context, year, search string) ([]mode
 	rows := make([]model.OtsusLabel, 0)
 	q := db.Table("labelisasi_otsus o").
 		Select(`o.*, s.bidang, s.program, s.kegiatan, s.subkegiatan,
+		 CASE WHEN POSITION(' - ' IN s.subkegiatan) > 0 THEN SPLIT_PART(s.subkegiatan, ' - ', 1) ELSE '' END AS subkegiatan_kode,
+		 CASE WHEN POSITION(' - ' IN s.subkegiatan) > 0 THEN SUBSTRING(s.subkegiatan FROM POSITION(' - ' IN s.subkegiatan) + 3) ELSE s.subkegiatan END AS subkegiatan_nama,
 		 (SELECT COUNT(*) FROM dokumentasi_otsus od WHERE od.otsus_label_id=o.id) AS documentation_count,
 		 (SELECT COUNT(*) FROM versi_dpa_otsus dv WHERE dv.otsus_label_id=o.id) AS dpa_count,
 		 EXISTS(SELECT 1 FROM lpj_otsus l WHERE l.otsus_label_id=o.id) AS has_lpj`).
 		Joins("JOIN subkegiatan s ON s.id=o.subkegiatan_id").
-		Where("o.tahun_anggaran = ?", strings.TrimSpace(year)).Order("o.updated_at DESC, o.id DESC")
+		Where("o.tahun_anggaran = ?", strings.TrimSpace(year)).
+		Order("SPLIT_PART(s.subkegiatan, ' - ', 1) ASC, o.id ASC")
 	if term := strings.TrimSpace(search); term != "" {
 		like := "%" + strings.ToLower(term) + "%"
 		q = q.Where("LOWER(s.subkegiatan) LIKE ? OR CAST(s.id AS TEXT) LIKE ?", like, "%"+term+"%")
@@ -87,7 +94,9 @@ func loadOtsusDetail(db *gorm.DB, id int64, year string) (model.OtsusDetail, err
 		Documentations: make([]model.OtsusDocumentation, 0),
 		DPAVersions:    make([]model.OtsusDPAVersion, 0),
 	}
-	err := db.Table("labelisasi_otsus o").Select("o.*, s.bidang, s.program, s.kegiatan, s.subkegiatan").
+	err := db.Table("labelisasi_otsus o").Select(`o.*, s.bidang, s.program, s.kegiatan, s.subkegiatan,
+		CASE WHEN POSITION(' - ' IN s.subkegiatan) > 0 THEN SPLIT_PART(s.subkegiatan, ' - ', 1) ELSE '' END AS subkegiatan_kode,
+		CASE WHEN POSITION(' - ' IN s.subkegiatan) > 0 THEN SUBSTRING(s.subkegiatan FROM POSITION(' - ' IN s.subkegiatan) + 3) ELSE s.subkegiatan END AS subkegiatan_nama`).
 		Joins("JOIN subkegiatan s ON s.id=o.subkegiatan_id").
 		Where("o.id=? AND o.tahun_anggaran=?", id, strings.TrimSpace(year)).Take(&out.Label).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -156,6 +165,7 @@ func (r *OtsusRepository) Save(ctx context.Context, id int64, year string, p mod
 	}
 	year = strings.TrimSpace(year)
 	p.Status = strings.TrimSpace(p.Status)
+	p.SumberDana = strings.TrimSpace(p.SumberDana)
 	p.Keterangan = strings.TrimSpace(p.Keterangan)
 	err = db.Transaction(func(tx *gorm.DB) error {
 		var count int64
@@ -176,7 +186,7 @@ func (r *OtsusRepository) Save(ctx context.Context, id int64, year string, p mod
 			id = rec.ID
 			return nil
 		}
-		res := tx.Model(&model.OtsusLabel{}).Where("id=? AND tahun_anggaran=?", id, year).Updates(map[string]any{"subkegiatan_id": p.SubkegiatanID, "pagu": p.Pagu, "realisasi": p.Realisasi, "status": p.Status, "keterangan": p.Keterangan, "updated_by": user, "updated_at": gorm.Expr("NOW()")})
+		res := tx.Model(&model.OtsusLabel{}).Where("id=? AND tahun_anggaran=?", id, year).Updates(map[string]any{"subkegiatan_id": p.SubkegiatanID, "pagu": p.Pagu, "realisasi": p.Realisasi, "sumber_dana": p.SumberDana, "status": p.Status, "keterangan": p.Keterangan, "updated_by": user, "updated_at": gorm.Expr("NOW()")})
 		if res.Error != nil {
 			if isUniqueViolation(res.Error) {
 				return ErrOtsusConflict
@@ -417,4 +427,33 @@ func (r *OtsusRepository) AddDPAVersion(ctx context.Context, id int64, year, jen
 		return nil
 	})
 	return out, err
+}
+
+func (r *OtsusRepository) DeleteDPAVersion(ctx context.Context, labelID, dpaID int64, year string) (string, error) {
+	db, err := r.session(ctx)
+	if err != nil {
+		return "", err
+	}
+	key := ""
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if e := ensureOtsusLabel(tx, labelID, year, false); e != nil {
+			return e
+		}
+		var dpa model.OtsusDPAVersion
+		if e := tx.Where("id=? AND otsus_label_id=?", dpaID, labelID).Take(&dpa).Error; errors.Is(e, gorm.ErrRecordNotFound) {
+			return ErrOtsusNotFound
+		} else if e != nil {
+			return e
+		}
+		var file model.StoredFile
+		if e := tx.Where("id=?", dpa.FileID).Take(&file).Error; e != nil {
+			return e
+		}
+		key = file.StorageKey
+		if e := softDeleteStoredFileRecord(tx, file.ID); e != nil {
+			return e
+		}
+		return tx.Delete(&dpa).Error
+	})
+	return key, err
 }

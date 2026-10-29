@@ -79,6 +79,7 @@ func New(config Config) *echo.Echo {
 	otsus.POST("/:id/lpj", config.Otsus.UploadLPJ)
 	otsus.DELETE("/:id/lpj", config.Otsus.DeleteLPJ)
 	otsus.POST("/:id/dpa", config.Otsus.UploadDPA)
+	otsus.DELETE("/:id/dpa/:dpa_id", config.Otsus.DeleteDPA)
 	for _, method := range []string{http.MethodGet, http.MethodHead} {
 		protected.Add(method, "/otsus-files/:file_id/preview", config.StoredFiles.Preview)
 		protected.Add(method, "/otsus-files/:file_id/download", config.StoredFiles.Download)
@@ -149,6 +150,10 @@ func New(config Config) *echo.Echo {
 	superAdmin.PUT("/organization/:kind/:id", config.Organization.Save)
 	superAdmin.DELETE("/organization/:kind/:id", config.Organization.Delete)
 	superAdmin.GET("/subkegiatan", config.Subkegiatan.List)
+	superAdmin.GET("/subkegiatan/export", config.Subkegiatan.Export)
+	superAdmin.GET("/subkegiatan/import-template", config.Subkegiatan.ImportTemplate)
+	superAdmin.POST("/subkegiatan/import/preview", config.Subkegiatan.ImportPreview)
+	superAdmin.POST("/subkegiatan/import", config.Subkegiatan.Import)
 	superAdmin.POST("/subkegiatan", config.Subkegiatan.Create)
 	superAdmin.PUT("/subkegiatan/:id", config.Subkegiatan.Update)
 	superAdmin.DELETE("/subkegiatan/:id", config.Subkegiatan.Delete)

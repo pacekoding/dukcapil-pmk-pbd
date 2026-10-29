@@ -47,7 +47,7 @@ func TestOtsusIntegration(t *testing.T) {
 	must(db.Create(&sub).Error)
 	repo := repository.NewOtsusRepository(db)
 	ctx := context.Background()
-	payload := model.OtsusPayload{SubkegiatanID: sub.ID, Pagu: 260000000, Realisasi: 130000000, Status: model.OtsusStatusBerjalan, Keterangan: "Berjalan"}
+	payload := model.OtsusPayload{SubkegiatanID: sub.ID, Pagu: 260000000, Realisasi: 130000000, SumberDana: model.OtsusSumberDanaSG, Status: model.OtsusStatusBerjalan, Keterangan: "Berjalan"}
 	created, err := repo.Save(ctx, 0, "2026", payload, user.ID)
 	must(err)
 	if created.Label.ID == 0 {
@@ -94,5 +94,20 @@ func TestOtsusIntegration(t *testing.T) {
 	must(err)
 	if len(detail.DPAVersions) != 2 || detail.DPAVersions[0].Versi != 2 || detail.DPAVersions[1].Versi != 1 {
 		t.Fatalf("DPA history=%+v", detail.DPAVersions)
+	}
+	deletedKey, err := repo.DeleteDPAVersion(ctx, created.Label.ID, second.ID, "2026")
+	must(err)
+	if deletedKey != second.File.StorageKey {
+		t.Fatalf("deleted storage key=%q want=%q", deletedKey, second.File.StorageKey)
+	}
+	detail, err = repo.Detail(ctx, created.Label.ID, "2026")
+	must(err)
+	if len(detail.DPAVersions) != 1 || detail.DPAVersions[0].ID != first.ID {
+		t.Fatalf("DPA history after delete=%+v", detail.DPAVersions)
+	}
+	var deletedMetadata int64
+	must(db.Model(&model.StoredFile{}).Where("id=? AND deleted_at IS NOT NULL", second.FileID).Count(&deletedMetadata).Error)
+	if deletedMetadata != 1 {
+		t.Fatal("deleted DPA metadata was not soft-deleted")
 	}
 }
