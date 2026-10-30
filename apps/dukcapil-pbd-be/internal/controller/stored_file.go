@@ -21,6 +21,7 @@ import (
 
 type StoredFileStore interface {
 	AuthorizedByID(ctx context.Context, id int64, claims security.Claims) (model.StoredFile, bool, error)
+	PublicOtsusByID(ctx context.Context, id int64) (model.StoredFile, bool, error)
 }
 
 type StoredFileController struct {
@@ -38,6 +39,30 @@ func (s *StoredFileController) Preview(c echo.Context) error {
 
 func (s *StoredFileController) Download(c echo.Context) error {
 	return s.serveProtected(c, "attachment")
+}
+
+func (s *StoredFileController) PublicPreview(c echo.Context) error {
+	return s.servePublic(c, "inline")
+}
+
+func (s *StoredFileController) PublicDownload(c echo.Context) error {
+	return s.servePublic(c, "attachment")
+}
+
+func (s *StoredFileController) servePublic(c echo.Context, disposition string) error {
+	id, err := storedFileID(c)
+	if err != nil {
+		return err
+	}
+	file, found, err := s.files.PublicOtsusByID(c.Request().Context(), id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "file belum dapat dimuat")
+	}
+	if !found {
+		return echo.NewHTTPError(http.StatusNotFound, "file tidak ditemukan")
+	}
+	c.Response().Header().Set("Cache-Control", "public, max-age=300")
+	return s.serve(c, file, disposition)
 }
 
 func (s *StoredFileController) serveProtected(c echo.Context, disposition string) error {
@@ -95,7 +120,9 @@ func (s *StoredFileController) serve(c echo.Context, file model.StoredFile, disp
 	if file.ChecksumSHA256 != "" {
 		response.Header().Set("ETag", fmt.Sprintf(`"sha256-%s"`, file.ChecksumSHA256))
 	}
-	response.Header().Set("Cache-Control", "private, no-store")
+	if response.Header().Get("Cache-Control") == "" {
+		response.Header().Set("Cache-Control", "private, no-store")
+	}
 
 	modified := metadata.Modified
 	if modified.IsZero() {

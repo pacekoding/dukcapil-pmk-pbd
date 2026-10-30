@@ -167,6 +167,7 @@ func (r *OtsusRepository) Save(ctx context.Context, id int64, year string, p mod
 	p.Status = strings.TrimSpace(p.Status)
 	p.SumberDana = strings.TrimSpace(p.SumberDana)
 	p.Keterangan = strings.TrimSpace(p.Keterangan)
+	p.KabupatenKota = strings.TrimSpace(p.KabupatenKota)
 	err = db.Transaction(func(tx *gorm.DB) error {
 		var count int64
 		if e := tx.Model(&model.SubkegiatanEntity{}).Where("id=?", p.SubkegiatanID).Count(&count).Error; e != nil {
@@ -186,7 +187,7 @@ func (r *OtsusRepository) Save(ctx context.Context, id int64, year string, p mod
 			id = rec.ID
 			return nil
 		}
-		res := tx.Model(&model.OtsusLabel{}).Where("id=? AND tahun_anggaran=?", id, year).Updates(map[string]any{"subkegiatan_id": p.SubkegiatanID, "pagu": p.Pagu, "realisasi": p.Realisasi, "sumber_dana": p.SumberDana, "status": p.Status, "keterangan": p.Keterangan, "updated_by": user, "updated_at": gorm.Expr("NOW()")})
+		res := tx.Model(&model.OtsusLabel{}).Where("id=? AND tahun_anggaran=?", id, year).Updates(map[string]any{"subkegiatan_id": p.SubkegiatanID, "pagu": p.Pagu, "realisasi": p.Realisasi, "sumber_dana": p.SumberDana, "kabupaten_kota": p.KabupatenKota, "status": p.Status, "keterangan": p.Keterangan, "updated_by": user, "updated_at": gorm.Expr("NOW()")})
 		if res.Error != nil {
 			if isUniqueViolation(res.Error) {
 				return ErrOtsusConflict
@@ -341,7 +342,8 @@ func (r *OtsusRepository) ReplaceLPJ(ctx context.Context, id int64, year string,
 			out = current
 			out.FileID = file.ID
 			out.UpdatedBy = user
-			if e = tx.Model(&out).Updates(map[string]any{"file_id": file.ID, "updated_by": user, "updated_at": gorm.Expr("NOW()")}).Error; e != nil {
+			out.IsPublic = false
+			if e = tx.Model(&out).Updates(map[string]any{"file_id": file.ID, "is_public": false, "updated_by": user, "updated_at": gorm.Expr("NOW()")}).Error; e != nil {
 				return e
 			}
 		} else if errors.Is(e, gorm.ErrRecordNotFound) {
@@ -456,4 +458,51 @@ func (r *OtsusRepository) DeleteDPAVersion(ctx context.Context, labelID, dpaID i
 		return tx.Delete(&dpa).Error
 	})
 	return key, err
+}
+
+func (r *OtsusRepository) SetPublication(ctx context.Context, labelID int64, year string, isPublic bool) error {
+	db, err := r.session(ctx)
+	if err != nil {
+		return err
+	}
+	result := db.Model(&model.OtsusLabel{}).Where("id=? AND tahun_anggaran=?", labelID, strings.TrimSpace(year)).Update("is_public", isPublic)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return ErrOtsusNotFound
+	}
+	return nil
+}
+
+func (r *OtsusRepository) SetFilePublication(ctx context.Context, labelID int64, year, kind string, itemID int64, isPublic bool) error {
+	db, err := r.session(ctx)
+	if err != nil {
+		return err
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := ensureOtsusLabel(tx, labelID, year, false); err != nil {
+			return err
+		}
+		table, where := "", "id=? AND otsus_label_id=?"
+		args := []any{itemID, labelID}
+		switch strings.TrimSpace(kind) {
+		case "documentation":
+			table = "dokumentasi_otsus"
+		case "dpa":
+			table = "versi_dpa_otsus"
+		case "lpj":
+			table, where, args = "lpj_otsus", "otsus_label_id=?", []any{labelID}
+		default:
+			return ErrOtsusInvalid
+		}
+		result := tx.Table(table).Where(where, args...).Update("is_public", isPublic)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return ErrOtsusNotFound
+		}
+		return nil
+	})
 }

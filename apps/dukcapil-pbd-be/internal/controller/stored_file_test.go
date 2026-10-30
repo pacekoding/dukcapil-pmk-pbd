@@ -19,6 +19,14 @@ import (
 type storedFileStoreStub struct {
 	file            model.StoredFile
 	authorizedFound bool
+	publicFound     bool
+}
+
+func (s storedFileStoreStub) PublicOtsusByID(
+	_ context.Context,
+	_ int64,
+) (model.StoredFile, bool, error) {
+	return s.file, s.publicFound, nil
 }
 
 func (s storedFileStoreStub) AuthorizedByID(

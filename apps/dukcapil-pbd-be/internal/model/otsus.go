@@ -18,6 +18,7 @@ type OtsusPayload struct {
 	Pagu          int64  `json:"pagu"`
 	Realisasi     int64  `json:"realisasi"`
 	SumberDana    string `json:"sumberDana" gorm:"column:sumber_dana"`
+	KabupatenKota string `json:"kabupatenKota" gorm:"column:kabupaten_kota"`
 	Status        string `json:"status"`
 	Keterangan    string `json:"keterangan"`
 }
@@ -26,6 +27,7 @@ type OtsusLabel struct {
 	ID                 int64  `json:"id" gorm:"primaryKey"`
 	TahunAnggaran      string `json:"tahunAnggaran" gorm:"column:tahun_anggaran"`
 	OtsusPayload       `gorm:"embedded"`
+	IsPublic           bool      `json:"isPublic" gorm:"column:is_public"`
 	CreatedBy          int64     `json:"createdBy"`
 	UpdatedBy          int64     `json:"updatedBy"`
 	CreatedAt          time.Time `json:"createdAt"`
@@ -48,6 +50,7 @@ type OtsusDocumentation struct {
 	OtsusLabelID int64      `json:"otsusLabelId"`
 	FileID       int64      `json:"fileId"`
 	Caption      string     `json:"caption"`
+	IsPublic     bool       `json:"isPublic" gorm:"column:is_public"`
 	CreatedBy    int64      `json:"createdBy"`
 	CreatedAt    time.Time  `json:"createdAt"`
 	File         StoredFile `json:"file" gorm:"-"`
@@ -59,6 +62,7 @@ type OtsusLPJ struct {
 	ID           int64      `json:"id" gorm:"primaryKey"`
 	OtsusLabelID int64      `json:"otsusLabelId"`
 	FileID       int64      `json:"fileId"`
+	IsPublic     bool       `json:"isPublic" gorm:"column:is_public"`
 	CreatedBy    int64      `json:"createdBy"`
 	UpdatedBy    int64      `json:"updatedBy"`
 	CreatedAt    time.Time  `json:"createdAt"`
@@ -75,6 +79,7 @@ type OtsusDPAVersion struct {
 	Versi        int        `json:"versi"`
 	FileID       int64      `json:"fileId"`
 	Catatan      string     `json:"catatan"`
+	IsPublic     bool       `json:"isPublic" gorm:"column:is_public"`
 	UploadedBy   int64      `json:"uploadedBy"`
 	UploadedAt   time.Time  `json:"uploadedAt"`
 	File         StoredFile `json:"file" gorm:"-"`

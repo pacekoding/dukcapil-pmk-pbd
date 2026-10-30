@@ -51,6 +51,12 @@ func New(config Config) *echo.Echo {
 	api := e.Group("/api/v1")
 	api.GET("/health", config.Health.Show)
 	api.POST("/auth/login", config.Auth.Login)
+	api.GET("/public/labelisasi", config.Otsus.PublicList)
+	api.GET("/public/labelisasi/:id", config.Otsus.PublicDetail)
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		api.Add(method, "/public/otsus-files/:file_id/preview", config.StoredFiles.PublicPreview)
+		api.Add(method, "/public/otsus-files/:file_id/download", config.StoredFiles.PublicDownload)
+	}
 
 	adminRoles := []model.Role{
 		model.RoleSuperAdmin,
@@ -80,6 +86,8 @@ func New(config Config) *echo.Echo {
 	otsus.DELETE("/:id/lpj", config.Otsus.DeleteLPJ)
 	otsus.POST("/:id/dpa", config.Otsus.UploadDPA)
 	otsus.DELETE("/:id/dpa/:dpa_id", config.Otsus.DeleteDPA)
+	otsus.PATCH("/:id/publication", config.Otsus.SetPublication)
+	otsus.PATCH("/:id/files/:kind/:item_id/publication", config.Otsus.SetFilePublication)
 	for _, method := range []string{http.MethodGet, http.MethodHead} {
 		protected.Add(method, "/otsus-files/:file_id/preview", config.StoredFiles.Preview)
 		protected.Add(method, "/otsus-files/:file_id/download", config.StoredFiles.Download)

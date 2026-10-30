@@ -20,3 +20,5 @@ export const uploadOtsusLpj = (id: number, file: File) => upload<OtsusLpj>(`${ap
 export const deleteOtsusLpj = (id: number) => apiRequest<void>(`${apiEndpoints.otsus}/${id}/lpj`, { method: "DELETE" });
 export const uploadOtsusDpa = (id: number, file: File, jenis: DpaType, catatan: string) => upload<OtsusDpa>(`${apiEndpoints.otsus}/${id}/dpa`, file, { jenis, catatan });
 export const deleteOtsusDpa = (id: number, dpaId: number) => apiRequest<void>(`${apiEndpoints.otsus}/${id}/dpa/${dpaId}`, { method: "DELETE" });
+export const setOtsusPublication = (id: number, isPublic: boolean) => apiRequest<void>(`${apiEndpoints.otsus}/${id}/publication`, { method: "PATCH", body: JSON.stringify({ isPublic }) });
+export const setOtsusFilePublication = (id: number, kind: "documentation" | "lpj" | "dpa", itemId: number, isPublic: boolean) => apiRequest<void>(`${apiEndpoints.otsus}/${id}/files/${kind}/${itemId}/publication`, { method: "PATCH", body: JSON.stringify({ isPublic }) });

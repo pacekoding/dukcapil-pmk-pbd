@@ -48,6 +48,10 @@ export const publicMenus: PublicMenuItem[] = [
     href: "/data-wilayah",
   },
   {
+    label: "Data Labelisasi Otsus",
+    href: "/labelisasi-otsus",
+  },
+  {
     label: "Layanan",
     href: "/#layanan",
   },

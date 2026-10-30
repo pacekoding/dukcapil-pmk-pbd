@@ -47,7 +47,7 @@ func TestOtsusIntegration(t *testing.T) {
 	must(db.Create(&sub).Error)
 	repo := repository.NewOtsusRepository(db)
 	ctx := context.Background()
-	payload := model.OtsusPayload{SubkegiatanID: sub.ID, Pagu: 260000000, Realisasi: 130000000, SumberDana: model.OtsusSumberDanaSG, Status: model.OtsusStatusBerjalan, Keterangan: "Berjalan"}
+	payload := model.OtsusPayload{SubkegiatanID: sub.ID, Pagu: 260000000, Realisasi: 130000000, SumberDana: model.OtsusSumberDanaSG, KabupatenKota: "Kabupaten Sorong", Status: model.OtsusStatusBerjalan, Keterangan: "Berjalan"}
 	created, err := repo.Save(ctx, 0, "2026", payload, user.ID)
 	must(err)
 	if created.Label.ID == 0 {
@@ -79,6 +79,17 @@ func TestOtsusIntegration(t *testing.T) {
 	if emptyDetail.Documentations == nil || emptyDetail.DPAVersions == nil {
 		t.Fatal("empty detail collections should be non-nil slices")
 	}
+	publicList, err := repo.PublicList(ctx, model.PublicOtsusListParams{Year: "2026", Page: 1, PageSize: 12})
+	must(err)
+	if publicList.Total != 0 {
+		t.Fatal("private label must not be returned by public list")
+	}
+	must(repo.SetPublication(ctx, created.Label.ID, "2026", true))
+	publicList, err = repo.PublicList(ctx, model.PublicOtsusListParams{Year: "2026", Page: 1, PageSize: 12})
+	must(err)
+	if publicList.Total != 1 || len(publicList.Items) != 1 || publicList.Items[0].KabupatenKota != "Kabupaten Sorong" {
+		t.Fatalf("public list=%+v", publicList)
+	}
 	input := func(category string, sequence int) model.StoredFileInput {
 		name := fmt.Sprintf("%s-%d.pdf", category, sequence)
 		return model.StoredFileInput{Module: "otsus", RelatedType: "otsus_dpa", Category: category, OriginalFilename: name, StoredFilename: name, StorageKey: fmt.Sprintf("private/otsus/%s/2026/%d.pdf", category, sequence), MimeType: "application/pdf", FileSize: 10, ChecksumSHA256: "", Visibility: model.FileVisibilityPrivate, UploadedBy: &user.ID}
@@ -90,6 +101,26 @@ func TestOtsusIntegration(t *testing.T) {
 	if first.Versi != 1 || second.Versi != 2 {
 		t.Fatalf("versions=%d,%d", first.Versi, second.Versi)
 	}
+	publicDetail, err := repo.PublicDetail(ctx, created.Label.ID, "2026")
+	must(err)
+	if len(publicDetail.Documents) != 0 {
+		t.Fatal("private DPA must not be returned by public detail")
+	}
+	must(repo.SetFilePublication(ctx, created.Label.ID, "2026", "dpa", first.ID, true))
+	publicDetail, err = repo.PublicDetail(ctx, created.Label.ID, "2026")
+	must(err)
+	if len(publicDetail.Documents) != 1 || publicDetail.Documents[0].Version != 1 {
+		t.Fatalf("public documents=%+v", publicDetail.Documents)
+	}
+	fileRepo := repository.NewStoredFileRepository(db)
+	if _, found, fileErr := fileRepo.PublicOtsusByID(ctx, first.FileID); fileErr != nil || !found {
+		t.Fatalf("published file found=%v err=%v", found, fileErr)
+	}
+	must(repo.SetPublication(ctx, created.Label.ID, "2026", false))
+	if _, found, fileErr := fileRepo.PublicOtsusByID(ctx, first.FileID); fileErr != nil || found {
+		t.Fatalf("file of private label found=%v err=%v", found, fileErr)
+	}
+	must(repo.SetPublication(ctx, created.Label.ID, "2026", true))
 	detail, err := repo.Detail(ctx, created.Label.ID, "2026")
 	must(err)
 	if len(detail.DPAVersions) != 2 || detail.DPAVersions[0].Versi != 2 || detail.DPAVersions[1].Versi != 1 {
